@@ -1,6 +1,6 @@
 ---
 name: bagual-test-pipeline
-description: Automated adversarial test pipeline — auto-setup + unit tests + full-stack E2E with browser/server log capture + auto-fix loops. Use when the user says "run test pipeline", "test everything", "automate tests", or "bagual-test-pipeline".
+description: Automated adversarial test pipeline — auto-setup + unit tests + full-stack E2E with browser/server log capture + visual validation (Vision AI) + auto-fix loops. Use when the user says "run test pipeline", "test everything", "automate tests", or "bagual-test-pipeline".
 ---
 
 # Test Pipeline

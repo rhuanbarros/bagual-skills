@@ -58,8 +58,102 @@ If in yolo mode and no coverage target provided: default to `80`.
   <critical>All test generation must include the Adversarial Testing Mandate verbatim in every subagent prompt.</critical>
   <critical>E2E phase requires a real running server + database — halt clearly if not running, never mock.</critical>
 
+  <!-- ==================== STEP 0: Diagnostic Scan ==================== -->
+  <step n="0" goal="Scan existing test infrastructure — identify what exists vs. what needs setup">
+    <output>
+      ============================================================
+      TEST PIPELINE — DIAGNOSTIC SCAN
+      Project: {project_name}
+      ============================================================
+    </output>
+
+    <action>Scan {project_root} for existing test infrastructure. Check each item:
+
+      FRAMEWORK
+      - Unit/component: `jest.config.*`, `vitest.config.*`, jest/vitest in package.json devDependencies
+      - E2E: `playwright.config.*`, `cypress.config.*`, @playwright/test or cypress in devDependencies
+
+      UNIT TESTS
+      - Test files: `**/*.test.*`, `**/*.spec.*` (exclude node_modules, dist, e2e dirs) — count them
+      - Coverage config: `c8`, `istanbul`, `nyc`, or coverage section in vitest/jest config
+      - Existing coverage report: `coverage/coverage-summary.json` or `coverage/lcov.info` — extract % if found
+
+      E2E TESTS
+      - Test files: `tests/e2e/**/*`, `e2e/**/*`, `playwright/**/*` — count them
+      - Browser console instrumentation: search for `page.on('console'` in any test file
+      - Server log capture: search for server log file references in test files
+
+      VISUAL VALIDATION
+      - Screenshot helper: `tests/e2e/helpers/screenshot.*` or `captureScreenshot` in any test file
+      - Requirements file: `{project_root}/visual-requirements.yaml`
+
+      OTHER
+      - CI config: `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`
+    </action>
+
+    <action>Build the diagnostic state: for each item, record FOUND / MISSING / PARTIAL with details.</action>
+
+    <output>
+      ## Test Infrastructure Diagnostic
+
+      ### Framework
+      - Unit/component framework: {FOUND: "vitest" / MISSING: "not detected"}
+      - E2E framework (Playwright): {FOUND / MISSING}
+
+      ### Unit Tests
+      - Test files: {N} found {in paths, or "none found"}
+      - Coverage config: {FOUND / MISSING}
+      - Current coverage: {X% from report / "not measured yet"}
+
+      ### E2E Tests
+      - Test files: {N} found {in paths, or "none found"}
+      - Browser console capture: {FOUND: "log-capture fixture detected" / MISSING}
+      - Server log capture: {FOUND / MISSING}
+
+      ### Visual Validation
+      - Screenshot helper: {FOUND / MISSING}
+      - visual-requirements.yaml: {FOUND: "{N} entries" / MISSING}
+
+      ### CI/CD
+      - CI pipeline: {FOUND: "GitHub Actions" / MISSING}
+
+      ---
+      **Items to configure:** {list of MISSING items, or "none — project is fully configured"}
+      **Items already in place:** {list of FOUND items}
+    </output>
+
+    <check if="NOT yolo mode">
+      <check if="no MISSING items found">
+        <output>All test infrastructure is already configured. Proceeding to run tests.</output>
+      </check>
+
+      <check if="MISSING items exist">
+        <output>
+          How would you like to proceed?
+
+          [1] Auto-configure all missing pieces and run the full pipeline
+          [2] Auto-configure missing pieces, but pause before each test run for review
+          [3] Diagnostic only — I'll configure manually and run the pipeline later
+
+          Choice:
+        </output>
+        <action>Wait for user response. Store as {proceed_mode}:
+          - [1] → {proceed_mode} = "auto"
+          - [2] → {proceed_mode} = "step"
+          - [3] → HALT. Output: "Diagnostic complete. Run /bagual-test-pipeline when ready."
+          - Default (no response / unclear) → {proceed_mode} = "auto"
+        </action>
+      </check>
+    </check>
+
+    <check if="yolo mode">
+      <output>[Step 0] YOLO mode — proceeding automatically.</output>
+      <action>Set {proceed_mode} = "auto"</action>
+    </check>
+  </step>
+
   <!-- ==================== STEP 1: Framework Check ==================== -->
-  <step n="1" goal="Detect test framework — auto-install if missing">
+  <step n="1" goal="Ensure test framework is installed — auto-install if missing (uses diagnostic findings from Step 0)">
     <output>
       ============================================================
       TEST PIPELINE STARTING
@@ -67,13 +161,11 @@ If in yolo mode and no coverage target provided: default to `80`.
       ============================================================
     </output>
 
-    <action>Scan {project-root} for framework indicators:
-      - `playwright.config.ts` or `playwright.config.js`
-      - `jest.config.*` or `vitest.config.*`
-      - `package.json` test script + test dependencies (playwright, jest, vitest, cypress)
-    </action>
+    <check if="framework was FOUND in Step 0 diagnostic">
+      <output>[Step 1] Test framework already configured. Proceeding.</output>
+    </check>
 
-    <check if="no framework config found">
+    <check if="framework was MISSING in Step 0 diagnostic">
       <output>[Step 1] No test framework detected. Auto-installing via bmad-testarch-framework...</output>
 
       <action>Spawn an Agent subagent with this prompt:
@@ -95,8 +187,11 @@ If in yolo mode and no coverage target provided: default to `80`.
       <output>[Step 1] Framework installed successfully.</output>
     </check>
 
-    <check if="framework already configured">
-      <output>[Step 1] Test framework detected. Proceeding.</output>
+    <check if="{proceed_mode} == 'step'">
+      <output>
+        [Step 1] Framework ready. Pausing before test generation — press Enter to continue with Step 2 (unit test generation).
+      </output>
+      <action>Wait for user confirmation before proceeding.</action>
     </check>
   </step>
 
@@ -155,6 +250,13 @@ If in yolo mode and no coverage target provided: default to `80`.
 
   <!-- ==================== STEP 3: Run Unit Tests — Fix Loop ==================== -->
   <step n="3" goal="Run unit/component tests with auto-fix loop (max 3 iterations)">
+    <check if="{proceed_mode} == 'step'">
+      <output>
+        [Step 3] Tests generated. Pausing before running unit tests — press Enter to continue.
+      </output>
+      <action>Wait for user confirmation before proceeding.</action>
+    </check>
+
     <action>Set {unit_fix_iteration} = 0</action>
     <action>Set {unit_tests_passing} = false</action>
     <action>Set {unit_test_output} = ""</action>
@@ -225,6 +327,13 @@ If in yolo mode and no coverage target provided: default to `80`.
 
   <!-- ==================== STEP 4: E2E Phase (isolated runner) ==================== -->
   <step n="4" goal="Run full-stack E2E tests with browser + server log capture">
+    <check if="{proceed_mode} == 'step'">
+      <output>
+        [Step 4] Unit tests passed. Pausing before E2E phase — make sure your server and database are running, then press Enter to continue.
+      </output>
+      <action>Wait for user confirmation before proceeding.</action>
+    </check>
+
     <output>[Step 4] Starting E2E phase — server + database must be running...</output>
     <action>Set {e2e_tests_passing} = false</action>
     <action>Set {e2e_failure_report} = ""</action>
