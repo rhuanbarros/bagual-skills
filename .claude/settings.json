@@ -13,9 +13,15 @@
       "WebSearch(*)",
       "TodoWrite(*)",
       "NotebookEdit(*)",
-      "mcp__*"
+      "mcp__*",
+      "Edit(/.claude/skills/bagual-test-pipeline/**)",
+      "Bash(mv /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/workflow.md /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/references/workflow.md)",
+      "Bash(mv /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/e2e-runner.md /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/references/e2e-runner.md)"
     ],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline"
+    ]
   },
   "skipDangerousModePermissionPrompt": true,
   "skipAutoPermissionPrompt": true

@@ -68,3 +68,5 @@ Test Architecture Enterprise,bmad-testarch-nfr,NFR Assessment,NR,Non-functional 
 Test Architecture Enterprise,bmad-testarch-test-design,Test Design,TD,Risk-based test planning.,,3-solutioning,false,bmad-testarch-framework,,,,false,test_artifacts,test design document,
 Test Architecture Enterprise,bmad-testarch-test-review,Test Review,RV,Quality audit (0-100 scoring).,,4-implementation,bmad-testarch-automate,,,,,false,test_artifacts,review report,
 Test Architecture Enterprise,bmad-testarch-trace,Traceability,TR,Coverage traceability and gate.,,4-implementation,bmad-testarch-test-review,,,,,false,test_artifacts,traceability matrix|gate decision,
+Bagual,bagual-test-pipeline,Test Pipeline,TP,Fully automated adversarial test pipeline — framework auto-setup + unit tests + full-stack E2E with browser/server log capture + auto-fix loops until green.,,4-implementation,,,,,false,implementation_artifacts,test pipeline report,
+Bagual,bagual-bmad-implement-quick-epic,Quick Epic,QE,Faster epic pipeline: create-story → dev-story → code-review (max 2 loops) → retrospective. Fully automated.,,4-implementation,,,,,false,implementation_artifacts,epic complete,
