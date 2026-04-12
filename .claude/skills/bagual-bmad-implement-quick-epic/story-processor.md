@@ -97,7 +97,7 @@ Derived paths:
   </step>
 
   <!-- ==================== SUB-STEP C: Code Review Correction Loop ==================== -->
-  <step name="C" goal="Code review with up to 5 correction iterations">
+  <step name="C" goal="Code review with up to 2 correction iterations">
     <action>Set {review_iteration} = 0</action>
     <action>Set {review_passed} = false</action>
     <action>Set {spec_lessons} = empty list</action>
@@ -105,7 +105,7 @@ Derived paths:
 
     <loop while="{review_iteration} less than 2 AND {review_passed} == false">
       <action>Increment {review_iteration} by 1</action>
-      <output>[Step C] Code review iteration {review_iteration}/5 for {story_key}...</output>
+      <output>[Step C] Code review iteration {review_iteration}/2 for {story_key}...</output>
 
       <action>Spawn an Agent subagent with this prompt:
         "Run the skill /bmad-code-review with args: uncommitted changes for story {story_key}, spec file at {story_file} yolo
@@ -229,47 +229,22 @@ Derived paths:
   </step>
 
   <!-- ==================== SUB-STEP D: Mark story as done ==================== -->
-  <step name="D" goal="Mark story done in sprint-status.yaml and story file">
+  <step name="D" goal="Update sprint-status.yaml ({story_key} → done, update last_updated) and set Status to done in {story_file}. Preserve all existing comments and structure.">
     <output>[Step D] Marking {story_key} as done...</output>
-
-    <action>Read the FULL {sprint_status} file</action>
-    <action>Update the line for {story_key} from its current status to: done</action>
-    <action>Update the last_updated field to current date: {date}</action>
-    <action>Save the file, preserving ALL comments and structure including STATUS DEFINITIONS header</action>
-
-    <action>Read {story_file} and update the Status field to "done"</action>
-    <action>Save {story_file}</action>
   </step>
 
   <!-- ==================== SUB-STEP E: Update projects-history.md ==================== -->
-  <step name="E" goal="Append story summary to projects history">
+  <step name="E" goal="Append a summary entry to {projects_history}">
     <output>[Step E] Updating projects history...</output>
 
-    <action>Read {story_file} to extract:
-      - Story title (human-readable)
-      - What was implemented (from Change Log and Completion Notes in Dev Agent Record)
-      - Key technical decisions made
-      - Files created/modified (from File List)
-      - Lessons learned (from Dev Agent Record)
-      - Review findings that were addressed (if correction loops occurred)
-      - Spec issues from {spec_lessons} — flag these prominently
-    </action>
+    <action>Read {story_file} and extract: title, what was implemented (from Change Log / Dev Agent Record), key technical decisions, files changed, lessons learned, review findings addressed, and any spec issues from {spec_lessons}.</action>
 
-    <action>Determine the area tag based on story content:
-      - FRONTEND if primarily UI/component changes
-      - BACKEND if primarily API/database changes
-      - INFRA if primarily infrastructure/config changes
-      - FULLSTACK if both frontend and backend
-    </action>
+    <action>Determine area tag (FRONTEND / BACKEND / INFRA / FULLSTACK) based on story content.</action>
 
-    <action>Append a new entry to {projects_history}:
-
-      ## ({AREA_TAG}) {date} - {story_title_human_readable}
-
-      - Bullet point summary of what was implemented
-      - Key technical decisions
-      - Lessons learned (if any, especially from review correction cycles)
-      - Spec issues found and fixed (from {spec_lessons}, if any)
+    <action>Append entry:
+      ## ({AREA_TAG}) {date} - {story_title}
+      - Summary of implementation
+      - Key decisions, lessons, spec issues (if any)
     </action>
   </step>
 
@@ -277,9 +252,11 @@ Derived paths:
   <step name="F" goal="Commit all changes for this story">
     <output>[Step F] Committing changes for {story_key}...</output>
 
-    <action>Run: git add -A</action>
+    <action>Stage all changed and new files relevant to this story (implementation files, story file, sprint-status.yaml, projects-history.md). Avoid staging sensitive files (.env, credentials).</action>
     <action>Run: git commit using a HEREDOC:
       feat: implement {story_key} - {one_line_summary_of_story}
+
+      Co-Authored-By: Claude Opus 4.6 (1M context) &lt;noreply@anthropic.com&gt;
     </action>
 
     <check if="git commit failed (e.g., pre-commit hook)">

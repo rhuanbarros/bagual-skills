@@ -55,8 +55,7 @@ Parse the user-provided epic number from the invocation arguments.
   <critical>If any story agent fails, HALT immediately.</critical>
 
   <step n="1" goal="Parse sprint status and build story queue">
-    <action>Read the FULL file: {sprint_status}</action>
-    <action>Parse the development_status section completely</action>
+    <action>Read {sprint_status} and parse the development_status section</action>
 
     <check if="epic-{epic_num} not found">
       <output>PIPELINE HALTED: Epic {epic_num} not found in sprint-status.yaml</output>
@@ -107,14 +106,8 @@ Parse the user-provided epic number from the invocation arguments.
       ============================================================
     </output>
 
-    <action>Read the FULL contents of {story_processor}</action>
-
     <action>Spawn an Agent subagent with this prompt:
-      "You are a story processor agent. Follow ALL instructions in the text below exactly.
-
-      === STORY PROCESSOR INSTRUCTIONS ===
-      {full contents of story_processor file}
-      === END INSTRUCTIONS ===
+      "You are a story processor agent. Read and follow ALL instructions in the file: {story_processor}
 
       Input values:
       - story_key: {current_story_key}
@@ -163,8 +156,7 @@ Parse the user-provided epic number from the invocation arguments.
   </step>
 
   <step n="3" goal="Verify all stories are done before running retrospective">
-    <action>Re-read the FULL {sprint_status} file</action>
-    <action>Check if ALL stories for epic {epic_num} are "done"</action>
+    <action>Re-read {sprint_status} and verify ALL stories for epic {epic_num} are "done"</action>
 
     <check if="some stories are not done">
       <output>
@@ -188,18 +180,12 @@ Parse the user-provided epic number from the invocation arguments.
     <check if="file exists and has content">
       <output>[Step 4] Deferred findings found. Running bmad-quick-dev batch fix pass...</output>
 
-      <action>Read the FULL contents of {deferred_findings_file}</action>
-
       <action>Spawn an Agent subagent with this prompt:
         "Run the skill /bmad-quick-dev with the following intent:
 
-        Address all deferred code review findings from epic {epic_num}. These are issues flagged during per-story review that were not resolved within the 2-iteration review limit.
+        Address all deferred code review findings from epic {epic_num}. Read the findings file at {deferred_findings_file}. These are issues flagged during per-story review that were not resolved within the 2-iteration review limit.
 
         IMPORTANT: Re-validate each finding first before acting — some may already be resolved by later story implementations. Only fix confirmed active issues. Group related fixes across stories when possible.
-
-        Here are the deferred findings:
-
-        {full contents of deferred_findings_file}
 
         This is running inside an automated pipeline. Auto-approve all checkpoints.
         Do not ask for user input — proceed automatically."
@@ -210,9 +196,14 @@ Parse the user-provided epic number from the invocation arguments.
       </check>
 
       <check if="Agent succeeded">
-        <action>Run: git add -A</action>
-        <action>Run: git commit -m "fix: epic-{epic_num} deferred review findings — batch fix pass" using a HEREDOC</action>
-        <output>[Step 4] Deferred findings addressed and committed.</output>
+        <action>Stage all files changed by the batch fix (avoid staging sensitive files like .env or credentials).</action>
+        <action>Run: git commit using a HEREDOC:
+          fix: epic-{epic_num} deferred review findings — batch fix pass
+
+          Co-Authored-By: Claude Opus 4.6 (1M context) &lt;noreply@anthropic.com&gt;
+        </action>
+        <action>Delete {deferred_findings_file} to prevent stale findings from accumulating on re-runs.</action>
+        <output>[Step 4] Deferred findings addressed, committed, and findings file cleaned up.</output>
       </check>
     </check>
   </step>
@@ -240,15 +231,13 @@ Parse the user-provided epic number from the invocation arguments.
 
     <output>[Step 5] Retrospective complete. Marking epic as done...</output>
 
-    <action>Read the FULL {sprint_status} file</action>
-    <action>Update the line for epic-{epic_num} from its current status to: done</action>
-    <action>Update the line for epic-{epic_num}-retrospective to: done</action>
-    <action>Update last_updated field to current date</action>
-    <action>Save file, preserving ALL comments and structure</action>
+    <action>Update {sprint_status}: set epic-{epic_num} and epic-{epic_num}-retrospective to done, update last_updated to current date. Preserve all existing comments and structure.</action>
 
-    <action>Run: git add -A</action>
-    <action>Run: git commit -m "docs: epic-{epic_num} retrospective — epic complete"
-      Use a HEREDOC for the commit message.
+    <action>Stage sprint-status.yaml and any retrospective artifacts. Avoid staging sensitive files.</action>
+    <action>Run: git commit using a HEREDOC:
+      docs: epic-{epic_num} retrospective — epic complete
+
+      Co-Authored-By: Claude Opus 4.6 (1M context) &lt;noreply@anthropic.com&gt;
     </action>
 
     <output>
