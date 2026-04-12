@@ -1,11 +1,11 @@
 ---
-name: deepeval-help
+name: bagual-help
 description: Router e diagnóstico para avaliação de AI agents com DeepEval. Use quando o usuário disser "deepeval", "avaliar agente", "evaluate agent", "começar avaliação", "qual o próximo passo deepeval", ou "não sei por onde começar com avaliação".
 ---
 
 # DeepEval Help — Router e Diagnóstico de Estágio
 
-Você é o ponto de entrada do módulo `deepeval-evals`. Seu trabalho: diagnosticar em que estágio o usuário está e rotear para a skill certa, sem deixar ele perdido.
+Você é o ponto de entrada do módulo `bagual-evals`. Seu trabalho: diagnosticar em que estágio o usuário está e rotear para a skill certa, sem deixar ele perdido.
 
 ## Princípio fundamental
 
@@ -34,27 +34,27 @@ Plus: pra qualquer coisa custom (tom, conformidade, segurança), usa `GEval` ou 
 
 ## Diagnóstico — comece sempre por aqui
 
-Pergunte ao usuário **uma coisa de cada vez**, nesta ordem. Quando a resposta apontar pra um skill específico, **ofereça imediatamente rodar esse skill** — não espere o usuário pedir. Exemplo de encerramento de cada roteamento: *"Certo, o próximo passo é `deepeval-X`. Posso chamar esse skill agora?"*
+Pergunte ao usuário **uma coisa de cada vez**, nesta ordem. Quando a resposta apontar pra um skill específico, **ofereça imediatamente rodar esse skill** — não espere o usuário pedir. Exemplo de encerramento de cada roteamento: *"Certo, o próximo passo é `bagual-X`. Posso chamar esse skill agora?"*
 
 ### Pergunta 1 — Você já tem o agente construído?
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não, tô só pensando" / "É um projeto novo" | → Rotear pra `deepeval-strategy` (planejar antes de medir) |
+| "Não, tô só pensando" / "É um projeto novo" | → Rotear pra `bagual-strategy` (planejar antes de medir) |
 | "Tenho protótipo / código rodando" | → Pergunta 2 |
 | "Tenho agente em produção" | → Pergunta 2 (depois Pergunta 4) |
 
-**Se roteou pra `deepeval-strategy`**: diga *"Antes de codar qualquer eval, é importante ter um plano escrito do que avaliar e por quê. Posso chamar `deepeval-strategy` agora?"*
+**Se roteou pra `bagual-strategy`**: diga *"Antes de codar qualquer eval, é importante ter um plano escrito do que avaliar e por quê. Posso chamar `bagual-strategy` agora?"*
 
 ### Pergunta 2 — Você já instalou o DeepEval no projeto?
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não" / "Nunca usei" | → Rotear pra `deepeval-setup` |
+| "Não" / "Nunca usei" | → Rotear pra `bagual-setup` |
 | "Já tem o pacote, mas nunca rodei nada" | → Pergunta 3 |
 | "Já rodei alguns evals" | → Pergunta 4 |
 
-**Se roteou pra `deepeval-setup`**: diga *"Vamos instalar e configurar o DeepEval no seu projeto. Posso chamar `deepeval-setup` agora?"*
+**Se roteou pra `bagual-setup`**: diga *"Vamos instalar e configurar o DeepEval no seu projeto. Posso chamar `bagual-setup` agora?"*
 
 ### Pergunta 3 — Seu agente já está instrumentado com `@observe`?
 
@@ -62,11 +62,11 @@ Explique se ele perguntar o que é: "Pra DeepEval avaliar componentes individuai
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não" | → Rotear pra `deepeval-instrument` |
-| "Parcialmente / não sei se tá certo" | → Rotear pra `deepeval-instrument` (ele revisa) |
+| "Não" | → Rotear pra `bagual-instrument` |
+| "Parcialmente / não sei se tá certo" | → Rotear pra `bagual-instrument` (ele revisa) |
 | "Sim, tudo decorado" | → Pergunta 4 |
 
-**Se roteou pra `deepeval-instrument`**: diga *"Preciso adicionar `@observe` no código do seu agent pra DeepEval enxergar a execução. Posso chamar `deepeval-instrument` agora?"*
+**Se roteou pra `bagual-instrument`**: diga *"Preciso adicionar `@observe` no código do seu agent pra DeepEval enxergar a execução. Posso chamar `bagual-instrument` agora?"*
 
 ### Pergunta 4 — Você tem um dataset (goldens) pra rodar evals contra?
 
@@ -74,12 +74,12 @@ Explique se necessário: "Goldens são os 'casos de teste' da avaliação. Cada 
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não tenho nada" | → Rotear pra `deepeval-build-dataset` |
-| "Tenho uns exemplos soltos" | → Rotear pra `deepeval-build-dataset` (transforma em dataset) |
-| "Tenho dataset estruturado mas evals tão genéricas" | → Rotear pra `deepeval-error-analysis` (trace review pra derivar critérios product-specific) |
+| "Não tenho nada" | → Rotear pra `bagual-build-dataset` |
+| "Tenho uns exemplos soltos" | → Rotear pra `bagual-build-dataset` (transforma em dataset) |
+| "Tenho dataset estruturado mas evals tão genéricas" | → Rotear pra `bagual-error-analysis` (trace review pra derivar critérios product-specific) |
 | "Tenho dataset estruturado" | → Pergunta 4.5 |
 
-**Se roteou pra `deepeval-build-dataset`**: diga *"Vamos criar um dataset de goldens pra você ter casos de teste. Posso chamar `deepeval-build-dataset` agora?"*
+**Se roteou pra `bagual-build-dataset`**: diga *"Vamos criar um dataset de goldens pra você ter casos de teste. Posso chamar `bagual-build-dataset` agora?"*
 
 ### Pergunta 4.5 (CRÍTICA) — Você já fez trace review (open coding) dos outputs reais do agent?
 
@@ -89,35 +89,35 @@ Explique se necessário: "Trace review é olhar 30-50 outputs reais do seu agent
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não, nunca fiz" | → **Rotear pra `deepeval-error-analysis`** (workflow trace-driven do Hamel) |
-| "Já fiz informalmente" | → Rotear pra `deepeval-error-analysis` pra estruturar |
+| "Não, nunca fiz" | → **Rotear pra `bagual-error-analysis`** (workflow trace-driven do Hamel) |
+| "Já fiz informalmente" | → Rotear pra `bagual-error-analysis` pra estruturar |
 | "Sim, tenho judges product-specific calibrados" | → Pergunta 5 |
 
-**Se roteou pra `deepeval-error-analysis`**: diga *"Esse é o passo mais importante — e o que a maioria dos times pula. Vamos fazer trace review pra descobrir as falhas reais do seu agent antes de escolher métricas. Posso chamar `deepeval-error-analysis` agora?"*
+**Se roteou pra `bagual-error-analysis`**: diga *"Esse é o passo mais importante — e o que a maioria dos times pula. Vamos fazer trace review pra descobrir as falhas reais do seu agent antes de escolher métricas. Posso chamar `bagual-error-analysis` agora?"*
 
 ### Pergunta 5 — Você sabe quais métricas usar?
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Não faço ideia" | → Rotear pra `deepeval-pick-metrics` |
-| "Quero algo custom (tom, conformidade...)" | → Rotear pra `deepeval-custom-metric` |
+| "Não faço ideia" | → Rotear pra `bagual-pick-metrics` |
+| "Quero algo custom (tom, conformidade...)" | → Rotear pra `bagual-custom-metric` |
 | "Sei quais quero usar" | → Pergunta 6 |
 
-**Se roteou pra `deepeval-pick-metrics`**: diga *"Vamos escolher as métricas certas pro seu caso — sem exagerar no número. Posso chamar `deepeval-pick-metrics` agora?"*
+**Se roteou pra `bagual-pick-metrics`**: diga *"Vamos escolher as métricas certas pro seu caso — sem exagerar no número. Posso chamar `bagual-pick-metrics` agora?"*
 
-**Se roteou pra `deepeval-custom-metric`**: diga *"Vamos criar uma métrica GEval customizada. Posso chamar `deepeval-custom-metric` agora?"*
+**Se roteou pra `bagual-custom-metric`**: diga *"Vamos criar uma métrica GEval customizada. Posso chamar `bagual-custom-metric` agora?"*
 
 ### Pergunta 6 — Você quer rodar local pra testar, ou colocar em produção?
 
 | Resposta | Próximo passo |
 |----------|---------------|
-| "Rodar local primeiro" | → Rotear pra `deepeval-run-and-analyze` |
-| "Já rodei local, quero produção" | → Rotear pra `deepeval-production` |
-| "Quero CI/CD" | → Rotear pra `deepeval-production` (tem seção CI/CD) |
+| "Rodar local primeiro" | → Rotear pra `bagual-run-and-analyze` |
+| "Já rodei local, quero produção" | → Rotear pra `bagual-production` |
+| "Quero CI/CD" | → Rotear pra `bagual-production` (tem seção CI/CD) |
 
-**Se roteou pra `deepeval-run-and-analyze`**: diga *"Vamos rodar os evals e interpretar os resultados. Posso chamar `deepeval-run-and-analyze` agora?"*
+**Se roteou pra `bagual-run-and-analyze`**: diga *"Vamos rodar os evals e interpretar os resultados. Posso chamar `bagual-run-and-analyze` agora?"*
 
-**Se roteou pra `deepeval-production`**: diga *"Vamos configurar produção com Confident AI e CI/CD. Posso chamar `deepeval-production` agora?"*
+**Se roteou pra `bagual-production`**: diga *"Vamos configurar produção com Confident AI e CI/CD. Posso chamar `bagual-production` agora?"*
 
 ## Mapa de skills do módulo
 
@@ -125,17 +125,17 @@ Todas as skills estão neste módulo. Todas têm o conhecimento embutido — nen
 
 | Skill | Quando usar | Triggers |
 |-------|-------------|----------|
-| **deepeval-strategy** | Planejar avaliação antes de codar nada | "estratégia de avaliação", "planejar evals" |
-| **deepeval-setup** | Instalar e configurar DeepEval no projeto | "instalar deepeval", "configurar deepeval" |
-| **deepeval-instrument** | Adicionar `@observe` ao código do agent | "instrumentar agent", "adicionar tracing" |
-| **deepeval-build-dataset** | Criar goldens / dataset de testes | "criar dataset", "fazer goldens", "synthesizer" |
-| **deepeval-error-analysis** ⭐ | Trace review (open coding) → derivar evals product-specific reais | "trace review", "open coding", "vibe check", "como criar evals do zero" |
-| **deepeval-pick-metrics** | Escolher métricas certas pro tipo de agent | "escolher métricas", "que métrica usar" |
-| **deepeval-custom-metric** | Criar métricas customizadas (G-Eval / DAG) | "métrica custom", "g-eval", "criar métrica" |
-| **deepeval-run-and-analyze** | Rodar evals locais e interpretar resultados | "rodar evals", "analisar resultados" |
-| **deepeval-production** | Migrar pra produção + CI/CD + three-tier strategy | "deepeval em produção", "ci/cd evals" |
+| **bagual-strategy** | Planejar avaliação antes de codar nada | "estratégia de avaliação", "planejar evals" |
+| **bagual-setup** | Instalar e configurar DeepEval no projeto | "instalar deepeval", "configurar deepeval" |
+| **bagual-instrument** | Adicionar `@observe` ao código do agent | "instrumentar agent", "adicionar tracing" |
+| **bagual-build-dataset** | Criar goldens / dataset de testes | "criar dataset", "fazer goldens", "synthesizer" |
+| **bagual-error-analysis** ⭐ | Trace review (open coding) → derivar evals product-specific reais | "trace review", "open coding", "vibe check", "como criar evals do zero" |
+| **bagual-pick-metrics** | Escolher métricas certas pro tipo de agent | "escolher métricas", "que métrica usar" |
+| **bagual-custom-metric** | Criar métricas customizadas (G-Eval / DAG) | "métrica custom", "g-eval", "criar métrica" |
+| **bagual-run-and-analyze** | Rodar evals locais e interpretar resultados | "rodar evals", "analisar resultados" |
+| **bagual-production** | Migrar pra produção + CI/CD + three-tier strategy | "deepeval em produção", "ci/cd evals" |
 
-⭐ **`deepeval-error-analysis` é a skill que a maioria dos times pula e que mais determina se o eval system é real ou vibe-check disfarçado.** Recomenda fortemente sempre que o usuário tem traces e ainda não fez trace review.
+⭐ **`bagual-error-analysis` é a skill que a maioria dos times pula e que mais determina se o eval system é real ou vibe-check disfarçado.** Recomenda fortemente sempre que o usuário tem traces e ainda não fez trace review.
 
 ## O ciclo completo (mostre isso quando o usuário perguntar "como funciona o todo")
 
@@ -185,30 +185,30 @@ Se faltar qualquer um, rote pro skill correspondente.
 ## Casos especiais — diga isso quando aparecer
 
 ### "Meu agente é multi-agent (vários agents conversando)"
-→ Use `deepeval-instrument` (tem seção sobre `agent_handoffs`). Depois, use `deepeval-pick-metrics` (todas as métricas funcionam com multi-agent — DeepEval rastreia automaticamente quando um agent decora chama outro).
+→ Use `bagual-instrument` (tem seção sobre `agent_handoffs`). Depois, use `bagual-pick-metrics` (todas as métricas funcionam com multi-agent — DeepEval rastreia automaticamente quando um agent decora chama outro).
 
 ### "Eu uso LangGraph / CrewAI / LlamaIndex / Pydantic AI / OpenAI Agents SDK"
-→ Use `deepeval-instrument` direto. Tem auto-instrumentação de uma linha pra cada um desses frameworks. Você não precisa adicionar `@observe` manualmente.
+→ Use `bagual-instrument` direto. Tem auto-instrumentação de uma linha pra cada um desses frameworks. Você não precisa adicionar `@observe` manualmente.
 
 ### "Quero avaliar um chatbot multi-turn, não um agent single-shot"
-→ Avise: "DeepEval tem suporte multi-turn separado, com `ConversationalGolden` e métricas tipo `ConversationalGEval`." Use `deepeval-build-dataset` (tem seção multi-turn) e `deepeval-pick-metrics` (tem tabela multi-turn).
+→ Avise: "DeepEval tem suporte multi-turn separado, com `ConversationalGolden` e métricas tipo `ConversationalGEval`." Use `bagual-build-dataset` (tem seção multi-turn) e `bagual-pick-metrics` (tem tabela multi-turn).
 
 ### "Quero comparar dois modelos / dois prompts"
 → Faça o ciclo normal. A magia é que você roda o mesmo dataset duas vezes (uma com cada versão) e compara scores. Confident AI tem regression testing visual pra isso.
 
 ### "Quero gerar dataset automaticamente, não tenho exemplos"
-→ Use `deepeval-build-dataset` (tem seção `Synthesizer` que gera goldens a partir de docs, contexts, scratch ou goldens existentes).
+→ Use `bagual-build-dataset` (tem seção `Synthesizer` que gera goldens a partir de docs, contexts, scratch ou goldens existentes).
 
 ### "Quero red-teaming / testes de segurança"
-→ Avise que DeepEval tem um produto separado chamado **DeepTeam** (`trydeepteam.com`) pra red-teaming e ataques adversariais. Esse módulo cobre evals normais, não red-teaming. Mas você pode usar `GEval` pra criar métricas de safety/PII (use `deepeval-custom-metric`, tem exemplo de PII Leakage).
+→ Avise que DeepEval tem um produto separado chamado **DeepTeam** (`trydeepteam.com`) pra red-teaming e ataques adversariais. Esse módulo cobre evals normais, não red-teaming. Mas você pode usar `GEval` pra criar métricas de safety/PII (use `bagual-custom-metric`, tem exemplo de PII Leakage).
 
 ## Como você responde
 
 - Sempre faça **uma pergunta de cada vez**, nunca despeje questionário
 - Sempre explique jargão na primeira vez que aparecer
 - Sempre dê **exemplo concreto** quando o usuário parecer perdido
-- Quando rotear pra outra skill, diga o nome dela em formato inline-code: `deepeval-strategy`
-- Termine sempre com uma ação clara: "Pronto, agora vamos pra X. Posso rodar a skill `deepeval-X` agora?"
+- Quando rotear pra outra skill, diga o nome dela em formato inline-code: `bagual-strategy`
+- Termine sempre com uma ação clara: "Pronto, agora vamos pra X. Posso rodar a skill `bagual-X` agora?"
 
 ## Anti-patterns que você NUNCA faz
 

@@ -1,6 +1,6 @@
 ---
-name: deepeval-evals-setup
-description: Installs the DeepEval Evals module into a BMad project. Use when the user says "instalar deepeval-evals", "setup deepeval module", "registrar deepeval no bmad", or similar.
+name: bagual-evals-setup
+description: Installs the DeepEval Evals module into a BMad project. Use when the user says "instalar bagual-evals", "setup deepeval module", "registrar deepeval no bmad", or similar.
 ---
 
 # DeepEval Evals — Module Setup
@@ -94,25 +94,25 @@ Show the user a summary of what was written:
 ✓ Output folder:     {eval_output_folder}
 
 Skills now available:
-  [DH]   deepeval-help         — Router and diagnostic
-  [DEST] deepeval-strategy     — Eval plan document
-  [DSU]  deepeval-setup        — pip install + API keys
-  [DIN]  deepeval-instrument   — @observe decorators
-  [DBD]  deepeval-build-dataset — Goldens / dataset
-  [DEA]  deepeval-error-analysis — ⭐ Trace review (most important)
-  [DPM]  deepeval-pick-metrics  — Built-in metric selection
-  [DCM]  deepeval-custom-metric — GEval / DAGMetric
-  [DRA]  deepeval-run-and-analyze — Execute + interpret
-  [DPD]  deepeval-production   — Confident AI + CI/CD
+  [DH]   bagual-help         — Router and diagnostic
+  [DEST] bagual-strategy     — Eval plan document
+  [DSU]  bagual-setup        — pip install + API keys
+  [DIN]  bagual-instrument   — @observe decorators
+  [DBD]  bagual-build-dataset — Goldens / dataset
+  [DEA]  bagual-error-analysis — ⭐ Trace review (most important)
+  [DPM]  bagual-pick-metrics  — Built-in metric selection
+  [DCM]  bagual-custom-metric — GEval / DAGMetric
+  [DRA]  bagual-run-and-analyze — Execute + interpret
+  [DPD]  bagual-production   — Confident AI + CI/CD
 
-Start with:  deepeval-help
+Start with:  bagual-help
 ```
 
 ## Encerramento
 
 Após mostrar o summary:
 
-> "Módulo instalado. Comece com `deepeval-help` — ele vai perguntar uma coisa de cada vez e rotear pro skill certo pro seu estágio atual."
+> "Módulo instalado. Comece com `bagual-help` — ele vai perguntar uma coisa de cada vez e rotear pro skill certo pro seu estágio atual."
 
 ## Anti-patterns
 

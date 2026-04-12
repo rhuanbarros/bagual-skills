@@ -1,5 +1,5 @@
 ---
-name: deepeval-custom-metric
+name: bagual-custom-metric
 description: Criação de métricas customizadas com G-Eval ou DAGMetric para critérios específicos do domínio (tom, conformidade, safety, PII, qualidade subjetiva). Use quando o usuário disser "métrica custom", "g-eval", "criar métrica", "DAG metric", "avaliar tom", "avaliar safety", "métrica de conformidade".
 ---
 
@@ -23,14 +23,14 @@ Crie quando as 6 métricas built-in **não cobrem** o que você precisa avaliar.
 
 **A fonte correta dos critérios custom não é sua imaginação — é trace review.**
 
-Se você ainda não fez o workflow de `deepeval-error-analysis` (open coding → axial coding → binary judges), seus critérios custom vão medir o que você **acha** que pode falhar, não o que está **realmente** falhando. Esse é o vibe-check trap aplicado a métricas custom.
+Se você ainda não fez o workflow de `bagual-error-analysis` (open coding → axial coding → binary judges), seus critérios custom vão medir o que você **acha** que pode falhar, não o que está **realmente** falhando. Esse é o vibe-check trap aplicado a métricas custom.
 
 **Fluxo recomendado**:
 
-1. Se o usuário tem agent rodando → `deepeval-error-analysis` primeiro, depois volta aqui pra implementar os judges que o axial coding identificou
+1. Se o usuário tem agent rodando → `bagual-error-analysis` primeiro, depois volta aqui pra implementar os judges que o axial coding identificou
 2. Se não tem traces ainda → pode criar custom metrics genéricas (tom, safety, PII) baseadas em requisitos conhecidos, mas deixe claro que isso é temporário até ter traces
 
-O axial coding do `deepeval-error-analysis` produz categorias de falha product-specific que viram **exatamente** os inputs pros `GEval` dessa skill. Você faz o trabalho conceitual lá, e implementa o judge aqui.
+O axial coding do `bagual-error-analysis` produz categorias de falha product-specific que viram **exatamente** os inputs pros `GEval` dessa skill. Você faz o trabalho conceitual lá, e implementa o judge aqui.
 
 ## GEval vs DAGMetric — qual usar
 
@@ -668,7 +668,7 @@ metric = GEval(
 
 Após criar e testar a métrica, diga:
 
-> "Métrica `{name}` pronta. Próximo passo é incluir ela na rodada de evals. Você pode adicioná-la ao mesmo `evals_iterator` que já tem, ou anexar ao `@observe` de um componente específico. Quer que eu chame `deepeval-run-and-analyze`?"
+> "Métrica `{name}` pronta. Próximo passo é incluir ela na rodada de evals. Você pode adicioná-la ao mesmo `evals_iterator` que já tem, ou anexar ao `@observe` de um componente específico. Quer que eu chame `bagual-run-and-analyze`?"
 
 ## Anti-patterns
 

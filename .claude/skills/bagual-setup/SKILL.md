@@ -1,5 +1,5 @@
 ---
-name: deepeval-setup
+name: bagual-setup
 description: Instalação e configuração inicial do DeepEval no projeto Python. Use quando o usuário disser "instalar deepeval", "configurar deepeval", "primeiro setup", "deepeval login", ou estiver começando do zero com avaliação.
 ---
 
@@ -268,7 +268,7 @@ Antes de declarar setup completo, confirme com o usuário:
 
 Após confirmar, diga:
 
-> "Setup completo. O próximo passo é instrumentar o seu agent com `@observe` pra DeepEval enxergar a árvore de execução. Quer que eu chame `deepeval-instrument` agora?"
+> "Setup completo. O próximo passo é instrumentar o seu agent com `@observe` pra DeepEval enxergar a árvore de execução. Quer que eu chame `bagual-instrument` agora?"
 
 ## Anti-patterns
 

@@ -1,5 +1,5 @@
 ---
-name: deepeval-error-analysis
+name: bagual-error-analysis
 description: Workflow de error-analysis-first para descobrir falhas reais do agent via trace review (Hamel Husain). Use quando o usuário disser "não sei o que avaliar", "preciso descobrir falhas", "review de traces", "open coding", "axial coding", "trace-driven evals", "vibe check", "como criar evals do zero", ou tiver agent rodando mas sem evals estruturados.
 ---
 
@@ -19,7 +19,7 @@ A maioria dos times entra num padrão previsível:
 
 Isso é o **vibe-check trap** que Hamel Husain descreve depois de rodar workshops com 3000+ engenheiros de OpenAI/Anthropic/Google. **Não é estupidez**. É um problema estrutural: o feedback loop de "mudou prompt → viu output" **parece** avaliação mas não é. É amostrar **um ponto** de uma distribuição e concluir que a distribuição inteira está OK.
 
-A skill `deepeval-strategy` te ajuda a planejar O QUE avaliar. **Esta skill** te ajuda a **descobrir** o que avaliar — porque as falhas que você precisa pegar você ainda não conhece.
+A skill `bagual-strategy` te ajuda a planejar O QUE avaliar. **Esta skill** te ajuda a **descobrir** o que avaliar — porque as falhas que você precisa pegar você ainda não conhece.
 
 ## Princípio fundamental: error-analysis-first, não EDD
 
@@ -39,7 +39,7 @@ Você precisa de **traces reais**. Pelo menos 30-50.
 |---------|-------------|
 | Tem agent em produção | Exporta 50 traces da última semana via Confident AI / LangSmith / Langfuse / Braintrust |
 | Tem agent em staging mas não prod | Roda 50 inputs sintéticos representativos da distribuição esperada |
-| Não tem agent rodando ainda | **Pare aqui** — vai pra `deepeval-strategy` primeiro, instrumenta o agent (`deepeval-instrument`), gera traces, e volta |
+| Não tem agent rodando ainda | **Pare aqui** — vai pra `bagual-strategy` primeiro, instrumenta o agent (`bagual-instrument`), gera traces, e volta |
 
 **Sintéticos contam pra começar**. Se você sampleia da distribuição esperada de inputs reais, é legítimo. Não é desculpa pra não fazer error analysis — é só um substituto temporário.
 
@@ -434,7 +434,7 @@ deepeval test run tests/test_agent_quality.py
 ```
 
 Em CI/CD, gate em:
-- **Tier 1 (every commit)**: deterministic assertions only (ver `deepeval-production`)
+- **Tier 1 (every commit)**: deterministic assertions only (ver `bagual-production`)
 - **Tier 2 (every PR)**: esses judges product-specific
 - **Tier 3 (nightly)**: full benchmark com pass^k
 
@@ -502,7 +502,7 @@ Se você roda evals e tudo passa, **isso é vermelho**, não verde.
 ## Roteiro completo com o usuário
 
 1. **Pergunta**: "Você tem agent já rodando e gerando traces?"
-   - Não → manda pra `deepeval-strategy` + `deepeval-instrument`
+   - Não → manda pra `bagual-strategy` + `bagual-instrument`
    - Sim → continua
 2. **Pergunta**: "Quantas traces você consegue coletar dos últimos 7 dias? Idealmente 30-50."
 3. **Setup**: ajude a exportar traces (Confident AI / LangSmith / Langfuse / Braintrust / via `trace_manager`)
@@ -532,7 +532,7 @@ Todas têm formato JSON exportable. O importante é trazer **trace completa**: i
 
 Após terminar o workflow de 4 passos, diga:
 
-> "Pronto, você tem {N} judges product-specific calibrados, derivados de {M} traces reais. Esse é seu **baseline**. A partir de agora, esses judges são parte da sua infraestrutura — recalibração biweekly é mandatory. Próximo passo é integrar isso na sua estratégia de three-tier: Tier 1 (assertions deterministic em todo commit), Tier 2 (esses judges em cada PR), Tier 3 (nightly com pass^k). Quer que eu chame `deepeval-production` pra montar isso?"
+> "Pronto, você tem {N} judges product-specific calibrados, derivados de {M} traces reais. Esse é seu **baseline**. A partir de agora, esses judges são parte da sua infraestrutura — recalibração biweekly é mandatory. Próximo passo é integrar isso na sua estratégia de three-tier: Tier 1 (assertions deterministic em todo commit), Tier 2 (esses judges em cada PR), Tier 3 (nightly com pass^k). Quer que eu chame `bagual-production` pra montar isso?"
 
 ## Anti-patterns
 
@@ -544,5 +544,5 @@ Após terminar o workflow de 4 passos, diga:
 - ❌ **Aggregate agreement** sem TPR/TNR separados — esconde bias dos dois lados
 - ❌ **95% pass rate** e achar que tá bom — é signal de evals fracos, não de agent bom
 - ❌ **Iterar prompt do judge contra test set** — memorização, não calibração
-- ❌ **Usar mesmo modelo como judge e agent** — self-enhancement bias (ver `deepeval-custom-metric`)
+- ❌ **Usar mesmo modelo como judge e agent** — self-enhancement bias (ver `bagual-custom-metric`)
 - ❌ **Domain expert fora do loop** — generic eval sem domain grounding produz scores genéricos que não predizem qualidade real

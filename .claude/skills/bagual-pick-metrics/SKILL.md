@@ -1,5 +1,5 @@
 ---
-name: deepeval-pick-metrics
+name: bagual-pick-metrics
 description: Seleção das métricas DeepEval certas para o tipo de agent e objetivos. Use quando o usuário disser "qual métrica usar", "escolher métricas", "que métricas pra meu agent", "tool correctness", "task completion", "métricas de planning" ou similar.
 ---
 
@@ -16,9 +16,9 @@ A recomendação ideal é **combinar os dois**:
 | Camada de eval | Como construir | O que pega |
 |----------------|----------------|------------|
 | **Built-in (essa skill)** | Escolha das 6 métricas — TaskCompletion, ToolCorrectness, etc | Falhas estruturais genéricas (não completou, tool errada, ineficiente) |
-| **Product-specific judges** | `deepeval-error-analysis` → open coding → binary judges | Falhas específicas do SEU produto (Context Amnesia, Policy Retrieval Mismatch, etc) |
+| **Product-specific judges** | `bagual-error-analysis` → open coding → binary judges | Falhas específicas do SEU produto (Context Amnesia, Policy Retrieval Mismatch, etc) |
 
-Se o usuário ainda não fez trace review e tem agent rodando, **sugira fortemente** que ele faça `deepeval-error-analysis` **antes** de fechar a lista de métricas. Os judges product-specific geralmente pegam falhas que as built-in missam — e vice-versa.
+Se o usuário ainda não fez trace review e tem agent rodando, **sugira fortemente** que ele faça `bagual-error-analysis` **antes** de fechar a lista de métricas. Os judges product-specific geralmente pegam falhas que as built-in missam — e vice-versa.
 
 **Se o usuário tá em smoke test mode** (primeira rodada de evals pra validar pipeline), pode usar só as built-in. Escale pra product-specific na segunda iteração.
 
@@ -326,7 +326,7 @@ Use essa tabela com o usuário pra recomendar o conjunto certo:
 | Agent com tools (caso comum) | `TaskCompletionMetric` (e2e) + `ToolCorrectnessMetric` + `ArgumentCorrectnessMetric` (LLM span) |
 | Agent com planejamento explícito (CoT) | Adicione `PlanQualityMetric` + `PlanAdherenceMetric` |
 | Agent em produção, custo importa | Adicione `StepEfficiencyMetric` |
-| Tem requisito específico (tom, segurança, conformidade) | Adicione `GEval` custom (ver `deepeval-custom-metric`) |
+| Tem requisito específico (tom, segurança, conformidade) | Adicione `GEval` custom (ver `bagual-custom-metric`) |
 | Multi-turn chatbot | Use as conversational metrics (`ConversationalGEval`, etc) — não esses |
 | RAG | Use as RAG metrics (`AnswerRelevancyMetric`, `FaithfulnessMetric`, `ContextualPrecisionMetric`, `ContextualRecallMetric`, `ContextualRelevancyMetric`) |
 
@@ -429,17 +429,17 @@ DeepEval tem 50+ métricas. Algumas categorias:
 | **Multimodal** | `ImageCoherenceMetric`, `TextToImageMetric` | Pra outputs multimodais |
 | **Outras** | `SummarizationMetric`, `HallucinationMetric` | Casos específicos |
 
-Se o usuário pedir uma métrica que não está nas 6 agentic, ofereça pesquisar mais detalhes ou crie uma custom com `GEval` (skill `deepeval-custom-metric`).
+Se o usuário pedir uma métrica que não está nas 6 agentic, ofereça pesquisar mais detalhes ou crie uma custom com `GEval` (skill `bagual-custom-metric`).
 
 ## Encerramento
 
 Após escolher e configurar as métricas, diga:
 
-> "Métricas escolhidas: {lista}. Próximo passo é rodar a primeira rodada de evals e analisar resultados. Quer que eu chame `deepeval-run-and-analyze`?"
+> "Métricas escolhidas: {lista}. Próximo passo é rodar a primeira rodada de evals e analisar resultados. Quer que eu chame `bagual-run-and-analyze`?"
 
 Se ele quer custom:
 
-> "Beleza, escolhemos {lista}. Você também mencionou que precisa avaliar {tom/segurança/conformidade}. Pra isso vamos criar uma métrica G-Eval custom. Quer que eu chame `deepeval-custom-metric`?"
+> "Beleza, escolhemos {lista}. Você também mencionou que precisa avaliar {tom/segurança/conformidade}. Pra isso vamos criar uma métrica G-Eval custom. Quer que eu chame `bagual-custom-metric`?"
 
 ## Anti-patterns
 

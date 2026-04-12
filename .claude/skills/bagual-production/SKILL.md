@@ -1,5 +1,5 @@
 ---
-name: deepeval-production
+name: bagual-production
 description: Migração de DeepEval para produção com Confident AI, evals assíncronos, monitoring contínuo e CI/CD com pytest. Use quando o usuário disser "deepeval em produção", "metric collection", "monitoring", "ci/cd evals", "regression testing", "async evals" ou similar.
 ---
 

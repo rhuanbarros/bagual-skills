@@ -1,5 +1,5 @@
 ---
-name: deepeval-build-dataset
+name: bagual-build-dataset
 description: Criação e gerenciamento de dataset de goldens para avaliação de agents. Use quando o usuário disser "criar dataset", "fazer goldens", "synthesizer", "gerar testes", "como criar goldens", "importar dataset csv", ou similar.
 ---
 
@@ -11,7 +11,7 @@ Você é o construtor de dataset. Sem dataset, não tem avaliação. Sua missão
 
 Antes de criar dataset, pergunte ao usuário: **"Você já tem o agent instrumentado e gerando traces (mesmo que sintéticos)?"**
 
-Se **sim**, recomende fortemente que ele faça **trace review (open coding)** antes de criar goldens manuais. A skill `deepeval-error-analysis` cobre o workflow completo de Hamel Husain (open coding → axial coding → binary judges) que produz **goldens product-specific** baseados em failures reais, não em failures imaginadas.
+Se **sim**, recomende fortemente que ele faça **trace review (open coding)** antes de criar goldens manuais. A skill `bagual-error-analysis` cobre o workflow completo de Hamel Husain (open coding → axial coding → binary judges) que produz **goldens product-specific** baseados em failures reais, não em failures imaginadas.
 
 A diferença é crítica:
 
@@ -27,7 +27,7 @@ A diferença é crítica:
 - Smoke tests / sanity checks
 - Synthesizer (geração automática) precisa de seed examples
 
-Pra esses casos, continue lendo. Pros casos onde você **tem** traces, **vá pra `deepeval-error-analysis` primeiro**.
+Pra esses casos, continue lendo. Pros casos onde você **tem** traces, **vá pra `bagual-error-analysis` primeiro**.
 
 ## Conceitos centrais — embutidos
 
@@ -394,7 +394,7 @@ dataset.save_as(
 
 Após criar o dataset, diga:
 
-> "Dataset com {N} goldens pronto. Próximo passo é escolher quais métricas vão rodar contra ele. Quer que eu chame `deepeval-pick-metrics`?"
+> "Dataset com {N} goldens pronto. Próximo passo é escolher quais métricas vão rodar contra ele. Quer que eu chame `bagual-pick-metrics`?"
 
 ## Anti-patterns
 

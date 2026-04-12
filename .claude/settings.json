@@ -16,11 +16,14 @@
       "mcp__*",
       "Edit(/.claude/skills/bagual-test-pipeline/**)",
       "Bash(mv /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/workflow.md /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/references/workflow.md)",
-      "Bash(mv /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/e2e-runner.md /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/references/e2e-runner.md)"
+      "Bash(mv /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/e2e-runner.md /home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline/references/e2e-runner.md)",
+      "Bash(sed -i 's/^name: deepeval-/name: bagual-/' __TRACKED_VAR__/SKILL.md)",
+      "Bash(grep \"^name:\" bagual-*/SKILL.md)"
     ],
     "defaultMode": "bypassPermissions",
     "additionalDirectories": [
-      "/home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline"
+      "/home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-test-pipeline",
+      "/home/rhuan/2_temporario/bagual-skills/.claude/skills/bagual-evals-setup/assets"
     ]
   },
   "skipDangerousModePermissionPrompt": true,

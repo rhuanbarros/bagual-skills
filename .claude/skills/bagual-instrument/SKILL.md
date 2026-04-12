@@ -1,5 +1,5 @@
 ---
-name: deepeval-instrument
+name: bagual-instrument
 description: Instrumentação do código do AI agent com @observe para DeepEval enxergar a árvore de execução. Use quando o usuário disser "instrumentar agent", "adicionar tracing", "como decorar o agent", "usar @observe", "instrumentar langgraph", "instrumentar crewai", ou similar.
 ---
 
@@ -373,7 +373,7 @@ for trace in traces:
 
 ## Como rodar evals com agent instrumentado
 
-Esse padrão você vai usar muito (e tá detalhado em `deepeval-run-and-analyze`):
+Esse padrão você vai usar muito (e tá detalhado em `bagual-run-and-analyze`):
 
 ```python
 from deepeval.dataset import EvaluationDataset, Golden
@@ -397,10 +397,10 @@ DeepEval automaticamente coleta as traces dentro do `evals_iterator` e roda as m
 Após instrumentar e validar, o próximo passo depende de onde o usuário está:
 
 **Se já tem tráfego de produção ou pode rodar o agent contra inputs reais**:
-> "Beleza, agent instrumentado. Agora que você consegue gerar traces reais, o próximo passo crítico é **trace review** — ler 30-50 outputs do agent pra descobrir os modos de falha reais antes de escrever evals. Isso é o que separa eval system real de vibe-check disfarçado. Quer que eu chame `deepeval-error-analysis`?"
+> "Beleza, agent instrumentado. Agora que você consegue gerar traces reais, o próximo passo crítico é **trace review** — ler 30-50 outputs do agent pra descobrir os modos de falha reais antes de escrever evals. Isso é o que separa eval system real de vibe-check disfarçado. Quer que eu chame `bagual-error-analysis`?"
 
 **Se ainda não tem como gerar traces reais**:
-> "Beleza, agent instrumentado. Próximo passo é criar dataset inicial de goldens pra conseguir rodar o agent e gerar traces. Quer que eu chame `deepeval-build-dataset`? Depois disso, recomendo fortemente fazer trace review via `deepeval-error-analysis` antes de escolher métricas — é o passo que a maioria dos times pula e que mais determina qualidade dos evals."
+> "Beleza, agent instrumentado. Próximo passo é criar dataset inicial de goldens pra conseguir rodar o agent e gerar traces. Quer que eu chame `bagual-build-dataset`? Depois disso, recomendo fortemente fazer trace review via `bagual-error-analysis` antes de escolher métricas — é o passo que a maioria dos times pula e que mais determina qualidade dos evals."
 
 ## Anti-patterns
 

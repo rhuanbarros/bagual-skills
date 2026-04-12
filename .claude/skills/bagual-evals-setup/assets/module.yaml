@@ -6,7 +6,7 @@ default_selected: false
 module_greeting: |
   DeepEval Evals module installed!
 
-  Start with deepeval-help to diagnose your current evaluation stage and get routed to the right skill.
+  Start with bagual-help to diagnose your current evaluation stage and get routed to the right skill.
 
   DeepEval docs: https://deepeval.com/docs
 
