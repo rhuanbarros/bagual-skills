@@ -1,0 +1,16 @@
+code: dev-evals
+name: "DeepEval Evals"
+description: "Complete AI agent evaluation module using the DeepEval framework — strategy, setup, instrumentation, dataset building, error analysis, metrics selection, and production deployment"
+module_version: 1.1.0
+default_selected: false
+module_greeting: |
+  DeepEval Evals module installed!
+
+  Start with deepeval-help to diagnose your current evaluation stage and get routed to the right skill.
+
+  DeepEval docs: https://deepeval.com/docs
+
+eval_output_folder:
+  prompt: "Where should evaluation artifacts (eval plans, reports, datasets) be saved?"
+  default: "{project-root}/eval-artifacts"
+  result: "{project-root}/{value}"
