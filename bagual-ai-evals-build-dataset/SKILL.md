@@ -388,13 +388,48 @@ dataset.save_as(
 3. **If manual**: guide the user to create 5-10 goldens (use the 4 questions from Path 1)
 4. **If Synthesizer**: ask about the source (docs/contexts/scratch), generate, then review together
 5. **Validation**: run `print(dataset.goldens)` or `len(dataset.goldens)` to confirm
-6. **Save**: offer to save locally as JSON or push to Confident AI
+6. **Realism Gate**: run through the Production Realism Gate section below for each golden before finalizing. Do not skip. This step is mandatory.
+7. **Save**: offer to save locally as JSON or push to Confident AI
+
+## Production Realism Gate — mandatory before finalizing any scenario
+
+This is the most important quality check. Before considering any golden final, answer this for **each one**:
+
+> **"What information is in the `input` field that the LLM would NOT have in production?"**
+
+Walk through every golden:
+
+1. **What does the system prompt tell the LLM it can access?** (e.g., "use document_format from metadata", "use the filename from state")
+2. **What context lives in system state, invisible to the LLM?** Common sources: `InjectedState` / LangGraph `state["..."]` fields, tool parameters populated by the orchestrator, metadata injected at runtime (document format, user tier, flags).
+3. **Does the `input` field contain any of that invisible context?** Ask: "Would a real user plausibly type this exact phrase? Or does it carry information only the system would know?"
+
+### Red flags (coached scenarios)
+
+| Pattern in `input` | Why it's coached |
+|---|---|
+| "It is a PDF file named patient_records.pdf" | `document_format` lives in state, not in user text |
+| "Please reprocess document with upload ID 64f3a2b1c9e7f05a" | The ID and the reprocess intent are separate concerns — in production the message can just be "helo" |
+| "The image consists of scanned pages, not a PDF" | Format is injected via metadata; user message wouldn't carry this |
+| Anything describing document type, file format, or system IDs | These almost always come from state, not user text |
+
+### What to do when coaching is found
+
+- **Option A**: Strip the coaching. Replace the coached `input` with a realistic minimal message ("process this", "go", "helo") and verify the expected outcome still holds — or update the expected outcome to reflect what should happen when the LLM lacks that context.
+- **Option B**: Keep the coached golden as a "fully-informed happy path" **and** add an adversarial variant alongside it with the coaching stripped.
+- **Option C**: If you find multiple coached scenarios, call `bagual-ai-evals-scenario-review` for a systematic audit across the full dataset.
+
+### Quick self-check before saving
+
+- [ ] Every `input` could plausibly be typed by a real user (or a real orchestrator message) in production
+- [ ] No `input` bridges a gap between what the system prompt claims and what the LLM can actually see
+- [ ] At least one scenario tests the agent when the user message is minimal/ambiguous
+- [ ] At least one scenario tests an error path (tool failure, missing state field, invalid input)
 
 ## Closing
 
 After creating the dataset, say:
 
-> "Dataset with {N} goldens ready. Next step is choosing which metrics will run against it. Want me to call `bagual-ai-evals-pick-metrics`?"
+> "Dataset with {N} goldens ready. Before choosing metrics, quick checkpoint: did all scenarios pass the Production Realism Gate? If any `input` fields contain format hints or IDs the LLM wouldn't have in production, now is the time to strip them or add adversarial variants. Want to run `bagual-ai-evals-scenario-review` to check, or proceed to `bagual-ai-evals-pick-metrics`?"
 
 ## Anti-patterns
 

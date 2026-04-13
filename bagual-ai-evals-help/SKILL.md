@@ -1,6 +1,6 @@
 ---
 name: bagual-ai-evals-help
-description: Router and diagnostic for AI agent evaluation with DeepEval. Use when the user says "deepeval", "avaliar agente", "evaluate agent", "começar avaliação", "qual o próximo passo deepeval", or "não sei por onde começar com avaliação".
+description: Router and diagnostic for AI agent evaluation with DeepEval. Use when the user says "deepeval", "evaluate agent", "start evaluation", "next step deepeval", "don't know where to start with evaluation", "review evals", "realistic scenarios", "adversarial evals", "coverage gap", or "evals pass but production fails".
 ---
 
 # DeepEval Help — Stage Router and Diagnostic
@@ -81,7 +81,23 @@ Explain if needed: "Goldens are the 'test cases' of the evaluation. Each golden 
 
 **If routed to `bagual-ai-evals-build-dataset`**: say *"Let's create a goldens dataset so you have test cases. Shall I call `bagual-ai-evals-build-dataset` now?"*
 
-### Question 4.5 (CRITICAL) — Have you done a trace review (open coding) of real agent outputs?
+### Question 4.5 — Have your eval scenarios been reviewed for production realism?
+
+This question is asked **before** choosing metrics. Coached scenarios invalidate your entire eval loop — evals pass, production fails.
+
+Explain if needed: "A coached scenario is one where the `input` (user_message) explicitly contains information the LLM cannot have in production — format hints, document IDs, state flags — because in production that information lives in system state (injected context, metadata), not in user text. The LLM passes the eval because the answer is handed to it. In production, it gets 'helo' instead."
+
+| Response | Next step |
+|---|---|
+| "No, I haven't checked" / "What does that mean?" | → Route to `bagual-ai-evals-scenario-review` |
+| "Some of my inputs describe the document type / format" | → Route to `bagual-ai-evals-scenario-review` (HIGH risk detected) |
+| "Yes, inputs are minimal and realistic" | → Spot-check, then Question 4.6 |
+
+**If routed to `bagual-ai-evals-scenario-review`**: say *"Let's audit your eval scenarios for realism before we go further — coached scenarios give false confidence. Shall I call `bagual-ai-evals-scenario-review` now?"*
+
+**If answered "yes"**: do a quick spot-check before moving on. Say: *"Great — can you paste one example input? Let me spot-check it."* If the pasted input contains format hints, file type mentions, or system-like IDs, route to `bagual-ai-evals-scenario-review` anyway with: *"I can see a potential coaching pattern here. Let's do a quick full audit — it only takes a few minutes."*
+
+### Question 4.6 (CRITICAL) — Have you done a trace review (open coding) of real agent outputs?
 
 This is the question **most teams skip** and the one that separates a real eval system from a disguised vibe-check.
 
@@ -94,6 +110,15 @@ Explain if needed: "Trace review means looking at 30-50 real outputs from your a
 | "Yes, I have calibrated product-specific judges" | → Question 5 |
 
 **If routed to `bagual-ai-evals-error-analysis`**: say *"This is the most important step — and the one most teams skip. Let's do a trace review to discover the real failures in your agent before choosing metrics. Shall I call `bagual-ai-evals-error-analysis` now?"*
+
+### Question 4.7 — Do you want to stress-test your scenarios adversarially before running evals?
+
+Optional but strongly recommended after building the dataset.
+
+| Response | Next step |
+|---|---|
+| "Yes" / "How do I do that?" | → Route to `bagual-ai-evals-scenario-review` |
+| "No, let's keep going" | → Question 5 (note: without adversarial variants, the adversarial axis in your coverage matrix will be ❌ — `bagual-ai-evals-scenario-review` will flag this as a blocker if run later) |
 
 ### Question 5 — Do you know which metrics to use?
 
@@ -130,12 +155,15 @@ All skills are in this module. All have knowledge built in — none depend on ex
 | **bagual-ai-evals-instrument** | Add `@observe` to the agent's code | "instrument agent", "add tracing" |
 | **bagual-ai-evals-build-dataset** | Create goldens / test dataset | "create dataset", "make goldens", "synthesizer" |
 | **bagual-ai-evals-error-analysis** ⭐ | Trace review (open coding) → derive real product-specific evals | "trace review", "open coding", "vibe check", "how to create evals from scratch" |
+| **bagual-ai-evals-scenario-review** 🔍 | Audit eval scenarios for realism + adversarial variants + coverage gaps | "review evals", "realistic scenarios", "adversarial evals", "evals pass but production fails", "coverage gap", "coached scenarios" |
 | **bagual-ai-evals-pick-metrics** | Choose the right metrics for the agent type | "choose metrics", "which metric to use" |
 | **bagual-ai-evals-custom-metric** | Create custom metrics (G-Eval / DAG) | "custom metric", "g-eval", "create metric" |
 | **bagual-ai-evals-run-and-analyze** | Run local evals and interpret results | "run evals", "analyze results" |
 | **bagual-ai-evals-production** | Migrate to production + CI/CD + three-tier strategy | "deepeval in production", "ci/cd evals" |
 
-⭐ **`bagual-ai-evals-error-analysis` is the skill most teams skip and the one that most determines whether the eval system is real or a disguised vibe-check.** Strongly recommend it whenever the user has traces and hasn't done trace review yet.
+⭐ **`bagual-ai-evals-error-analysis`** is the skill most teams skip and the one that most determines whether the eval system is real or a disguised vibe-check. Strongly recommend it whenever the user has traces and hasn't done trace review yet.
+
+🔍 **`bagual-ai-evals-scenario-review`** is the skill that catches the second most dangerous failure mode: scenarios that pass because the `input` hands the answer to the LLM, not because the agent can actually handle production conditions. Run it after building any dataset.
 
 ## The full cycle (show this when the user asks "how does the whole thing work")
 
