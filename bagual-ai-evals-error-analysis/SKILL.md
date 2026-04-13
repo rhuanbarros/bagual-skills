@@ -1,91 +1,91 @@
 ---
 name: bagual-ai-evals-error-analysis
-description: Workflow de error-analysis-first para descobrir falhas reais do agent via trace review (Hamel Husain). Use quando o usuário disser "não sei o que avaliar", "preciso descobrir falhas", "review de traces", "open coding", "axial coding", "trace-driven evals", "vibe check", "como criar evals do zero", ou tiver agent rodando mas sem evals estruturados.
+description: Error-analysis-first workflow to discover real agent failures via trace review (Hamel Husain). Use when the user says "I don't know what to evaluate", "I need to discover failures", "trace review", "open coding", "axial coding", "trace-driven evals", "vibe check", "how to create evals from scratch", or when they have an agent running but no structured evals.
 ---
 
-# DeepEval Error Analysis — Trace Review e Workflow Trace-Driven
+# DeepEval Error Analysis — Trace Review and Trace-Driven Workflow
 
-Você é o instrutor de error analysis. Esta é a skill mais importante do módulo, e a que mais difere da intuição de quem nunca fez avaliação de LLM.
+You are the error analysis instructor. This is the most important skill in the module, and the one that differs most from the intuition of those who have never done LLM evaluation.
 
-## Por que essa skill existe — o vibe-check trap
+## Why this skill exists — the vibe-check trap
 
-A maioria dos times entra num padrão previsível:
+Most teams fall into a predictable pattern:
 
-1. Sprints 1-2: prompt funciona, demo passa, todo mundo feliz
-2. Alguém muda alguma coisa (chunking, prompt, modelo, tool schema)
-3. Demo continua passando
+1. Sprints 1-2: prompt works, demo passes, everyone is happy
+2. Someone changes something (chunking, prompt, model, tool schema)
+3. Demo still passes
 4. Ship
-5. Seis semanas depois: cliente reclama. Algo regrediu na semana 3, mas não tem signal trail
+5. Six weeks later: customer complains. Something regressed in week 3, but there's no signal trail
 
-Isso é o **vibe-check trap** que Hamel Husain descreve depois de rodar workshops com 3000+ engenheiros de OpenAI/Anthropic/Google. **Não é estupidez**. É um problema estrutural: o feedback loop de "mudou prompt → viu output" **parece** avaliação mas não é. É amostrar **um ponto** de uma distribuição e concluir que a distribuição inteira está OK.
+This is the **vibe-check trap** that Hamel Husain describes after running workshops with 3000+ engineers from OpenAI/Anthropic/Google. **It's not stupidity**. It's a structural problem: the feedback loop of "changed prompt → saw output" **looks like** evaluation but isn't. It's sampling **one point** from a distribution and concluding that the entire distribution is fine.
 
-A skill `bagual-ai-evals-strategy` te ajuda a planejar O QUE avaliar. **Esta skill** te ajuda a **descobrir** o que avaliar — porque as falhas que você precisa pegar você ainda não conhece.
+The `bagual-ai-evals-strategy` skill helps you plan WHAT to evaluate. **This skill** helps you **discover** what to evaluate — because the failures you need to catch you don't know yet.
 
-## Princípio fundamental: error-analysis-first, não EDD
+## Core principle: error-analysis-first, not EDD
 
-Existe uma escola de pensamento chamada **EDD (Eval-Driven Development)** que diz: escreva evals **antes** do código, igual TDD. A teoria é bonita. A prática rachada.
+There is a school of thought called **EDD (Eval-Driven Development)** that says: write evals **before** the code, just like TDD. The theory is elegant. The practice is cracked.
 
-O motivo é estrutural: **LLMs têm "infinite surface area for potential failures"**. Você não consegue escrever evals pra modos de falha que ainda não observou — e você vai observar modos de falha que não conseguiria prever antes de shippar algo real. Escrever uma suite de evals "completa" antes de ver traces de produção significa escrever evals pra problemas imaginários enquanto falhas reais ficam não medidas.
+The reason is structural: **LLMs have "infinite surface area for potential failures"**. You can't write evals for failure modes you haven't observed yet — and you will observe failure modes you couldn't predict before shipping something real. Writing a "complete" eval suite before seeing production traces means writing evals for imaginary problems while real failures go unmeasured.
 
-A resolução prática (Hamel): **use os princípios de infraestrutura do EDD** (build harness early, gate em CI), mas **use error-analysis-first pra populá-los**. Não escreva evals pro que você acha que pode falhar. Escreva evals pro que você **observa** falhando.
+The practical resolution (Hamel): **use EDD's infrastructure principles** (build harness early, gate in CI), but **use error-analysis-first to populate them**. Don't write evals for what you think might fail. Write evals for what you **observe** failing.
 
-Isso muda **quando** no ciclo você faz cada coisa. E significa que **seus primeiros 100 traces valem mais que qualquer benchmark dataset que outra pessoa construiu**.
+This changes **when** in the cycle you do each thing. And it means that **your first 100 traces are worth more than any benchmark dataset someone else built**.
 
-## Pré-requisito
+## Prerequisites
 
-Você precisa de **traces reais**. Pelo menos 30-50.
+You need **real traces**. At least 30-50.
 
-| Cenário | O que fazer |
+| Scenario | What to do |
 |---------|-------------|
-| Tem agent em produção | Exporta 50 traces da última semana via Confident AI / LangSmith / Langfuse / Braintrust |
-| Tem agent em staging mas não prod | Roda 50 inputs sintéticos representativos da distribuição esperada |
-| Não tem agent rodando ainda | **Pare aqui** — vai pra `bagual-ai-evals-strategy` primeiro, instrumenta o agent (`bagual-ai-evals-instrument`), gera traces, e volta |
+| Have agent in production | Export 50 traces from the last week via Confident AI / LangSmith / Langfuse / Braintrust |
+| Have agent in staging but not prod | Run 50 synthetic inputs representative of the expected distribution |
+| No agent running yet | **Stop here** — go to `bagual-ai-evals-strategy` first, instrument the agent (`bagual-ai-evals-instrument`), generate traces, and come back |
 
-**Sintéticos contam pra começar**. Se você sampleia da distribuição esperada de inputs reais, é legítimo. Não é desculpa pra não fazer error analysis — é só um substituto temporário.
+**Synthetics count to get started**. If you sample from the expected distribution of real inputs, it's legitimate. It's not an excuse to skip error analysis — it's just a temporary substitute.
 
-## O Workflow de 4 Passos
+## The 4-Step Workflow
 
-Esse é o processo que converte traces brutos em sistema de evals funcionando. Não é glamoroso. Envolve muita planilha e Jupyter notebook. **Faça assim mesmo.**
+This is the process that converts raw traces into a working evals system. It's not glamorous. It involves lots of spreadsheets and Jupyter notebooks. **Do it anyway.**
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Passo 1 — OPEN CODING                       │
-│  Lê 30-50 traces, escreve notas freeform     │
-│  ~2 sessões de 30 minutos                    │
+│  Step 1 — OPEN CODING                        │
+│  Read 30-50 traces, write freeform notes     │
+│  ~2 sessions of 30 minutes                   │
 ├─────────────────────────────────────────────┤
-│  Passo 2 — AXIAL CODING                      │
-│  LLM agrupa as notas em categorias de falha  │
-│  Aim: 4-8 categorias produto-específicas     │
+│  Step 2 — AXIAL CODING                       │
+│  LLM clusters notes into failure categories  │
+│  Aim: 4-8 product-specific categories        │
 ├─────────────────────────────────────────────┤
-│  Passo 3 — BINARY LLM JUDGES                 │
-│  Pra cada categoria: 2 frases pass/fail      │
-│  Validar com 2º annotador antes de escalar   │
+│  Step 3 — BINARY LLM JUDGES                  │
+│  Per category: 2-sentence pass/fail          │
+│  Validate with 2nd annotator before scaling  │
 ├─────────────────────────────────────────────┤
-│  Passo 4 — CI DEPLOYMENT                     │
-│  Integrar judges em CI + calibração ongoing  │
+│  Step 4 — CI DEPLOYMENT                      │
+│  Integrate judges in CI + ongoing calibration│
 │  TPR/TNR tracking biweekly                   │
 └─────────────────────────────────────────────┘
 ```
 
-## Passo 1 — Open Coding
+## Step 1 — Open Coding
 
-**Objetivo**: parar de relacionar com seu agent como abstração ("ele lida com perguntas de billing") e começar a relacionar como **distribuição de comportamentos reais**.
+**Goal**: stop relating to your agent as an abstraction ("it handles billing questions") and start relating to it as a **distribution of real behaviors**.
 
 ### Setup
 
-Abra um Jupyter notebook (ou qualquer ferramenta de notas longas). **Não use ferramenta de evals ainda.** Não tente categorizar nada. Não use template.
+Open a Jupyter notebook (or any long-form notes tool). **Don't use an evals tool yet.** Don't try to categorize anything. Don't use a template.
 
 ```python
 import json
-from deepeval.tracing import trace_manager  # se já instrumentado com deepeval
+from deepeval.tracing import trace_manager  # if already instrumented with deepeval
 
-# OU exporta de outras plataformas:
+# OR export from other platforms:
 # - Confident AI: dataset.pull(alias="prod-traces")
 # - Langfuse: langfuse.fetch_traces(...)
 # - LangSmith: client.list_runs(...)
 # - Braintrust: braintrust.fetch_dataset(...)
 
-# Carrega 50 traces com tudo: input, output, retrieved_context, tool_calls
+# Load 50 traces with everything: input, output, retrieved_context, tool_calls
 traces = load_traces_with_full_context(n=50)
 
 for i, trace in enumerate(traces):
@@ -100,156 +100,156 @@ for i, trace in enumerate(traces):
         print(f"  - {tc['name']}({tc['args']}) -> {tc['result'][:200]}")
 ```
 
-### Como ler
+### How to read
 
-Pra cada trace, gaste **2-5 minutos**. Em duas sessões de 30 minutos você vê 30-50 traces.
+For each trace, spend **2-5 minutes**. In two 30-minute sessions you can review 30-50 traces.
 
-Pra cada trace, escreva notas freeform respondendo:
+For each trace, write freeform notes answering:
 
-- **O que é surpreendente aqui?**
-- **O que parece errado?**
-- **O que parece certo de um jeito que eu não esperava?**
-- **Esse output é factualmente correto?** (compare com sua knowledge)
-- **O agent fez algo que eu não pediria pra ele fazer?**
-- **O agent deixou de fazer algo que eu esperaria?**
+- **What is surprising here?**
+- **What seems wrong?**
+- **What seems right in a way I didn't expect?**
+- **Is this output factually correct?** (compare with your knowledge)
+- **Did the agent do something I wouldn't ask it to do?**
+- **Did the agent fail to do something I would expect?**
 
-**Não tente categorizar.** Não tente ser conciso. Escreva como notas de campo de pesquisa. Os pesquisadores chamam isso de **open coding** — você está construindo intuição, não taxonomia ainda.
+**Don't try to categorize.** Don't try to be concise. Write like field research notes. Researchers call this **open coding** — you're building intuition, not taxonomy yet.
 
-### Exemplos do tipo de notas que você quer
+### Examples of the kind of notes you want
 
 **Trace 7** (billing dispute):
-> Pediu número da conta no turno 3, mas o user já tinha dado no turno 1. Resposta no turno 5 cita política de refund correta mas o valor (R$ 50) tá errado, deveria ser R$ 75. Mencionou processo de escalação mas depois tentou resolver mesmo assim, ficou meio incoerente.
+> Asked for account number on turn 3, but the user already gave it on turn 1. Response on turn 5 cites the correct refund policy but the amount ($50) is wrong, should be $75. Mentioned escalation process but then tried to resolve it anyway, became somewhat incoherent.
 
 **Trace 12** (feature question):
-> User perguntou se o plano X tem cobertura internacional. Doc retornado diz que cobertura internacional é add-on de R$ 15/mês. Agent respondeu "sim, seu plano inclui cobertura internacional sem custo adicional". **HALLUCINATION CONFIANTE**. Score de relevância passou porque tava on-topic mas resposta tava errada.
+> User asked if plan X has international coverage. Retrieved doc says international coverage is a $15/month add-on. Agent responded "yes, your plan includes international coverage at no additional cost". **CONFIDENT HALLUCINATION**. Relevance score passed because it was on-topic but the response was wrong.
 
 **Trace 23** (return request):
-> Tool call `get_order_status` foi chamado com `order_id="ABC-123"` mas o user disse `#ABC123` (sem hífen). Tool retornou erro mas agent não percebeu, continuou fazendo as próximas chamadas como se tivesse dado certo. Ended up dando confirmação fake.
+> Tool call `get_order_status` was called with `order_id="ABC-123"` but the user said `#ABC123` (no hyphen). Tool returned an error but agent didn't notice, continued making subsequent calls as if it had succeeded. Ended up giving a fake confirmation.
 
-Note como essas notas são **específicas**, não genéricas. "Hallucination" sozinho seria inútil. "Hallucination confiante sobre feature de cobertura internacional, contradizendo o doc retornado" é acionável.
+Note how these notes are **specific**, not generic. "Hallucination" alone would be useless. "Confident hallucination about international coverage feature, contradicting the retrieved doc" is actionable.
 
-### Quanto tempo leva
+### How long it takes
 
-| Atividade | Tempo |
+| Activity | Time |
 |-----------|-------|
-| Setup do notebook | 30 min |
-| Ler 30-50 traces e tomar notas | 1-2h em 2 sessões |
-| Limpeza das notas | 30 min |
-| **Total** | **3-4 horas** |
+| Notebook setup | 30 min |
+| Reading 30-50 traces and taking notes | 1-2h in 2 sessions |
+| Note cleanup | 30 min |
+| **Total** | **3-4 hours** |
 
-**Não pule.** Esse é o trabalho mais alto-ROI do ciclo inteiro de evals.
+**Don't skip it.** This is the highest-ROI work in the entire evals cycle.
 
-## Passo 2 — Axial Coding
+## Step 2 — Axial Coding
 
-**Objetivo**: clusterizar suas notas brutas em **categorias de falha mutuamente exclusivas** que sejam **produto-específicas**, não genéricas.
+**Goal**: cluster your raw notes into **mutually exclusive failure categories** that are **product-specific**, not generic.
 
-A diferença é crítica:
+The difference is critical:
 
-| Genérico (ruim) | Produto-específico (bom) |
+| Generic (bad) | Product-specific (good) |
 |-----------------|--------------------------|
 | "Quality issues" | "Agent applies wrong policy version when multiple versions exist" |
 | "Hallucination" | "Agent confidently quotes pricing that contradicts retrieved doc" |
 | "Tool error" | "Agent doesn't notice when tool returns 404, continues as if successful" |
 | "Coherence problem" | "Agent re-asks for info already provided 3+ turns ago" |
 
-Generic eval pra "factual accuracy" não distingue entre alucinar uma feature de produto e aplicar mal uma política de desconto — duas falhas com root causes e fixes completamente diferentes.
+A generic eval for "factual accuracy" doesn't distinguish between hallucinating a product feature and misapplying a discount policy — two failures with completely different root causes and fixes.
 
-### Como fazer
+### How to do it
 
-Pega todas as notas do passo 1 (collated num único arquivo de texto) e usa um LLM pra clusterizar. Não use o LLM-as-judge — use Claude/GPT pra ajudar você a **pensar**, isso não é uma avaliação.
+Take all the notes from step 1 (collated into a single text file) and use an LLM to cluster them. Don't use LLM-as-judge — use Claude/GPT to help you **think**, this is not an evaluation.
 
-Prompt sugerido:
+Suggested prompt:
 
 ```
-Aqui estão minhas notas de open coding sobre 47 traces de um customer support 
-agent que faz tool calls contra uma API de billing e RAG sobre uma knowledge 
-base de políticas:
+Here are my open coding notes on 47 traces from a customer support 
+agent that makes tool calls against a billing API and does RAG over a 
+policies knowledge base:
 
-[cola todas as notas aqui]
+[paste all notes here]
 
-Agrupe essas observações em categorias de falha mutuamente exclusivas, 
-seguindo essas regras:
-- 4-8 categorias no total (não 20)
-- Cada categoria deve ser PRODUTO-ESPECÍFICA, não genérica
-- Cada categoria precisa de um nome preciso e uma descrição que distinga 
-  ela de categorias adjacentes
-- Categorias devem ser acionáveis: "qual fix vai resolver isso" deve ser 
-  óbvio pelo nome
-- Liste 2-3 traces de exemplo pra cada categoria (use os números das notas)
+Group these observations into mutually exclusive failure categories, 
+following these rules:
+- 4-8 categories total (not 20)
+- Each category must be PRODUCT-SPECIFIC, not generic
+- Each category needs a precise name and a description that distinguishes 
+  it from adjacent categories
+- Categories should be actionable: "what fix will solve this" should be 
+  obvious from the name
+- List 2-3 example traces per category (use note numbers)
 
-Devolva como markdown com categoria + descrição + exemplos.
+Return as markdown with category + description + examples.
 ```
 
-### Output esperado
+### Expected output
 
 ```markdown
-## Categorias de Falha (8 total)
+## Failure Categories (8 total)
 
 ### 1. Context Amnesia
-**Descrição**: Agent pede informação que já foi fornecida na conversa atual.
-**Exemplos**: Trace 7, Trace 19, Trace 31
+**Description**: Agent requests information that was already provided in the current conversation.
+**Examples**: Trace 7, Trace 19, Trace 31
 
 ### 2. Policy Retrieval Mismatch
-**Descrição**: Doc correto retrievado mas agent aplica versão errada da política,
-ou aplica política que não vale pro tipo de produto do cliente.
-**Exemplos**: Trace 12, Trace 28
+**Description**: Correct doc retrieved but agent applies wrong policy version,
+or applies a policy that doesn't apply to the customer's product type.
+**Examples**: Trace 12, Trace 28
 
 ### 3. Tool Argument Format Mismatch
-**Descrição**: Tool é a correta, mas args estão em formato errado e tool retorna
-erro silencioso. Agent não detecta o erro.
-**Exemplos**: Trace 23, Trace 41
+**Description**: Correct tool, but args are in wrong format and tool returns
+a silent error. Agent doesn't detect the error.
+**Examples**: Trace 23, Trace 41
 
 ### 4. Escalation Abandonment
-**Descrição**: Agent commits a fazer escalação pra humano mas depois tenta
-resolver mesmo assim, gerando incoerência.
-**Exemplos**: Trace 7, Trace 33
+**Description**: Agent commits to escalating to a human but then tries to
+resolve it anyway, causing incoherence.
+**Examples**: Trace 7, Trace 33
 
 ### 5. Confident Hallucination Over Retrieved Context
-**Descrição**: Doc retornado contém informação correta, agent gera resposta
-factualmente contrária ao doc com tom confiante.
-**Exemplos**: Trace 12, Trace 39
+**Description**: Retrieved doc contains correct information, agent generates a response
+factually contrary to the doc with a confident tone.
+**Examples**: Trace 12, Trace 39
 
 ### 6. Number/Amount Hallucination
-**Descrição**: Agent cita valores numéricos (preços, prazos, contagens) que não
-estão nos docs ou nos tool results. Política certa, número errado.
-**Exemplos**: Trace 7, Trace 14
+**Description**: Agent cites numerical values (prices, deadlines, counts) that are not
+in the docs or tool results. Correct policy, wrong number.
+**Examples**: Trace 7, Trace 14
 
 ### 7. Missing Slot Re-confirmation
-**Descrição**: Agent não confirma availability de slots/produtos antes de
-afirmar disponibilidade, baseado em cache antigo.
-**Exemplos**: Trace 22, Trace 38
+**Description**: Agent doesn't confirm slot/product availability before
+asserting availability, based on stale cache.
+**Examples**: Trace 22, Trace 38
 
 ### 8. Tone Drift on Frustration
-**Descrição**: Quando user expressa frustração, agent fica defensivo ou
-formal demais em vez de empático.
-**Exemplos**: Trace 11, Trace 26
+**Description**: When user expresses frustration, agent becomes defensive or
+overly formal instead of empathetic.
+**Examples**: Trace 11, Trace 26
 ```
 
-Cada uma dessas vira uma **eval criterion** no passo 3.
+Each of these becomes an **eval criterion** in step 3.
 
-### Por que isso funciona
+### Why this works
 
-Hamel mostra que essas categorias derivadas de traces reais consistentemente catch failures que generic metrics não pegam. Você não consegue projetar essas categorias antes de ver os traces — porque não sabia que "Number Hallucination" era diferente de "Policy Hallucination" até você ver os 47 traces e perceber que o fix de cada um é diferente.
+Hamel shows that these categories derived from real traces consistently catch failures that generic metrics miss. You can't design these categories before seeing the traces — because you didn't know that "Number Hallucination" was different from "Policy Hallucination" until you saw the 47 traces and realized the fix for each one is different.
 
-## Passo 3 — Binary LLM Judges
+## Step 3 — Binary LLM Judges
 
-**Objetivo**: pra cada categoria do passo 2, criar um judge LLM com definição **binária** de pass/fail.
+**Goal**: for each category from step 2, create an LLM judge with a **binary** pass/fail definition.
 
-### Princípio: binário > Likert
+### Principle: binary > Likert
 
-Hamel Husain e Eugene Yan convergiram independentemente em pass/fail binário, não escalas Likert. Os motivos são práticos:
+Hamel Husain and Eugene Yan independently converged on binary pass/fail, not Likert scales. The reasons are practical:
 
-**Motivo 1 — inter-rater agreement em escalas ordinais é genuinamente ruim.** Cohen's Kappa humano em escalas de 5 pontos frequentemente fica entre **0.2 e 0.3**, o que significa que dois experts revisando a mesma resposta dão scores 2 pontos de distância. Se humanos não conseguem concordar, você não consegue calibrar um LLM judge contra julgamento humano, e seu eval vira ruído.
+**Reason 1 — inter-rater agreement on ordinal scales is genuinely bad.** Human Cohen's Kappa on 5-point scales frequently falls between **0.2 and 0.3**, meaning two experts reviewing the same response give scores 2 points apart. If humans can't agree, you can't calibrate an LLM judge against human judgment, and your eval becomes noise.
 
-**Motivo 2 — stakeholders não usam a escala mesmo.** Eles pedem um threshold recomendado e tratam tudo acima como pass, tudo abaixo como fail — o que é comportamento binário forçado numa escala que fingia ser contínua.
+**Reason 2 — stakeholders don't use the scale anyway.** They ask for a recommended threshold and treat everything above as pass, everything below as fail — which is binary behavior forced onto a scale that pretended to be continuous.
 
-### Como escrever uma definição binária
+### How to write a binary definition
 
-**Regra das duas frases**: uma frase definindo PASS, uma frase definindo FAIL. Sem rubrica. Sem escala.
+**The two-sentence rule**: one sentence defining PASS, one sentence defining FAIL. No rubric. No scale.
 
-**Teste de qualidade**: se duas pessoas lendo sua definição **discordariam num caso borderline**, a definição precisa apertar antes de você pedir pra um LLM aplicar.
+**Quality test**: if two people reading your definition **would disagree on a borderline case**, the definition needs tightening before you ask an LLM to apply it.
 
-### Exemplo concreto — Categoria "Context Amnesia"
+### Concrete example — "Context Amnesia" category
 
 ```python
 CONTEXT_AMNESIA_JUDGE_PROMPT = """
@@ -274,14 +274,14 @@ Return JSON: {{"result": "pass" | "fail", "reason": "<one sentence>"}}
 """
 ```
 
-**Por que esse prompt funciona**:
-- Role explícito ("you are evaluating") como avaliador imparcial
-- PASS e FAIL definidos em frase única cada
-- Critério acionável: "did the agent ask for information already given"
-- Reason field obrigatório (não opcional!) — é o dado que torna failures debugáveis
-- JSON output pra parsing programático
+**Why this prompt works**:
+- Explicit role ("you are evaluating") as impartial evaluator
+- PASS and FAIL each defined in a single sentence
+- Actionable criterion: "did the agent ask for information already given"
+- Reason field mandatory (not optional!) — it's the data that makes failures debuggable
+- JSON output for programmatic parsing
 
-### Implementação em DeepEval com GEval
+### Implementation in DeepEval with GEval
 
 ```python
 from deepeval.metrics import GEval
@@ -306,59 +306,59 @@ context_amnesia = GEval(
 )
 ```
 
-Note `threshold=1.0` + `strict_mode=True` — força output binário 0/1, alinhado com a filosofia.
+Note `threshold=1.0` + `strict_mode=True` — forces binary 0/1 output, aligned with the philosophy.
 
-### Validação inter-annotator
+### Inter-annotator validation
 
-**Antes de declarar o judge pronto**:
+**Before declaring the judge ready**:
 
-1. Pegue 10-15 traces (mistura de PASS e FAIL prováveis)
-2. **Você** aplica a definição manualmente. Anota seu verdict.
-3. **Outra pessoa** (idealmente um engenheiro do time) aplica independentemente
-4. Compare. Se concordam em **8/10 ou mais**, OK.
-5. Se discordam em mais de 2 casos, **a definição tem ambiguidade** — discuta os casos discordantes, refine a definição, repita.
+1. Take 10-15 traces (mix of probable PASS and FAIL)
+2. **You** apply the definition manually. Note your verdict.
+3. **Someone else** (ideally a team engineer) applies it independently
+4. Compare. If they agree on **8/10 or more**, OK.
+5. If they disagree on more than 2 cases, **the definition has ambiguity** — discuss the disagreement cases, refine the definition, repeat.
 
-Só depois disso vai pro LLM. Esse passo de validação humana é o que separa um eval que funciona de um que produz ruído.
+Only after this go to the LLM. This human validation step is what separates an eval that works from one that produces noise.
 
-### ⚠️ Escolha do modelo do judge
+### ⚠️ Judge model selection
 
-**NUNCA use o mesmo modelo como judge e como agent**. Self-enhancement bias é documentado: Claude avaliando Claude, GPT-4o avaliando GPT-4o — o judge sistematicamente favorece seus próprios outputs (Claude→Claude cai pra 44.8% de agreement com humanos em JudgeBench ICLR 2025).
+**NEVER use the same model as both judge and agent**. Self-enhancement bias is documented: Claude evaluating Claude, GPT-4o evaluating GPT-4o — the judge systematically favors its own outputs (Claude→Claude drops to 44.8% agreement with humans in JudgeBench ICLR 2025).
 
-Regra simples:
-- Agent usa GPT-4o → judge usa Claude Sonnet
-- Agent usa Claude → judge usa GPT-4o (ou Selene Mini pra Tier 2 com custo controlado)
-- Agent usa modelo local → judge usa modelo cloud
+Simple rule:
+- Agent uses GPT-4o → judge uses Claude Sonnet
+- Agent uses Claude → judge uses GPT-4o (or Selene Mini for Tier 2 with controlled cost)
+- Agent uses local model → judge uses cloud model
 
-Isso não é detalhe — é a diferença entre um eval system que mede qualidade real e um que mede "quanto o judge gosta de si mesmo".
+This is not a detail — it's the difference between an eval system that measures real quality and one that measures "how much the judge likes itself".
 
-### Calibração contra humano (AlignEval)
+### Calibration against human (AlignEval)
 
-Eugene Yan formalizou isso como **AlignEval workflow**:
+Eugene Yan formalized this as the **AlignEval workflow**:
 
 ```
-1. Você labeia 30+ amostras manualmente
-2. Escreve a definição de duas frases
-3. Roda o LLM judge nas mesmas amostras
-4. Calcula:
-   - TPR (True Positive Rate) = TP / (TP + FN) — judge pega failures reais?
-   - TNR (True Negative Rate) = TN / (TN + FP) — judge não flagga PASSes corretos?
-   - Cohen's Kappa = agreement ajustado por chance
-5. Itera no prompt até κ ≥ 0.7
-6. Quando OK, declara baseline e deploya
+1. You manually label 30+ samples
+2. Write the two-sentence definition
+3. Run the LLM judge on the same samples
+4. Calculate:
+   - TPR (True Positive Rate) = TP / (TP + FN) — does the judge catch real failures?
+   - TNR (True Negative Rate) = TN / (TN + FP) — does the judge not flag correct PASSes?
+   - Cohen's Kappa = chance-adjusted agreement
+5. Iterate on the prompt until κ ≥ 0.7
+6. When OK, declare baseline and deploy
 ```
 
-Target: **κ ≥ 0.7** antes de deployar em CI. Abaixo disso, anotadores (humano ou LLM) discordam frequentemente demais pro eval ser sinal confiável.
+Target: **κ ≥ 0.7** before deploying in CI. Below that, annotators (human or LLM) disagree too often for the eval to be a reliable signal.
 
 ```python
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
 
-# Você labeou manualmente 30 traces
+# You manually labeled 30 traces
 human_labels = [1, 0, 1, 1, 0, 1, 0, 0, 1, 1, ...]  # 1=PASS, 0=FAIL
 
-# Roda o LLM judge nos mesmos 30 traces
+# Run the LLM judge on the same 30 traces
 llm_labels = [1, 0, 1, 1, 1, 1, 0, 0, 1, 0, ...]
 
-# Métricas
+# Metrics
 kappa = cohen_kappa_score(human_labels, llm_labels)
 tn, fp, fn, tp = confusion_matrix(human_labels, llm_labels).ravel()
 tpr = tp / (tp + fn)  # sensitivity / recall
@@ -368,29 +368,29 @@ print(f"Cohen's κ: {kappa:.2f}")
 print(f"TPR: {tpr:.2f}")
 print(f"TNR: {tnr:.2f}")
 
-# Threshold de aceite:
+# Acceptance threshold:
 assert kappa >= 0.7, "Judge needs more calibration"
 assert tpr >= 0.75, "Judge missing too many real failures"
 assert tnr >= 0.75, "Judge flagging too many false positives"
 ```
 
-### Particionar dados de calibração corretamente
+### Partitioning calibration data correctly
 
-Insight crítico de "Who Validates the Validators" (ACM CHI 2024): seus dados de calibração precisam vir da **distribuição atual** de outputs do agent, não de samples antigos.
+Critical insight from "Who Validates the Validators" (ACM CHI 2024): your calibration data needs to come from the **current distribution** of agent outputs, not from old samples.
 
-Se seu agent mudou (modelo novo, prompt novo), o calibration set precisa incluir **samples recentes** dessa distribuição. Senão você tá calibrando contra um agent que não existe mais.
+If your agent changed (new model, new prompt), the calibration set needs to include **recent samples** from that distribution. Otherwise you're calibrating against an agent that no longer exists.
 
-Faça split 60/40:
-- **60% dev**: pra iterar o prompt do judge
-- **40% test**: nunca usado pra iteração — só pra check final
+Do a 60/40 split:
+- **60% dev**: for iterating the judge prompt
+- **40% test**: never used for iteration — only for the final check
 
-Iterar contra o test set é memorização, não calibração.
+Iterating against the test set is memorization, not calibration.
 
-## Passo 4 — CI Deployment
+## Step 4 — CI Deployment
 
-Depois que o judge está calibrado, integra no CI/CD com gating apropriado.
+Once the judge is calibrated, integrate into CI/CD with appropriate gating.
 
-### Estrutura recomendada
+### Recommended structure
 
 ```python
 # tests/test_agent_quality.py
@@ -399,7 +399,7 @@ from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import GEval
 
-# Carrega golden dataset (mesmos traces que você usou pra calibrar + outros)
+# Load golden dataset (same traces you used to calibrate + others)
 from my_evals.datasets import load_regression_dataset
 from my_evals.metrics import (
     context_amnesia,
@@ -427,122 +427,122 @@ def test_agent_quality(test_case: LLMTestCase):
     )
 ```
 
-Roda:
+Run:
 
 ```bash
 deepeval test run tests/test_agent_quality.py
 ```
 
-Em CI/CD, gate em:
-- **Tier 1 (every commit)**: deterministic assertions only (ver `bagual-ai-evals-production`)
-- **Tier 2 (every PR)**: esses judges product-specific
-- **Tier 3 (nightly)**: full benchmark com pass^k
+In CI/CD, gate on:
+- **Tier 1 (every commit)**: deterministic assertions only (see `bagual-ai-evals-production`)
+- **Tier 2 (every PR)**: these product-specific judges
+- **Tier 3 (nightly)**: full benchmark with pass^k
 
-### Calibração ongoing
+### Ongoing calibration
 
-Judges driftam. Três coisas mudam ao longo do tempo:
+Judges drift. Three things change over time:
 
-1. **Modelo subjacente atualiza** — mesmo com version pinning, comportamento muda sutilmente entre minor versions
-2. **Distribuição de outputs do produto muda** — system prompt evolui, knowledge base atualiza
-3. **Seus critérios afrouxam na sua cabeça** — você revisa mais traces e o que parecia FAIL agora parece PASS
+1. **Underlying model updates** — even with version pinning, behavior changes subtly between minor versions
+2. **Product output distribution changes** — system prompt evolves, knowledge base updates
+3. **Your criteria loosen in your head** — you review more traces and what seemed like a FAIL now seems like a PASS
 
-**Cadência de calibração mínima**: a cada 2 semanas:
+**Minimum calibration cadence**: every 2 weeks:
 
-1. Sample estratificado: 10 traces que o judge marcou PASS, 10 que marcou FAIL
-2. Você (ou domain expert) labeia manualmente
-3. Recalcula TPR e TNR
-4. Se TPR < 0.75 → judge tá perdendo failures reais → recalibra
-5. Se TNR < 0.75 → judge tá gerando ruído → recalibra
+1. Stratified sample: 10 traces the judge marked PASS, 10 it marked FAIL
+2. You (or domain expert) label manually
+3. Recalculate TPR and TNR
+4. If TPR < 0.75 → judge is missing real failures → recalibrate
+5. If TNR < 0.75 → judge is generating noise → recalibrate
 
-**Track tendências rolling de 7 e 30 dias**, não sessões individuais. Single-session audits são flaky; aggregates são confiáveis.
+**Track 7-day and 30-day rolling trends**, not individual sessions. Single-session audits are flaky; aggregates are reliable.
 
-## Domain expertise é não-negociável
+## Domain expertise is non-negotiable
 
-Esse é um dos pontos mais subestimados do framework do Hamel: você precisa de **alguém que entenda profundamente o que outputs bons parecem pro seu produto específico**. Não um generalista que diz "isso parece razoável". Alguém que olha a resposta de billing dispute e **sabe** se a aplicação da política tá correta.
+This is one of the most underestimated points in Hamel's framework: you need **someone who deeply understands what good outputs look like for your specific product**. Not a generalist who says "this looks reasonable". Someone who looks at the billing dispute response and **knows** whether the policy application is correct.
 
-Pra customer support agent, isso significa que a pessoa calibrando seus evals deveria:
-- Conhecer as políticas de support
-- Entender que informação o agent realmente tem acesso
-- Conseguir distinguir entre "vago mas aceitável" e "ativamente errado"
+For a customer support agent, this means the person calibrating your evals should:
+- Know the support policies
+- Understand what information the agent actually has access to
+- Be able to distinguish between "vague but acceptable" and "actively wrong"
 
-**Se essa pessoa é você**, proteja tempo pra trace review. Não delegue.
+**If that person is you**, protect time for trace review. Don't delegate.
 
-**Se é um SME (subject matter expert)**, seu workflow de evals precisa **incluir** ele sem exigir que ele entenda LLM infrastructure. Confident AI tem UI pra isso (anotação de goldens por não-técnicos). Mande um Google Sheets se for o caso. Não importa a ferramenta — importa o domain expert estar **no loop**.
+**If it's an SME (subject matter expert)**, your evals workflow needs to **include** them without requiring them to understand LLM infrastructure. Confident AI has a UI for this (golden annotation by non-technical users). Send a Google Sheet if needed. The tool doesn't matter — what matters is having the domain expert **in the loop**.
 
-## Eugene Yan: evals são prática, não deliverable
+## Eugene Yan: evals are a practice, not a deliverable
 
-Mindset crítico do Eugene Yan: **eval suite que você escreve no mês 1 e nunca toca é pior que nenhum eval suite no mês 6**, porque tá gerando false confidence.
+Critical mindset from Eugene Yan: **an eval suite you write in month 1 and never touch is worse than no eval suite in month 6**, because it's generating false confidence.
 
-Os modos de falha do seu agent mudam à medida que prompts mudam, knowledge base atualiza, users encontram novos jeitos de phrasear pedidos. O eval suite precisa **acompanhar** isso.
+Your agent's failure modes change as prompts change, knowledge base updates, and users find new ways to phrase requests. The eval suite needs to **keep up** with this.
 
-Loops de manutenção explícitos:
+Explicit maintenance loops:
 
-- **Cada incident em produção que seus evals NÃO pegaram = um eval faltante**. Escreve imediatamente, adiciona à suite, faz post-mortem do porquê a coverage existente não viu.
-- **Cada calibration session que revela judge drift = signal pra atualizar judge prompts**.
-- **Cada nova feature shippada = nova failure surface que precisa coverage antes de ship**.
+- **Each production incident your evals DIDN'T catch = a missing eval**. Write it immediately, add to the suite, do a post-mortem on why existing coverage didn't see it.
+- **Each calibration session that reveals judge drift = signal to update judge prompts**.
+- **Each new feature shipped = new failure surface that needs coverage before ship**.
 
-O **EDDOps framework** formaliza isso como continuous evaluation governance: avaliação não é uma fase, é uma **função** rodando em paralelo com toda atividade de dev. Em prática, alguém no time **owns** o eval suite do mesmo jeito que alguém owna o data pipeline. É infraestrutura, não tarefa que se fecha.
+The **EDDOps framework** formalizes this as continuous evaluation governance: evaluation is not a phase, it's a **function** running in parallel with all dev activity. In practice, someone on the team **owns** the eval suite the same way someone owns the data pipeline. It's infrastructure, not a task to close.
 
-## O test do bom eval suite
+## The good eval suite test
 
-Esse é um critério incrivelmente útil que o livro destila:
+This is an incredibly useful criterion that the book distills:
 
-> **Se tudo passa 95% das vezes na sua suite, você está medindo coisas que seu agent já faz bem.**
-> **Uma suite bem-desenhada derivada de padrões reais de falha deveria produzir pass rate ~70% na primeira rodada.**
+> **If everything passes 95% of the time in your suite, you are measuring things your agent already does well.**
+> **A well-designed suite derived from real failure patterns should produce a ~70% pass rate on the first run.**
 
-| Pass rate inicial | Diagnóstico |
+| Initial pass rate | Diagnosis |
 |-------------------|-------------|
-| 95%+ | Suite tá medindo coisas que não são problema. **Falsa segurança.** Volte pro Step 1. |
-| 70-85% | **Healthy.** Tem signal real pra agir. |
-| 40-70% | OK também — agent precisa trabalho mas evals tão calibrados |
-| <40% | Definições muito loose OU agent tem problema fundamental antes de eval ser bottleneck |
+| 95%+ | Suite is measuring things that aren't a problem. **False security.** Go back to Step 1. |
+| 70-85% | **Healthy.** There's real signal to act on. |
+| 40-70% | Also OK — agent needs work but evals are calibrated |
+| <40% | Definitions too loose OR agent has a fundamental problem before evals are the bottleneck |
 
-Se você roda evals e tudo passa, **isso é vermelho**, não verde.
+If you run evals and everything passes, **that's red**, not green.
 
-## Roteiro completo com o usuário
+## Complete script with the user
 
-1. **Pergunta**: "Você tem agent já rodando e gerando traces?"
-   - Não → manda pra `bagual-ai-evals-strategy` + `bagual-ai-evals-instrument`
-   - Sim → continua
-2. **Pergunta**: "Quantas traces você consegue coletar dos últimos 7 dias? Idealmente 30-50."
-3. **Setup**: ajude a exportar traces (Confident AI / LangSmith / Langfuse / Braintrust / via `trace_manager`)
-4. **Open coding session 1** (30 min): leia 15-25 traces juntos, escreva notas freeform. Modele o tipo de notas que ele deve fazer — específicas, não genéricas.
-5. **Open coding session 2** (30 min, idealmente outro dia): outros 15-25 traces.
-6. **Axial coding**: pegue as notas, monte o prompt de clusterização, rode com Claude/GPT, refine as categorias com o usuário.
-7. **Binary judge writing**: pra cada categoria (4-8), escreva a definição de 2 frases junto. Você gera o draft, o usuário valida.
-8. **Inter-annotator validation**: 10-15 traces. Você labeia, ele labeia, comparam. Refinar onde discordam.
-9. **AlignEval calibration**: 30+ traces, métricas TPR/TNR/κ, iterar até κ ≥ 0.7.
-10. **CI integration**: monta o test file, integra no pipeline.
-11. **Cadência**: combina cadência de re-calibração biweekly.
+1. **Question**: "Do you have an agent already running and generating traces?"
+   - No → send to `bagual-ai-evals-strategy` + `bagual-ai-evals-instrument`
+   - Yes → continue
+2. **Question**: "How many traces can you collect from the last 7 days? Ideally 30-50."
+3. **Setup**: help export traces (Confident AI / LangSmith / Langfuse / Braintrust / via `trace_manager`)
+4. **Open coding session 1** (30 min): read 15-25 traces together, write freeform notes. Model the type of notes they should take — specific, not generic.
+5. **Open coding session 2** (30 min, ideally another day): another 15-25 traces.
+6. **Axial coding**: take the notes, build the clustering prompt, run it with Claude/GPT, refine the categories with the user.
+7. **Binary judge writing**: for each category (4-8), write the 2-sentence definition together. You draft, the user validates.
+8. **Inter-annotator validation**: 10-15 traces. You label, they label, compare. Refine where they disagree.
+9. **AlignEval calibration**: 30+ traces, TPR/TNR/κ metrics, iterate until κ ≥ 0.7.
+10. **CI integration**: build the test file, integrate into the pipeline.
+11. **Cadence**: agree on a biweekly re-calibration cadence.
 
-## Ferramentas pra exportar traces
+## Tools for exporting traces
 
-| Plataforma | Como exportar traces |
+| Platform | How to export traces |
 |------------|----------------------|
 | DeepEval (local) | `from deepeval.tracing import trace_manager; traces = trace_manager.get_all_traces_dict()` |
-| Confident AI | `dataset.pull(alias="prod-traces-week-15")` ou export via UI |
+| Confident AI | `dataset.pull(alias="prod-traces-week-15")` or export via UI |
 | LangSmith | `client.list_runs(project_name="...", start_time=...)` |
 | Langfuse | `langfuse.fetch_traces(start_time=...)` |
 | Braintrust | `braintrust.fetch_dataset(...)` |
-| Arize Phoenix | Phoenix UI export ou SDK |
+| Arize Phoenix | Phoenix UI export or SDK |
 
-Todas têm formato JSON exportable. O importante é trazer **trace completa**: input, output, retrieved context, tool calls com args e outputs.
+All have exportable JSON format. What matters is bringing the **complete trace**: input, output, retrieved context, tool calls with args and outputs.
 
-## Encerramento
+## Closing
 
-Após terminar o workflow de 4 passos, diga:
+After finishing the 4-step workflow, say:
 
-> "Pronto, você tem {N} judges product-specific calibrados, derivados de {M} traces reais. Esse é seu **baseline**. A partir de agora, esses judges são parte da sua infraestrutura — recalibração biweekly é mandatory. Próximo passo é integrar isso na sua estratégia de three-tier: Tier 1 (assertions deterministic em todo commit), Tier 2 (esses judges em cada PR), Tier 3 (nightly com pass^k). Quer que eu chame `bagual-ai-evals-production` pra montar isso?"
+> "Done, you have {N} calibrated product-specific judges, derived from {M} real traces. This is your **baseline**. From now on, these judges are part of your infrastructure — biweekly recalibration is mandatory. Next step is integrating this into your three-tier strategy: Tier 1 (deterministic assertions on every commit), Tier 2 (these judges on each PR), Tier 3 (nightly with pass^k). Want me to call `bagual-ai-evals-production` to set that up?"
 
 ## Anti-patterns
 
-- ❌ **Pular open coding** porque "já sei que falhas existem" — você sabe as que viu, não as que existem
-- ❌ **Categorias genéricas** ("hallucination", "quality") em vez de produto-específicas
-- ❌ **Likert scales** em vez de binário — inter-rater agreement vai ser ruim
-- ❌ **Skipar inter-annotator validation** — definição que parece clara pra você pode ser ambígua pra outros
-- ❌ **Calibrar uma vez e nunca mais** — judges driftam silenciosamente
-- ❌ **Aggregate agreement** sem TPR/TNR separados — esconde bias dos dois lados
-- ❌ **95% pass rate** e achar que tá bom — é signal de evals fracos, não de agent bom
-- ❌ **Iterar prompt do judge contra test set** — memorização, não calibração
-- ❌ **Usar mesmo modelo como judge e agent** — self-enhancement bias (ver `bagual-ai-evals-custom-metric`)
-- ❌ **Domain expert fora do loop** — generic eval sem domain grounding produz scores genéricos que não predizem qualidade real
+- ❌ **Skipping open coding** because "I already know what failures exist" — you know the ones you've seen, not the ones that exist
+- ❌ **Generic categories** ("hallucination", "quality") instead of product-specific ones
+- ❌ **Likert scales** instead of binary — inter-rater agreement will be bad
+- ❌ **Skipping inter-annotator validation** — a definition that seems clear to you may be ambiguous to others
+- ❌ **Calibrating once and never again** — judges drift silently
+- ❌ **Aggregate agreement** without separate TPR/TNR — hides bias on both sides
+- ❌ **95% pass rate** and thinking it's fine — it's a signal of weak evals, not a good agent
+- ❌ **Iterating judge prompt against test set** — memorization, not calibration
+- ❌ **Using the same model as judge and agent** — self-enhancement bias (see `bagual-ai-evals-custom-metric`)
+- ❌ **Domain expert out of the loop** — generic eval without domain grounding produces generic scores that don't predict real quality

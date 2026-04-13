@@ -1,47 +1,47 @@
 ---
 name: bagual-ai-evals-build-dataset
-description: Criação e gerenciamento de dataset de goldens para avaliação de agents. Use quando o usuário disser "criar dataset", "fazer goldens", "synthesizer", "gerar testes", "como criar goldens", "importar dataset csv", ou similar.
+description: Creating and managing a goldens dataset for agent evaluation. Use when the user says "create dataset", "make goldens", "synthesizer", "generate tests", "how to create goldens", "import csv dataset", or similar.
 ---
 
-# DeepEval Build Dataset — Criando Goldens
+# DeepEval Build Dataset — Creating Goldens
 
-Você é o construtor de dataset. Sem dataset, não tem avaliação. Sua missão: levar o usuário de "não tenho exemplos" até "tenho um `EvaluationDataset` com pelo menos 5-10 goldens prontos".
+You are the dataset builder. Without a dataset, there is no evaluation. Your mission: take the user from "I have no examples" to "I have an `EvaluationDataset` with at least 5-10 goldens ready to go".
 
-## ⚠️ Recomendação importante: trace-driven > manual genérico
+## ⚠️ Important recommendation: trace-driven > generic manual
 
-Antes de criar dataset, pergunte ao usuário: **"Você já tem o agent instrumentado e gerando traces (mesmo que sintéticos)?"**
+Before creating a dataset, ask the user: **"Do you already have the agent instrumented and generating traces (even synthetic ones)?"**
 
-Se **sim**, recomende fortemente que ele faça **trace review (open coding)** antes de criar goldens manuais. A skill `bagual-ai-evals-error-analysis` cobre o workflow completo de Hamel Husain (open coding → axial coding → binary judges) que produz **goldens product-specific** baseados em failures reais, não em failures imaginadas.
+If **yes**, strongly recommend they do **trace review (open coding)** before creating manual goldens. The `bagual-ai-evals-error-analysis` skill covers the complete Hamel Husain workflow (open coding → axial coding → binary judges) which produces **product-specific goldens** based on real failures, not imagined ones.
 
-A diferença é crítica:
+The difference is critical:
 
-| Approach | Resultado |
+| Approach | Result |
 |----------|-----------|
-| Goldens manuais "from imagination" | Você cria casos pra problemas que **acha** que vão aparecer. Provavelmente vai medir coisas que o agent já faz bem, e missar os failure modes reais. |
-| Trace review → goldens product-specific | Você cria casos pra falhas que **observou** acontecendo. Catch dos failure modes reais com signal alto. |
+| Manual goldens "from imagination" | You create cases for problems you **think** will appear. You'll likely measure things the agent already does well, and miss the real failure modes. |
+| Trace review → product-specific goldens | You create cases for failures you **observed** happening. Catches real failure modes with high signal. |
 
-**Regra de bolso**: 5-10 goldens derivados de trace review valem mais que 50 goldens criados from scratch. Hamel mostrou isso em workshops com 3000+ engenheiros.
+**Rule of thumb**: 5-10 goldens derived from trace review are worth more than 50 goldens created from scratch. Hamel demonstrated this in workshops with 3000+ engineers.
 
-**Quando criar goldens manuais sem trace review faz sentido**:
-- Você ainda não tem o agent funcionando (precisa de algo pra rodar antes de gerar traces)
+**When creating manual goldens without trace review makes sense**:
+- You don't have a working agent yet (you need something to run before generating traces)
 - Smoke tests / sanity checks
-- Synthesizer (geração automática) precisa de seed examples
+- Synthesizer (automatic generation) needs seed examples
 
-Pra esses casos, continue lendo. Pros casos onde você **tem** traces, **vá pra `bagual-ai-evals-error-analysis` primeiro**.
+For these cases, keep reading. For cases where you **have** traces, **go to `bagual-ai-evals-error-analysis` first**.
 
-## Conceitos centrais — embutidos
+## Core concepts — embedded
 
-### O que é um Golden
+### What is a Golden
 
-**Golden** = "caso de teste pendente". Diferente de um `LLMTestCase` que está pronto pra avaliar, um Golden contém só os dados de entrada e o esperado. O `actual_output` (o que o agent realmente produziu) é gerado **dinamicamente** quando você roda o agent.
+**Golden** = "pending test case". Unlike an `LLMTestCase` which is ready to evaluate, a Golden only contains the input data and the expected output. The `actual_output` (what the agent actually produced) is generated **dynamically** when you run the agent.
 
-A analogia: Golden é o **molde**, TestCase é a **peça pronta** após você rodar o agent contra o golden.
+The analogy: a Golden is the **mold**, a TestCase is the **finished piece** after you run the agent against the golden.
 
-### Por que Goldens > TestCases
+### Why Goldens > TestCases
 
-- Permitem rerodar o mesmo dataset contra **versões diferentes** do agent (regressão)
-- Permitem avaliar o agent com **inputs que ainda não foram processados**
-- São o jeito **preferido** de inicializar um dataset
+- Allow re-running the same dataset against **different versions** of the agent (regression)
+- Allow evaluating the agent against **inputs that haven't been processed yet**
+- Are the **preferred** way to initialize a dataset
 
 ### Data model — Single-turn Golden
 
@@ -51,17 +51,17 @@ from typing import List, Optional, Dict
 from deepeval.test_case import ToolCall
 
 class Golden(BaseModel):
-    input: str                                  # OBRIGATÓRIO — o input do usuário
-    expected_output: Optional[str] = None       # output ideal (opcional)
-    context: Optional[List[str]] = None         # contexto pré-existente (opcional)
-    expected_tools: Optional[List[ToolCall]] = None  # tools que deveriam ser chamadas
+    input: str                                  # REQUIRED — the user input
+    expected_output: Optional[str] = None       # ideal output (optional)
+    context: Optional[List[str]] = None         # pre-existing context (optional)
+    expected_tools: Optional[List[ToolCall]] = None  # tools that should be called
     
-    # Metadata útil
+    # Useful metadata
     additional_metadata: Optional[Dict] = None
     comments: Optional[str] = None
     custom_column_key_values: Optional[Dict[str, str]] = None
     
-    # NÃO popular manualmente — geram dinamicamente
+    # DO NOT populate manually — generated dynamically
     actual_output: Optional[str] = None
     retrieval_context: Optional[List[str]] = None
     tools_called: Optional[List[ToolCall]] = None
@@ -71,21 +71,21 @@ class Golden(BaseModel):
 
 ```python
 class ConversationalGolden(BaseModel):
-    scenario: str                              # OBRIGATÓRIO — descrição do cenário da conversa
-    expected_outcome: Optional[str] = None     # o que deveria acontecer no final
-    user_description: Optional[str] = None     # quem é o user simulado
+    scenario: str                              # REQUIRED — description of the conversation scenario
+    expected_outcome: Optional[str] = None     # what should happen at the end
+    user_description: Optional[str] = None     # who the simulated user is
     context: Optional[List[str]] = None
     
     additional_metadata: Optional[Dict] = None
     comments: Optional[str] = None
     
-    # Geralmente NÃO popular — geram dinamicamente via ConversationSimulator
+    # Generally DO NOT populate — generated dynamically via ConversationSimulator
     turns: Optional[list] = None
 ```
 
 ### Single-turn vs Multi-turn dataset
 
-Datasets em DeepEval são **statefully single OU multi-turn**, não os dois. A primeira `add_golden()` define qual tipo é:
+Datasets in DeepEval are **statefully single OR multi-turn**, not both. The first `add_golden()` determines which type it is:
 
 ```python
 from deepeval.dataset import EvaluationDataset, Golden, ConversationalGolden
@@ -104,94 +104,94 @@ ds_multi = EvaluationDataset(goldens=[
 print(ds_multi._multi_turn)  # True
 ```
 
-Não dá pra mudar depois. **Decida no início**.
+You can't change it afterwards. **Decide at the start**.
 
-## Pergunta crítica
+## Critical question
 
-"Você quer avaliar interações **single-turn** (uma pergunta → uma resposta do agent) ou **multi-turn** (uma conversa inteira com várias trocas)?"
+"Do you want to evaluate **single-turn** interactions (one question → one agent response) or **multi-turn** (a full conversation with multiple exchanges)?"
 
-- **Single-turn** → use `Golden` (caso mais comum pra agents que executam tarefas)
-- **Multi-turn** → use `ConversationalGolden` (caso de chatbots, copilots de conversa)
+- **Single-turn** → use `Golden` (most common case for agents that execute tasks)
+- **Multi-turn** → use `ConversationalGolden` (for chatbots, conversational copilots)
 
-## Os 4 caminhos pra criar dataset
+## The 4 paths to create a dataset
 
-1. **Manual** — escreve goldens à mão (recomendado pra começar)
-2. **Synthesizer** — gera goldens automaticamente a partir de docs / contexto / scratch
-3. **Importar** — JSON, CSV, ou Hugging Face
+1. **Manual** — write goldens by hand (recommended to start)
+2. **Synthesizer** — automatically generate goldens from docs / context / scratch
+3. **Import** — JSON, CSV, or Hugging Face
 4. **Cloud** — pull/push via Confident AI
 
-## Caminho 1 — Criação manual (RECOMENDADO PRA COMEÇAR)
+## Path 1 — Manual creation (RECOMMENDED TO START)
 
-Pra um agent novo, **comece manualmente** com 5-10 goldens. Eles são teus "ground truth" e te ensinam o que é importante.
+For a new agent, **start manually** with 5-10 goldens. They are your "ground truth" and teach you what matters.
 
-### Conversa estruturada com o usuário
+### Structured conversation with the user
 
-**Pergunta 1**: "Me dá 3 exemplos de inputs reais que usuários mandariam pro seu agent. Pode ser bem variado: um caso simples, um caso difícil, um edge case."
+**Question 1**: "Give me 3 real examples of inputs users would send to your agent. They can vary widely: a simple case, a difficult case, an edge case."
 
-Anote como `inputs_iniciais`.
+Note as `inputs_iniciais`.
 
-**Pergunta 2**: "Pra cada um desses, qual seria o resultado ideal? Ex: 'reserva um voo NYC→Paris' → 'voo reservado, confirmação retornada'."
+**Question 2**: "For each of those, what would be the ideal result? E.g.: 'book a flight NYC→Paris' → 'flight booked, confirmation returned'."
 
-Anote como `expected_outputs`.
+Note as `expected_outputs`.
 
-**Pergunta 3**: "Quais tools você espera que o agent chame em cada caso? Ex: pra 'reservar voo' → `search_flights` + `book_flight`."
+**Question 3**: "Which tools do you expect the agent to call in each case? E.g.: for 'book flight' → `search_flights` + `book_flight`."
 
-Anote como `expected_tools`.
+Note as `expected_tools`.
 
-**Pergunta 4** (importante!): "Lembra dos failure modes que você priorizou no plano de avaliação? Vamos criar 1-2 goldens pra cada modo de falha. Por exemplo: pra 'agent reserva voo errado', criamos um golden com input ambíguo pra ver se ele clarifica ou erra."
+**Question 4** (important!): "Remember the failure modes you prioritized in the evaluation plan? Let's create 1-2 goldens for each failure mode. For example: for 'agent books the wrong flight', we create a golden with an ambiguous input to see if it clarifies or makes a mistake."
 
-### Código resultante
+### Resulting code
 
 ```python
 from deepeval.dataset import EvaluationDataset, Golden
 from deepeval.test_case import ToolCall
 
 dataset = EvaluationDataset(goldens=[
-    # Caso simples
+    # Simple case
     Golden(
-        input="Reserve um voo de NYC pra Paris pra próxima segunda",
-        expected_output="Voo reservado, confirmação CONF-XXX retornada",
+        input="Book a flight from NYC to Paris for next Monday",
+        expected_output="Flight booked, confirmation CONF-XXX returned",
         expected_tools=[
             ToolCall(name="search_flights"),
             ToolCall(name="book_flight"),
         ],
     ),
-    # Caso ambíguo (testa robustez)
+    # Ambiguous case (tests robustness)
     Golden(
-        input="Quero ir pra Paris",
-        expected_output="Pediu mais detalhes (data, origem) antes de buscar",
-        expected_tools=[],  # não deve chamar nenhuma tool ainda
+        input="I want to go to Paris",
+        expected_output="Asked for more details (date, origin) before searching",
+        expected_tools=[],  # should not call any tool yet
     ),
-    # Edge case (input quebrado)
+    # Edge case (broken input)
     Golden(
-        input="reserva voo nyc-paris 2099-13-45",  # data inválida
-        expected_output="Erro de validação, pediu data válida",
+        input="book flight nyc-paris 2099-13-45",  # invalid date
+        expected_output="Validation error, asked for a valid date",
         expected_tools=[],
     ),
-    # ... mais goldens
+    # ... more goldens
 ])
 ```
 
-### Adicionar mais goldens depois
+### Adding more goldens later
 
 ```python
-dataset.add_golden(Golden(input="Cancele minha última reserva"))
+dataset.add_golden(Golden(input="Cancel my last booking"))
 ```
 
-## Caminho 2 — Synthesizer (geração automática)
+## Path 2 — Synthesizer (automatic generation)
 
-Synthesizer gera goldens **sintéticos** a partir de documentos, contextos, ou do zero. Útil quando você não tem exemplos suficientes ou quer expandir cobertura.
+Synthesizer generates **synthetic** goldens from documents, contexts, or from scratch. Useful when you don't have enough examples or want to expand coverage.
 
-### 4 métodos disponíveis
+### 4 available methods
 
-| Método | Quando usar |
+| Method | When to use |
 |--------|-------------|
-| `generate_goldens_from_docs()` | Tem knowledge base (PDFs, .docx, .txt) e quer gerar perguntas baseadas no conteúdo. **Mais útil pra RAG**. |
-| `generate_goldens_from_contexts()` | Já tem chunks/contextos prontos como list de strings |
-| `generate_goldens_from_scratch()` | Zero base — geração puramente do nada baseada em descrição |
-| `generate_goldens_from_goldens()` | Aumenta um conjunto existente de goldens (variações/evoluções) |
+| `generate_goldens_from_docs()` | You have a knowledge base (PDFs, .docx, .txt) and want to generate questions based on the content. **Most useful for RAG**. |
+| `generate_goldens_from_contexts()` | You already have ready-made chunks/contexts as a list of strings |
+| `generate_goldens_from_scratch()` | Zero base — purely from-scratch generation based on a description |
+| `generate_goldens_from_goldens()` | Augments an existing set of goldens (variations/evolutions) |
 
-### Exemplo — from docs
+### Example — from docs
 
 ```python
 from deepeval.synthesizer import Synthesizer
@@ -204,7 +204,7 @@ goldens = Synthesizer().generate_goldens_from_docs(
 dataset = EvaluationDataset(goldens=goldens)
 ```
 
-### Exemplo — from scratch
+### Example — from scratch
 
 ```python
 goldens = Synthesizer().generate_goldens_from_scratch(
@@ -215,15 +215,15 @@ goldens = Synthesizer().generate_goldens_from_scratch(
 )
 ```
 
-### Como funciona internamente
+### How it works internally
 
-Synthesizer usa **técnicas de evolução** pra complicar e tornar os goldens gerados mais realistas e parecidos com dados feitos por humanos. Por baixo, é um LLM gerando inputs + expected outputs baseado nos parâmetros que você passou.
+Synthesizer uses **evolution techniques** to complicate and make the generated goldens more realistic and similar to human-made data. Under the hood, it's an LLM generating inputs + expected outputs based on the parameters you passed.
 
-**Importante**: revise os goldens gerados manualmente antes de confiar neles. Synthesizer é ótimo pra cobertura mas pode gerar exemplos artificiais.
+**Important**: manually review the generated goldens before trusting them. Synthesizer is great for coverage but can generate artificial examples.
 
 ### Conversation Simulator (multi-turn)
 
-Pra gerar **turns** dentro de um `ConversationalTestCase`, use `ConversationSimulator` em vez do Synthesizer:
+To generate **turns** inside a `ConversationalTestCase`, use `ConversationSimulator` instead of Synthesizer:
 
 ```python
 from deepeval.simulator import ConversationSimulator
@@ -241,7 +241,7 @@ simulator = ConversationSimulator(
 )
 
 async def model_callback(input: str, conversation_history: List[Dict[str, str]]) -> str:
-    # Sua função que recebe input + histórico e retorna resposta do agent
+    # Your function that receives input + history and returns the agent's response
     return await your_agent_function(input, conversation_history)
 
 convo_test_cases = simulator.simulate(
@@ -250,23 +250,23 @@ convo_test_cases = simulator.simulate(
 )
 ```
 
-## Caminho 3 — Importar de arquivos
+## Path 3 — Import from files
 
-### De JSON
+### From JSON
 
-Formato: array de objetos onde cada objeto tem keys do Golden.
+Format: array of objects where each object has keys from Golden.
 
 ```python
 from deepeval.dataset import EvaluationDataset
 
 dataset = EvaluationDataset()
 
-# Como goldens
+# As goldens
 dataset.add_goldens_from_json_file(
     file_path="example.json",
 )
 
-# Como test cases já prontos (raro)
+# As already-ready test cases (rare)
 dataset.add_test_cases_from_json_file(
     file_path="example.json",
     input_key_name="query",
@@ -277,129 +277,129 @@ dataset.add_test_cases_from_json_file(
 )
 ```
 
-Se as keys do JSON forem diferentes do convencional, passe os nomes via parâmetros (`input_key_name`, etc).
+If the JSON keys differ from the convention, pass the names via parameters (`input_key_name`, etc).
 
-### De CSV
+### From CSV
 
 ```python
 dataset = EvaluationDataset()
 
-# Como goldens
+# As goldens
 dataset.add_goldens_from_csv_file(
     file_path="example.csv",
 )
 
-# Como test cases
+# As test cases
 dataset.add_test_cases_from_csv_file(
     file_path="example.csv",
     input_col_name="query",
     actual_output_col_name="actual_output",
     expected_output_col_name="expected_output",
     context_col_name="context",
-    context_col_delimiter=";",  # IMPORTANTE pra colunas que viram lista
+    context_col_delimiter=";",  # IMPORTANT for columns that become a list
     retrieval_context_col_name="retrieval_context",
     retrieval_context_col_delimiter=";",
 )
 ```
 
-`expected_output`, `context`, `retrieval_context`, `tools_called`, `expected_tools` são **todos opcionais**.
+`expected_output`, `context`, `retrieval_context`, `tools_called`, `expected_tools` are **all optional**.
 
-## Caminho 4 — Cloud (Confident AI)
+## Path 4 — Cloud (Confident AI)
 
-Se o usuário tá logado no Confident AI, ele pode gerenciar datasets na nuvem com colaboração de domain experts.
+If the user is logged into Confident AI, they can manage datasets in the cloud with collaboration from domain experts.
 
-### Pull (baixar)
+### Pull (download)
 
 ```python
 from deepeval.dataset import EvaluationDataset
 
 dataset = EvaluationDataset()
-dataset.pull(alias="My Dataset")  # alias é o nome dado no Confident AI
+dataset.pull(alias="My Dataset")  # alias is the name given in Confident AI
 print(dataset.goldens)  # sanity check
 ```
 
-### Push (subir)
+### Push (upload)
 
 ```python
 dataset = EvaluationDataset(goldens=[...])
 dataset.push(alias="My dataset")
 ```
 
-Se não tem certeza que estão prontos:
+If you're not sure they're ready:
 
 ```python
 dataset.push(alias="My dataset", finalized=False)
-# Não vão ser pulled até você marcar como finalized no Confident AI manualmente
+# They won't be pulled until you mark them as finalized in Confident AI manually
 ```
 
-### Vantagens do cloud
+### Advantages of cloud
 
-- Domain experts (não-técnicos) criam, anotam, comentam goldens via UI
-- Versionamento built-in
-- Upload em CSV via interface
-- Combinação com test runs automaticamente
+- Domain experts (non-technical) create, annotate, and comment on goldens via UI
+- Built-in versioning
+- CSV upload via interface
+- Automatic combination with test runs
 - Custom columns
 
-## Salvar local
+## Save locally
 
-Se não usa Confident AI, salve em arquivo:
+If you don't use Confident AI, save to a file:
 
 ```python
-# Como JSON
+# As JSON
 dataset.save_as(
     file_type="json",
     directory="./eval-data",
-    file_name="my_dataset",  # opcional, default é YYYYMMDD_HHMMSS
-    include_test_cases=False,  # se True, salva test cases também
+    file_name="my_dataset",  # optional, default is YYYYMMDD_HHMMSS
+    include_test_cases=False,  # if True, also saves test cases
 )
 
-# Como CSV
+# As CSV
 dataset.save_as(
     file_type="csv",
     directory="./eval-data",
 )
 ```
 
-## Best practices pra dataset bom
+## Best practices for a good dataset
 
-- **Cobertura diversa**: inputs reais variando em complexidade, casos extremos, edge cases
-- **Foco quantitativo**: cada golden testa algo específico, não tudo de uma vez
-- **Objetivos claros**: alinhe goldens com as métricas escolhidas
-- **Pequeno e bom > grande e ruim**: 10 goldens bem pensados > 100 goldens genéricos
-- **Inclua failure modes**: pelo menos 1-2 goldens pra cada modo de falha priorizado
-- **Versionamento**: mantenha goldens em git (ou Confident AI) pra rastrear mudanças
+- **Diverse coverage**: real inputs varying in complexity, extreme cases, edge cases
+- **Quantitative focus**: each golden tests something specific, not everything at once
+- **Clear objectives**: align goldens with the chosen metrics
+- **Small and good > large and bad**: 10 well-thought-out goldens > 100 generic goldens
+- **Include failure modes**: at least 1-2 goldens for each prioritized failure mode
+- **Versioning**: keep goldens in git (or Confident AI) to track changes
 
-## Quantos goldens?
+## How many goldens?
 
-| Estágio | Recomendação |
+| Stage | Recommendation |
 |---------|--------------|
-| Smoke test (validar setup) | 1-2 |
-| Dev inicial | 5-10 |
-| Iteração regular | 20-50 |
-| Pré-produção | 50-200 |
-| CI/CD em produção | depende do custo (LLM-as-judge custa) |
+| Smoke test (validate setup) | 1-2 |
+| Early dev | 5-10 |
+| Regular iteration | 20-50 |
+| Pre-production | 50-200 |
+| CI/CD in production | depends on cost (LLM-as-judge costs tokens) |
 
-**Lembre**: cada golden = 1 chamada do agent (custo de tokens) + 1 chamada de LLM-as-judge por métrica (custo de tokens). Faça a conta antes de rodar 1000 goldens com 5 métricas.
+**Remember**: each golden = 1 agent call (token cost) + 1 LLM-as-judge call per metric (token cost). Do the math before running 1000 goldens with 5 metrics.
 
-## Roteiro que você segue com o usuário
+## Script you follow with the user
 
-1. **Pergunta**: "Single-turn ou multi-turn?"
-2. **Pergunta**: "Você prefere começar manual (recomendado) ou gerar com Synthesizer?"
-3. **Se manual**: conduza o usuário a criar 5-10 goldens (use as 4 perguntas do Caminho 1)
-4. **Se Synthesizer**: pergunte sobre fonte (docs/contextos/scratch), gere, depois revise junto
-5. **Validação**: rode `print(dataset.goldens)` ou `len(dataset.goldens)` pra confirmar
-6. **Salvar**: ofereça salvar local em JSON ou push pro Confident AI
+1. **Question**: "Single-turn or multi-turn?"
+2. **Question**: "Do you prefer to start manually (recommended) or generate with Synthesizer?"
+3. **If manual**: guide the user to create 5-10 goldens (use the 4 questions from Path 1)
+4. **If Synthesizer**: ask about the source (docs/contexts/scratch), generate, then review together
+5. **Validation**: run `print(dataset.goldens)` or `len(dataset.goldens)` to confirm
+6. **Save**: offer to save locally as JSON or push to Confident AI
 
-## Encerramento
+## Closing
 
-Após criar o dataset, diga:
+After creating the dataset, say:
 
-> "Dataset com {N} goldens pronto. Próximo passo é escolher quais métricas vão rodar contra ele. Quer que eu chame `bagual-ai-evals-pick-metrics`?"
+> "Dataset with {N} goldens ready. Next step is choosing which metrics will run against it. Want me to call `bagual-ai-evals-pick-metrics`?"
 
 ## Anti-patterns
 
-- ❌ Forçar Synthesizer pra usuário iniciante — manual ensina melhor
-- ❌ Criar 100 goldens antes de rodar nenhum eval — small batch primeiro
-- ❌ Esquecer de cobrir failure modes — esses são os mais importantes
-- ❌ Pular `expected_tools` quando vai usar `ToolCorrectnessMetric`
-- ❌ Misturar single-turn e multi-turn no mesmo dataset (não dá)
+- ❌ Forcing Synthesizer on a beginner user — doing it manually teaches better
+- ❌ Creating 100 goldens before running any eval — small batch first
+- ❌ Forgetting to cover failure modes — those are the most important ones
+- ❌ Skipping `expected_tools` when you'll use `ToolCorrectnessMetric`
+- ❌ Mixing single-turn and multi-turn in the same dataset (not possible)

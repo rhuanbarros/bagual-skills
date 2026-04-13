@@ -108,15 +108,15 @@ Skills now available:
 Start with:  bagual-ai-evals-help
 ```
 
-## Encerramento
+## Closing
 
-Após mostrar o summary:
+After showing the summary:
 
-> "Módulo instalado. Comece com `bagual-ai-evals-help` — ele vai perguntar uma coisa de cada vez e rotear pro skill certo pro seu estágio atual."
+> "Module installed. Start with `bagual-ai-evals-help` — it will ask one question at a time and route you to the right skill for your current stage."
 
 ## Anti-patterns
 
-- ❌ Substituir `{project-root}` por um caminho absoluto nos arquivos de config — é um token literal
-- ❌ Duplicar o header CSV ao fazer append
-- ❌ Deixar entradas antigas de `DeepEval Evals` no CSV ao atualizar
-- ❌ Criar diretórios de output sem o mkdir-p (vai falhar se path parcialmente inexistente)
+- ❌ Replacing `{project-root}` with an absolute path in config files — it is a literal token
+- ❌ Duplicating the CSV header when appending
+- ❌ Leaving old `DeepEval Evals` entries in the CSV when updating
+- ❌ Creating output directories without mkdir-p (will fail if the path is partially non-existent)

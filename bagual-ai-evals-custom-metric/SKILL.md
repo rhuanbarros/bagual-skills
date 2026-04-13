@@ -1,86 +1,86 @@
 ---
 name: bagual-ai-evals-custom-metric
-description: Criação de métricas customizadas com G-Eval ou DAGMetric para critérios específicos do domínio (tom, conformidade, safety, PII, qualidade subjetiva). Use quando o usuário disser "métrica custom", "g-eval", "criar métrica", "DAG metric", "avaliar tom", "avaliar safety", "métrica de conformidade".
+description: Creating custom metrics with G-Eval or DAGMetric for domain-specific criteria (tone, compliance, safety, PII, subjective quality). Use when the user says "custom metric", "g-eval", "create metric", "DAG metric", "evaluate tone", "evaluate safety", "compliance metric".
 ---
 
-# DeepEval Custom Metric — Criando Métricas Próprias
+# DeepEval Custom Metric — Creating Your Own Metrics
 
-Você cria métricas customizadas com `GEval` (LLM-as-judge baseado em critério em linguagem natural) ou `DAGMetric` (decision tree determinístico).
+You create custom metrics with `GEval` (LLM-as-judge based on a natural language criterion) or `DAGMetric` (deterministic decision tree).
 
-## Quando criar uma métrica custom
+## When to create a custom metric
 
-Crie quando as 6 métricas built-in **não cobrem** o que você precisa avaliar. Exemplos de necessidades que pedem custom:
+Create one when the 6 built-in metrics **don't cover** what you need to evaluate. Examples of needs that call for custom:
 
-- **Tom / formalidade**: "o agent mantém tom profissional?"
-- **Conformidade**: "o agent segue as guidelines do setor?"
-- **Safety / PII**: "o agent vaza dados pessoais?"
-- **Clareza de raciocínio**: "o agent explica claramente o que tá fazendo?"
-- **Domínio específico**: "o agent dá recomendação médica clinicamente segura?"
-- **Precisão referenciada**: "o output está factualmente correto comparado ao expected?"
+- **Tone / formality**: "does the agent maintain a professional tone?"
+- **Compliance**: "does the agent follow the sector's guidelines?"
+- **Safety / PII**: "does the agent leak personal data?"
+- **Reasoning clarity**: "does the agent clearly explain what it's doing?"
+- **Specific domain**: "does the agent give a clinically safe medical recommendation?"
+- **Referenced accuracy**: "is the output factually correct compared to the expected?"
 - **Product-specific failures**: context amnesia, policy retrieval mismatch, escalation abandonment, etc
 
-## ⚠️ De onde vêm os critérios certos pra custom metrics
+## ⚠️ Where the right criteria for custom metrics come from
 
-**A fonte correta dos critérios custom não é sua imaginação — é trace review.**
+**The correct source of custom criteria is not your imagination — it's trace review.**
 
-Se você ainda não fez o workflow de `bagual-ai-evals-error-analysis` (open coding → axial coding → binary judges), seus critérios custom vão medir o que você **acha** que pode falhar, não o que está **realmente** falhando. Esse é o vibe-check trap aplicado a métricas custom.
+If you haven't done the `bagual-ai-evals-error-analysis` workflow yet (open coding → axial coding → binary judges), your custom criteria will measure what you **think** might fail, not what is **actually** failing. That's the vibe-check trap applied to custom metrics.
 
-**Fluxo recomendado**:
+**Recommended flow**:
 
-1. Se o usuário tem agent rodando → `bagual-ai-evals-error-analysis` primeiro, depois volta aqui pra implementar os judges que o axial coding identificou
-2. Se não tem traces ainda → pode criar custom metrics genéricas (tom, safety, PII) baseadas em requisitos conhecidos, mas deixe claro que isso é temporário até ter traces
+1. If the user has an agent running → `bagual-ai-evals-error-analysis` first, then come back here to implement the judges that axial coding identified
+2. If there are no traces yet → you can create generic custom metrics (tone, safety, PII) based on known requirements, but make clear this is temporary until you have traces
 
-O axial coding do `bagual-ai-evals-error-analysis` produz categorias de falha product-specific que viram **exatamente** os inputs pros `GEval` dessa skill. Você faz o trabalho conceitual lá, e implementa o judge aqui.
+The axial coding from `bagual-ai-evals-error-analysis` produces product-specific failure categories that become **exactly** the inputs for `GEval` in this skill. You do the conceptual work there, and implement the judge here.
 
-## GEval vs DAGMetric — qual usar
+## GEval vs DAGMetric — which to use
 
-| Critério | GEval | DAGMetric |
+| Criterion | GEval | DAGMetric |
 |----------|-------|-----------|
-| **Filosofia** | LLM-as-judge baseado em critério em linguagem natural | Decision tree LLM-powered, mais determinístico |
-| **Quando** | Avaliações subjetivas, criativas, linguagem natural | Quando você precisa de scores **fine-grained** e **reproduzíveis** |
-| **Variabilidade** | Pode variar entre runs (não-determinístico) | Mais determinístico, scores mais consistentes |
-| **Uso comum** | 95% dos casos | Casos onde precisa auditar/explicar exato |
+| **Philosophy** | LLM-as-judge based on natural language criterion | LLM-powered decision tree, more deterministic |
+| **When** | Subjective, creative, natural language evaluations | When you need **fine-grained** and **reproducible** scores |
+| **Variability** | May vary between runs (non-deterministic) | More deterministic, more consistent scores |
+| **Common use** | 95% of cases | Cases where you need to audit/explain exactly |
 
-**Default**: comece com `GEval`. Vá pra `DAGMetric` só se precisar mais determinismo.
+**Default**: start with `GEval`. Move to `DAGMetric` only if you need more determinism.
 
-## ⚠️ Princípios arquiteturais antes de criar judges
+## ⚠️ Architectural principles before creating judges
 
-Esses 4 princípios vêm da literatura recente (JudgeBench ICLR 2025, MT-Bench NeurIPS 2023, Hamel Husain workshops). Ignorá-los produz judges que parecem funcionar mas não funcionam.
+These 4 principles come from recent literature (JudgeBench ICLR 2025, MT-Bench NeurIPS 2023, Hamel Husain workshops). Ignoring them produces judges that seem to work but don't.
 
-### Princípio 1 — One judge, one criterion
+### Principle 1 — One judge, one criterion
 
-**O erro mais comum** em design de judge é overload do prompt com critérios demais. "Avalie accuracy, helpfulness, safety, e tone" num único prompt produz um judge que avalia os 4 critérios **mal**, porque não tem estrutura pra weight conflicts entre eles.
+**The most common mistake** in judge design is overloading the prompt with too many criteria. "Evaluate accuracy, helpfulness, safety, and tone" in a single prompt produces a judge that evaluates all 4 criteria **poorly**, because there's no structure to weight conflicts between them.
 
-**Regra**: cada judge avalia **um critério**. Se você tem 5 critérios, faça 5 judges, cada um focado.
+**Rule**: each judge evaluates **one criterion**. If you have 5 criteria, make 5 judges, each focused.
 
-### Princípio 2 — Binário > Likert (sempre, com raras exceções)
+### Principle 2 — Binary > Likert (always, with rare exceptions)
 
-Hamel Husain e Eugene Yan convergiram independentemente em pass/fail binário. Razões práticas:
+Hamel Husain and Eugene Yan independently converged on binary pass/fail. Practical reasons:
 
-**Razão 1**: inter-rater agreement em ordinal scales é genuinamente ruim. Cohen's Kappa humano em escalas de 5 pontos frequentemente fica entre **0.2 e 0.3**. Dois experts dão scores 2 pontos de distância. Se humanos não concordam, você não consegue calibrar LLM judge contra julgamento humano.
+**Reason 1**: inter-rater agreement on ordinal scales is genuinely bad. Human Cohen's Kappa on 5-point scales frequently falls between **0.2 and 0.3**. Two experts give scores 2 points apart. If humans can't agree, you can't calibrate an LLM judge against human judgment.
 
-**Razão 2**: stakeholders não usam a escala de qualquer jeito. Eles pedem threshold e tratam tudo acima como pass.
+**Reason 2**: stakeholders don't use the scale anyway. They ask for a threshold and treat everything above as pass.
 
-**Quando usar additive scoring** (alternativa ao binary single): pra critérios que **legitimamente** têm sub-dimensões, use **rubric-as-rewards (RaR)**: cada sub-criterion vale 0 ou 1 ponto, soma. Ver seção dedicada abaixo.
+**When to use additive scoring** (alternative to single binary): for criteria that **legitimately** have sub-dimensions, use **rubric-as-rewards (RaR)**: each sub-criterion is worth 0 or 1 point, summed. See dedicated section below.
 
-### Princípio 3 — JAMAIS use o mesmo modelo como judge e agent
+### Principle 3 — NEVER use the same model as both judge and agent
 
-JudgeBench (ICLR 2025) demonstrou self-enhancement bias com clareza brutal: Claude-3.5-Sonnet alcança **64.3%** de accuracy julgando pares gerados por GPT-4o, mas cai pra **44.8%** — abaixo de random — quando julga pares gerados pelo próprio Claude-3.5-Sonnet.
+JudgeBench (ICLR 2025) demonstrated self-enhancement bias with brutal clarity: Claude-3.5-Sonnet achieves **64.3%** accuracy judging pairs generated by GPT-4o, but drops to **44.8%** — below random — when judging pairs generated by Claude-3.5-Sonnet itself.
 
-**Implicação direta**:
-- Agent em Claude → judge GPT-4o ou open-source
-- Agent em GPT-4o → judge Claude
-- Agent em Qwen3 self-hosted → judge GPT-4o, Claude, Selene Mini, ou Prometheus 2
+**Direct implication**:
+- Agent on Claude → judge GPT-4o or open-source
+- Agent on GPT-4o → judge Claude
+- Agent on self-hosted Qwen3 → judge GPT-4o, Claude, Selene Mini, or Prometheus 2
 
-### Princípio 4 — Vieses sistemáticos: position, verbosity, self-enhancement
+### Principle 4 — Systematic biases: position, verbosity, self-enhancement
 
-| Viés | Magnitude | Mitigação |
+| Bias | Magnitude | Mitigation |
 |------|-----------|-----------|
-| **Position bias** (pairwise) | ~40% inconsistência sob swap de ordem | Rode ambas ordens (A,B) e (B,A); só conta vencedor se concordam |
-| **Verbosity bias** (pointwise) | ~15% inflação de score pra responses mais longos | Instrução anti-verbosidade no prompt + escala 1-4 não 1-10 |
-| **Self-enhancement bias** | Claude→Claude cai pra 44.8% | Famílias diferentes pra agent e judge |
+| **Position bias** (pairwise) | ~40% inconsistency under order swap | Run both orders (A,B) and (B,A); only count winner if they agree |
+| **Verbosity bias** (pointwise) | ~15% score inflation for longer responses | Anti-verbosity instruction in prompt + 1-4 scale not 1-10 |
+| **Self-enhancement bias** | Claude→Claude drops to 44.8% | Different families for agent and judge |
 
-### Mitigação de position bias — código
+### Position bias mitigation — code
 
 ```python
 import json
@@ -89,7 +89,7 @@ from anthropic import Anthropic
 client = Anthropic()
 
 def debiased_pairwise_judge(context, response_a, response_b, criteria):
-    """Roda ambas ordens; só conta win quando concordam."""
+    """Runs both orders; only counts win when they agree."""
     def judge(first, second, first_label, second_label):
         prompt = f"""{criteria}
 
@@ -110,7 +110,7 @@ Return JSON: {{"winner": "{first_label}" | "{second_label}" | "tie", "reason": "
     result_ab = judge(response_a, response_b, "A", "B")
     result_ba = judge(response_b, response_a, "B", "A")
     
-    # Normaliza: em BA, "B wins" significa que A original ganhou
+    # Normalize: in BA, "B wins" means the original A won
     ab_winner = result_ab["winner"]
     ba_winner = "A" if result_ba["winner"] == "B" else ("B" if result_ba["winner"] == "A" else "tie")
     
@@ -119,53 +119,53 @@ Return JSON: {{"winner": "{first_label}" | "{second_label}" | "tie", "reason": "
     return {"winner": "tie", "confidence": "low", "reason": "Position bias detected"}
 ```
 
-Dobra o custo de pairwise mas elimina o artefato. Em CI/CD comparando prompt N vs N-1, vale a pena.
+Doubles the cost of pairwise but eliminates the artifact. In CI/CD comparing prompt N vs N-1, it's worth it.
 
-### Mitigação de verbosity bias
+### Verbosity bias mitigation
 
-Sempre inclua no judge prompt:
+Always include in the judge prompt:
 ```
 Do not reward length. A response that is concise and complete should score 
 the same or higher than a verbose response covering the same content.
 ```
 
-E pra pointwise, **use escalas 1-4 em vez de 1-10** — range comprimida reduz artefatos.
+And for pointwise, **use 1-4 scales instead of 1-10** — compressed range reduces artifacts.
 
 ### Anchored examples — high-ROI
 
-Inclua **1-2 exemplos pré-graded** no prompt do judge: um claro PASS, um claro FAIL, com reasoning pra cada. Isso define floor e ceiling da escala em termos concretos, e é o que previne score drift quando a distribuição de inputs muda. Anchored examples constrain a interpretação do judge dos seus critérios de jeitos que prose definitions sozinhas não fazem.
+Include **1-2 pre-graded examples** in the judge prompt: one clear PASS, one clear FAIL, with reasoning for each. This defines the floor and ceiling of the scale in concrete terms, and is what prevents score drift when the input distribution changes. Anchored examples constrain the judge's interpretation of your criteria in ways that prose definitions alone don't.
 
-### O ceiling problem (JudgeBench)
+### The ceiling problem (JudgeBench)
 
-JudgeBench mediu accuracy de judges em **challenging response pairs**. O modelo mais forte alcançou **64% de accuracy**. Esse é o ceiling.
+JudgeBench measured judge accuracy on **challenging response pairs**. The strongest model achieved **64% accuracy**. That is the ceiling.
 
-**Implicação**: LLM judges são confiáveis pra failure modes claros (factual contradiction, format violation) e **não confiáveis** pra casos onde a diferença requer domain expertise. **Saber em qual regime sua avaliação cai** é a decisão de design crítica.
+**Implication**: LLM judges are reliable for clear failure modes (factual contradiction, format violation) and **unreliable** for cases where the difference requires domain expertise. **Knowing which regime your evaluation falls into** is the critical design decision.
 
 ## AlignEval calibration workflow
 
-Eugene Yan formalizou esse workflow. **Faça pra cada judge** antes de deployar:
+Eugene Yan formalized this workflow. **Do it for each judge** before deploying:
 
 ```
-1. Você labeia 30+ amostras manualmente (PASS/FAIL binário)
-2. Escreve a definição de duas frases (PASS / FAIL)
-3. Roda o LLM judge nas mesmas amostras
-4. Calcula:
-   - TPR (True Positive Rate) = TP / (TP + FN) — judge pega failures reais?
-   - TNR (True Negative Rate) = TN / (TN + FP) — judge não flagga PASSes corretos?
-   - Cohen's Kappa = agreement ajustado por chance
-5. Itera no prompt até κ ≥ 0.7
-6. Quando OK, declara baseline e deploya
+1. You manually label 30+ samples (binary PASS/FAIL)
+2. Write the two-sentence definition (PASS / FAIL)
+3. Run the LLM judge on the same samples
+4. Calculate:
+   - TPR (True Positive Rate) = TP / (TP + FN) — does the judge catch real failures?
+   - TNR (True Negative Rate) = TN / (TN + FP) — does the judge not flag correct PASSes?
+   - Cohen's Kappa = chance-adjusted agreement
+5. Iterate on the prompt until κ ≥ 0.7
+6. When OK, declare baseline and deploy
 ```
 
-**Target**: κ ≥ 0.7 antes de deployar em CI. Abaixo disso, anotadores discordam frequentemente demais pro eval ser sinal confiável.
+**Target**: κ ≥ 0.7 before deploying in CI. Below that, annotators disagree too often for the eval to be a reliable signal.
 
 ```python
 from sklearn.metrics import cohen_kappa_score, confusion_matrix
 
-# Você labeou manualmente 30 traces
+# You manually labeled 30 traces
 human_labels = [1, 0, 1, 1, 0, 1, 0, 0, 1, 1, ...]  # 1=PASS, 0=FAIL
 
-# Roda o LLM judge nos mesmos 30 traces
+# Run the LLM judge on the same 30 traces
 llm_labels = [1, 0, 1, 1, 1, 1, 0, 0, 1, 0, ...]
 
 kappa = cohen_kappa_score(human_labels, llm_labels)
@@ -178,60 +178,59 @@ assert tpr >= 0.75, "Judge missing too many real failures"
 assert tnr >= 0.75, "Judge flagging too many false positives"
 ```
 
-### TPR/TNR separados — não use só aggregate agreement
+### Separate TPR/TNR — don't use only aggregate agreement
 
-Hamel Husain insiste nisso: track TPR e TNR **separadamente**, não só aggregate.
+Hamel Husain insists on this: track TPR and TNR **separately**, not just aggregate.
 
-Um judge que alcança 85% agreement chamando tudo de PASS tem TNR inútil — não tá pegando falhas. Um judge que flagga tudo tem TPR inútil. Você precisa **dos dois lados** da confusion matrix saudáveis.
+A judge that achieves 85% agreement by calling everything PASS has useless TNR — it's not catching failures. A judge that flags everything has useless TPR. You need **both sides** of the confusion matrix to be healthy.
 
-E faça check em **dev/test partition** que você não usou pra iterar o prompt — caso contrário é memorização, não calibração.
+And check on a **dev/test partition** you didn't use to iterate the prompt — otherwise it's memorization, not calibration.
 
-### Drift detection — cadência biweekly
+### Drift detection — biweekly cadence
 
-Judges driftam. A cada 2 semanas:
+Judges drift. Every 2 weeks:
 
-1. Sample estratificado: 10 PASSes, 10 FAILs marcados pelo judge
-2. Você (ou domain expert) labeia manualmente
-3. Recalcula TPR e TNR
-4. Se TPR < 0.75 → recalibra (judge perdendo failures)
-5. Se TNR < 0.75 → recalibra (judge gerando ruído)
+1. Stratified sample: 10 PASSes, 10 FAILs flagged by the judge
+2. You (or domain expert) label manually
+3. Recalculate TPR and TNR
+4. If TPR < 0.75 → recalibrate (judge missing failures)
+5. If TNR < 0.75 → recalibrate (judge generating noise)
 
-**Track tendências rolling de 7 e 30 dias**, não single sessions. Single-session audits são flaky; aggregates são confiáveis.
+**Track 7-day and 30-day rolling trends**, not single sessions. Single-session audits are flaky; aggregates are reliable.
 
-## Rubric-as-Rewards (RaR) — pra critérios multi-dimensionais
+## Rubric-as-Rewards (RaR) — for multi-dimensional criteria
 
-Quando um critério legitimamente tem múltiplas sub-dimensões, **não** force binário monolítico. Em vez disso, decomponha em sub-criteria atômicos onde cada um vale 0 ou 1 ponto, e some.
+When a criterion legitimately has multiple sub-dimensions, **don't** force a monolithic binary. Instead, decompose into atomic sub-criteria where each is worth 0 or 1 point, and sum them.
 
-O resultado é um score com **componentes interpretáveis**: quando uma response score 3/5, você lê o reasoning do judge pra ver quais 2 critérios falharam — info diretamente acionável.
+The result is a score with **interpretable components**: when a response scores 3/5, you read the judge's reasoning to see which 2 criteria failed — directly actionable information.
 
 ```python
 ESCALATION_QUALITY_RUBRIC = """
-Você está avaliando a qualidade de uma escalação de customer support agent 
-pra agente humano.
+You are evaluating the quality of a customer support agent's escalation 
+to a human agent.
 
-Pontue cada critério independentemente (0 = falha, 1 = passa).
+Score each criterion independently (0 = fail, 1 = pass).
 
-CRITÉRIO 1 — Resumo da issue (0 ou 1):
-A mensagem de escalação inclui um resumo claro de uma frase do problema 
-original do cliente. Não deveria exigir que o agente humano leia o transcript 
-inteiro.
+CRITERION 1 — Issue summary (0 or 1):
+The escalation message includes a clear one-sentence summary of the customer's 
+original problem. It should not require the human agent to read the entire transcript.
 
-CRITÉRIO 2 — Account context (0 ou 1):
-Todos os identificadores de conta mencionados na conversa (account number, 
-ticket IDs, plan type) aparecem na mensagem de escalação.
+CRITERION 2 — Account context (0 or 1):
+All account identifiers mentioned in the conversation (account number, 
+ticket IDs, plan type) appear in the escalation message.
 
-CRITÉRIO 3 — Tentativas anteriores (0 ou 1):
-A mensagem de escalação afirma o que o agent tentou e por que falhou. 
-"Não consegui resolver" é insuficiente; uma razão específica é exigida.
+CRITERION 3 — Previous attempts (0 or 1):
+The escalation message states what the agent tried and why it failed. 
+"Couldn't resolve" is insufficient; a specific reason is required.
 
-CRITÉRIO 4 — Sinal de estado emocional (0 ou 1):
-Se o cliente expressou frustração, urgência ou angústia durante a conversa, 
-a mensagem de escalação reconhece isso. Se o cliente foi neutro, este 
-critério é automaticamente 1.
+CRITERION 4 — Emotional state signal (0 or 1):
+If the customer expressed frustration, urgency or distress during the conversation, 
+the escalation message acknowledges this. If the customer was neutral, this 
+criterion is automatically 1.
 
-CRITÉRIO 5 — Sem fechamento prematuro (0 ou 1):
-A mensagem de escalação não implica que o problema está resolvido nem 
-minimiza sua urgência.
+CRITERION 5 — No premature closure (0 or 1):
+The escalation message does not imply the problem is resolved nor 
+minimize its urgency.
 
 Conversation transcript:
 {transcript}
@@ -252,15 +251,15 @@ Return JSON:
 """
 ```
 
-Esse judge produz score 0-5 com `primary_failure` field diretamente acionável. Quando esse roda em CI e o escalation score cai de 4.2 pra 3.6 depois de uma prompt change, você não precisa ler traces — os scores criterion-level te dizem imediatamente que critério 3 (tentativas anteriores) regrediu.
+This judge produces a 0-5 score with a directly actionable `primary_failure` field. When this runs in CI and the escalation score drops from 4.2 to 3.6 after a prompt change, you don't need to read traces — the criterion-level scores immediately tell you that criterion 3 (previous attempts) regressed.
 
-**Use rubric-as-rewards quando**: critério tem múltiplas dimensões reais, você quer debug-friendliness, stakeholders precisam interpretar componentes.
+**Use rubric-as-rewards when**: criterion has multiple real dimensions, you want debug-friendliness, stakeholders need to interpret components.
 
-**Não use quando**: o critério é genuinamente unificado (faithfulness é só "claims supported by context", não tem sub-dimensões reais).
+**Don't use when**: the criterion is genuinely unified (faithfulness is just "claims supported by context", it has no real sub-dimensions).
 
-## GEval — anatomia completa
+## GEval — complete anatomy
 
-### Sintaxe básica
+### Basic syntax
 
 ```python
 from deepeval.metrics import GEval
@@ -279,57 +278,57 @@ correctness_metric = GEval(
 )
 ```
 
-### Parâmetros — todos eles
+### Parameters — all of them
 
-**Obrigatórios** (3):
+**Required** (3):
 
-| Parâmetro | O que é |
+| Parameter | What it is |
 |-----------|---------|
-| `name` | Nome do metric (string) |
-| `criteria` | Critério em linguagem natural — ou seja, "como você quer que seja avaliado" |
-| `evaluation_params` | Lista de `LLMTestCaseParams` — quais campos do test case o judge deve olhar |
+| `name` | Metric name (string) |
+| `criteria` | Natural language criterion — i.e., "how you want it to be evaluated" |
+| `evaluation_params` | List of `LLMTestCaseParams` — which test case fields the judge should look at |
 
-**Opcionais** (7):
+**Optional** (7):
 
-| Parâmetro | Default | O que faz |
+| Parameter | Default | What it does |
 |-----------|---------|-----------|
-| `evaluation_steps` | None | Lista de strings com os passos exatos. Substitui `criteria` na hora de calcular. **Mais reliable**. |
-| `rubric` | None | Lista de `Rubric`s pra confinar o range do score (ver abaixo) |
-| `threshold` | 0.5 | Score mínimo pra passar |
-| `model` | `gpt-4.1` | Qualquer LLM (string ou `DeepEvalBaseLLM` instance) |
-| `strict_mode` | False | Se True, score é binário 0 ou 1 |
-| `async_mode` | True | Concorrência interna |
-| `verbose_mode` | False | Printa intermediários |
-| `evaluation_template` | `GEvalTemplate` | Override do prompt template default |
+| `evaluation_steps` | None | List of strings with exact steps. Replaces `criteria` at calculation time. **More reliable**. |
+| `rubric` | None | List of `Rubric`s to confine the score range (see below) |
+| `threshold` | 0.5 | Minimum score to pass |
+| `model` | `gpt-4.1` | Any LLM (string or `DeepEvalBaseLLM` instance) |
+| `strict_mode` | False | If True, score is binary 0 or 1 |
+| `async_mode` | True | Internal concurrency |
+| `verbose_mode` | False | Prints intermediates |
+| `evaluation_template` | `GEvalTemplate` | Override of the default prompt template |
 
-### IMPORTANTE: criteria vs evaluation_steps
+### IMPORTANT: criteria vs evaluation_steps
 
-Você passa **um OU outro**, nunca os dois juntos:
+You pass **one OR the other**, never both together:
 
-- **`criteria` only**: GEval gera os steps automaticamente baseado no critério. Mais flexível mas menos consistente.
-- **`evaluation_steps`**: você fornece os passos explícitos. Mais reliable across runs.
+- **`criteria` only**: GEval automatically generates steps based on the criterion. More flexible but less consistent.
+- **`evaluation_steps`**: you provide the explicit steps. More reliable across runs.
 
-**Pra produção**, sempre prefira `evaluation_steps`. Pra exploração inicial, `criteria` é suficiente.
+**For production**, always prefer `evaluation_steps`. For initial exploration, `criteria` is sufficient.
 
-### LLMTestCaseParams — os campos disponíveis
+### LLMTestCaseParams — available fields
 
-Os campos que você pode incluir em `evaluation_params`:
+The fields you can include in `evaluation_params`:
 
-| Param | O que representa |
+| Param | What it represents |
 |-------|------------------|
-| `LLMTestCaseParams.INPUT` | O input que foi dado pro agent |
-| `LLMTestCaseParams.ACTUAL_OUTPUT` | O output real que o agent produziu |
-| `LLMTestCaseParams.EXPECTED_OUTPUT` | O output esperado (ground truth) |
-| `LLMTestCaseParams.CONTEXT` | Contexto pré-existente |
-| `LLMTestCaseParams.RETRIEVAL_CONTEXT` | Contexto recuperado (RAG) |
-| `LLMTestCaseParams.TOOLS_CALLED` | Tools que o agent chamou |
-| `LLMTestCaseParams.EXPECTED_TOOLS` | Tools esperadas |
+| `LLMTestCaseParams.INPUT` | The input given to the agent |
+| `LLMTestCaseParams.ACTUAL_OUTPUT` | The real output the agent produced |
+| `LLMTestCaseParams.EXPECTED_OUTPUT` | The expected output (ground truth) |
+| `LLMTestCaseParams.CONTEXT` | Pre-existing context |
+| `LLMTestCaseParams.RETRIEVAL_CONTEXT` | Retrieved context (RAG) |
+| `LLMTestCaseParams.TOOLS_CALLED` | Tools the agent called |
+| `LLMTestCaseParams.EXPECTED_TOOLS` | Expected tools |
 
-**Regra**: só inclua os params que **realmente são mencionados** no `criteria` ou `evaluation_steps`. Inclui um que não usa = score impreciso.
+**Rule**: only include params that are **actually mentioned** in `criteria` or `evaluation_steps`. Including one you don't use = imprecise score.
 
-### Rubric — confinando scores em ranges
+### Rubric — confining scores to ranges
 
-Pra ter scores mais estruturados, use `Rubric`:
+For more structured scores, use `Rubric`:
 
 ```python
 from deepeval.metrics.g_eval import Rubric
@@ -347,16 +346,16 @@ correctness_metric = GEval(
 )
 ```
 
-**Regras de Rubric**:
-- `score_range` é **0-10 inclusive** (não 0-1)
-- Ranges não podem se sobrepor
-- Pode usar `score_range=(7, 7)` pra um único score
+**Rubric rules**:
+- `score_range` is **0-10 inclusive** (not 0-1)
+- Ranges cannot overlap
+- You can use `score_range=(7, 7)` for a single score
 
-O score final retornado é normalizado pra 0-1, então funciona junto com `threshold`.
+The final score returned is normalized to 0-1, so it works together with `threshold`.
 
-## Exemplos prontos — copie e adapte
+## Ready-made examples — copy and adapt
 
-### Exemplo 1 — Answer Correctness (mais comum)
+### Example 1 — Answer Correctness (most common)
 
 ```python
 from deepeval.metrics import GEval
@@ -376,7 +375,7 @@ correctness = GEval(
 )
 ```
 
-### Exemplo 2 — Coherence / Clareza
+### Example 2 — Coherence / Clarity
 
 ```python
 clarity = GEval(
@@ -391,7 +390,7 @@ clarity = GEval(
 )
 ```
 
-### Exemplo 3 — Tonalidade / Profissionalismo
+### Example 3 — Tone / Professionalism
 
 ```python
 professionalism = GEval(
@@ -406,7 +405,7 @@ professionalism = GEval(
 )
 ```
 
-### Exemplo 4 — Safety / PII Leakage
+### Example 4 — Safety / PII Leakage
 
 ```python
 pii_leakage = GEval(
@@ -421,9 +420,9 @@ pii_leakage = GEval(
 )
 ```
 
-### Exemplo 5 — Custom RAG (Medical Faithfulness)
+### Example 5 — Custom RAG (Medical Faithfulness)
 
-Esse exemplo mostra como criar métrica de domínio específico:
+This example shows how to create a domain-specific metric:
 
 ```python
 medical_faithfulness = GEval(
@@ -442,7 +441,7 @@ medical_faithfulness = GEval(
 )
 ```
 
-### Exemplo 6 — Reasoning Clarity (pra agents)
+### Example 6 — Reasoning Clarity (for agents)
 
 ```python
 reasoning_clarity = GEval(
@@ -452,9 +451,9 @@ reasoning_clarity = GEval(
 )
 ```
 
-## Como usar a métrica criada
+## How to use the created metric
 
-### 1. End-to-end (no `evals_iterator`)
+### 1. End-to-end (in `evals_iterator`)
 
 ```python
 from deepeval.dataset import EvaluationDataset, Golden
@@ -465,7 +464,7 @@ for golden in dataset.evals_iterator(metrics=[correctness, professionalism]):
     your_agent(golden.input)
 ```
 
-### 2. Component-level (no `@observe`)
+### 2. Component-level (in `@observe`)
 
 ```python
 from deepeval.tracing import observe, update_current_span
@@ -481,7 +480,7 @@ def call_llm(messages):
     return response
 ```
 
-### 3. Standalone (raro, só pra debug)
+### 3. Standalone (rare, only for debugging)
 
 ```python
 from deepeval.test_case import LLMTestCase
@@ -496,68 +495,68 @@ correctness.measure(test_case)
 print(correctness.score, correctness.reason)
 ```
 
-**Atenção**: standalone não dá os benefícios do `evaluate()` ou `deepeval test run` (testing reports, Confident AI, otimizações). Use só pra debug.
+**Note**: standalone doesn't give the benefits of `evaluate()` or `deepeval test run` (testing reports, Confident AI, optimizations). Use only for debugging.
 
-## Como GEval funciona por baixo
+## How GEval works under the hood
 
-GEval implementa o paper "NLG Evaluation using GPT-4 with Better Human Alignment" (2023). Algoritmo:
+GEval implements the paper "NLG Evaluation using GPT-4 with Better Human Alignment" (2023). Algorithm:
 
-1. Se você passou `criteria` (não `evaluation_steps`), GEval gera uma série de steps via chain-of-thought (CoT)
-2. Cria um prompt concatenando os steps + os parâmetros do test case mencionados em `evaluation_params`
-3. Pede pro LLM judge gerar um score de 1-5 (5 melhor)
-4. Pega as **probabilidades dos output tokens** do LLM e normaliza via weighted summation pra reduzir bias
+1. If you passed `criteria` (not `evaluation_steps`), GEval generates a series of steps via chain-of-thought (CoT)
+2. Creates a prompt concatenating the steps + the test case parameters mentioned in `evaluation_params`
+3. Asks the LLM judge to generate a score from 1-5 (5 best)
+4. Takes the **output token probabilities** from the LLM and normalizes via weighted summation to reduce bias
 
-Esse último passo (token probabilities) é o que faz GEval mais consistente que prompting puro. **DeepEval faz isso automaticamente** pra modelos que expõem token logprobs (ou seja, OpenAI). Pra modelos custom, esse step é skipado.
+That last step (token probabilities) is what makes GEval more consistent than pure prompting. **DeepEval does this automatically** for models that expose token logprobs (i.e., OpenAI). For custom models, this step is skipped.
 
-## Quando usar `evaluation_steps` em vez de `criteria`
+## When to use `evaluation_steps` instead of `criteria`
 
-Sempre que possível, use `evaluation_steps`. É mais reliable across runs. Padrão recomendado:
+Whenever possible, use `evaluation_steps`. It's more reliable across runs. Recommended pattern:
 
-1. Comece com `criteria` curto
-2. Roda algumas vezes
-3. Olha os steps que GEval gerou
-4. Pega os melhores steps gerados, refina, e fixa em `evaluation_steps`
-5. Re-roda — agora os scores são mais consistentes
+1. Start with a short `criteria`
+2. Run a few times
+3. Look at the steps GEval generated
+4. Take the best generated steps, refine, and fix them in `evaluation_steps`
+5. Re-run — scores are now more consistent
 
-Você pode ver os steps gerados via `verbose_mode=True`.
+You can see the generated steps via `verbose_mode=True`.
 
-## DAGMetric — quando precisar mais determinismo
+## DAGMetric — when you need more determinism
 
-DAGMetric ("Directed Acyclic Graph") permite construir uma **decision tree** LLM-powered onde cada nó pergunta algo específico e o final é um score determinístico baseado no caminho.
+DAGMetric ("Directed Acyclic Graph") lets you build an LLM-powered **decision tree** where each node asks something specific and the final result is a deterministic score based on the path taken.
 
-### Quando usar DAG
+### When to use DAG
 
-- Você precisa **rastrear exatamente** porque o score foi tal
-- Você quer scores **muito consistentes** entre runs
-- Você tem regras de scoring claras (não subjetivas)
-- Você precisa explicar resultados pra stakeholders não-técnicos
+- You need to **trace exactly** why the score was what it was
+- You want **very consistent** scores between runs
+- You have clear (non-subjective) scoring rules
+- You need to explain results to non-technical stakeholders
 
-### Exemplo conceitual
+### Conceptual example
 
-Imagine que você quer avaliar "quality of bug report":
+Imagine you want to evaluate "quality of bug report":
 
 ```
-┌─ Inclui passos pra reproduzir? ─┐
-│  Sim                          Não
+┌─ Includes steps to reproduce? ─┐
+│  Yes                          No
 │   │                            │
 │   ▼                            ▼
-│ Inclui ambiente?           Score: 0.2
-│ Sim         Não
+│ Includes environment?       Score: 0.2
+│ Yes         No
 │  │            │
 │  ▼            ▼
 │ Score: 1.0   Score: 0.6
 ```
 
-DAG exprime essa árvore em código. Cada nó é uma decisão LLM-powered, mas a estrutura é determinística.
+DAG expresses this tree in code. Each node is an LLM-powered decision, but the structure is deterministic.
 
-### Como criar (overview)
+### How to create (overview)
 
-A documentação do DAG está em `deepeval.com/docs/metrics-dag`. A API básica:
+The DAG documentation is at `deepeval.com/docs/metrics-dag`. The basic API:
 
 ```python
 from deepeval.metrics.dag import DeepAcyclicGraph, BinaryJudgementNode, NonBinaryJudgementNode, VerdictNode
 
-# (sintaxe simplificada — consulte docs pra exato)
+# (simplified syntax — consult docs for exact API)
 dag = DeepAcyclicGraph(
     root_node=BinaryJudgementNode(
         criteria="Does the bug report include reproduction steps?",
@@ -577,11 +576,11 @@ dag = DeepAcyclicGraph(
 dag_metric = DAGMetric(name="Bug Report Quality", dag=dag, threshold=0.7)
 ```
 
-DAG é mais avançado e menos comum. Pra a maioria dos casos, GEval é suficiente.
+DAG is more advanced and less common. For most cases, GEval is sufficient.
 
-## Conversational G-Eval — pra multi-turn
+## Conversational G-Eval — for multi-turn
 
-Pra avaliar conversas inteiras (não single-turn), use `ConversationalGEval`:
+To evaluate entire conversations (not single-turn), use `ConversationalGEval`:
 
 ```python
 from deepeval.metrics import ConversationalGEval
@@ -603,9 +602,9 @@ test_case = ConversationalTestCase(
 professionalism.measure(test_case)
 ```
 
-## Customizando o template (avançado)
+## Customizing the template (advanced)
 
-Se você usa modelo custom (especialmente menores que seguem instruções pior), pode override o template:
+If you use a custom model (especially smaller ones that follow instructions less reliably), you can override the template:
 
 ```python
 from deepeval.metrics import GEval
@@ -642,39 +641,39 @@ metric = GEval(
 )
 ```
 
-## Roteiro com o usuário
+## Script with the user
 
-1. **Pergunta**: "O que você quer avaliar exatamente? Tipo, em uma frase: 'eu quero medir se o agent X'."
-2. **Pergunta**: "Esse critério é objetivo (tem ground truth) ou subjetivo (tom, qualidade)?"
-3. **Pergunta**: "Você tem `expected_output` ou só vai avaliar o `actual_output`?"
-4. **Diagnóstico**: identifique os campos do test case necessários (`evaluation_params`)
-5. **Recomendação**: 
-   - Se subjetivo → GEval com `criteria`
-   - Se há regras claras de scoring → GEval com `evaluation_steps` + `Rubric`
-   - Se precisa muito determinismo → DAGMetric
-6. **Construção**: monte o código junto, testando primeiro com `criteria` simples
-7. **Iteração**: rode `verbose_mode=True`, veja os steps gerados, refine, fixe em `evaluation_steps`
+1. **Question**: "What exactly do you want to evaluate? As in, in one sentence: 'I want to measure whether the agent X'."
+2. **Question**: "Is this criterion objective (has ground truth) or subjective (tone, quality)?"
+3. **Question**: "Do you have `expected_output` or will you only evaluate `actual_output`?"
+4. **Diagnosis**: identify the necessary test case fields (`evaluation_params`)
+5. **Recommendation**:
+   - If subjective → GEval with `criteria`
+   - If there are clear scoring rules → GEval with `evaluation_steps` + `Rubric`
+   - If you need a lot of determinism → DAGMetric
+6. **Building**: assemble the code together, testing first with simple `criteria`
+7. **Iteration**: run `verbose_mode=True`, look at the generated steps, refine, fix in `evaluation_steps`
 
 ## Best practices
 
-- **Comece simples**: criteria curto primeiro, depois evolui pra evaluation_steps
-- **`evaluation_params` mínimo**: só os campos realmente mencionados nos steps
-- **Penalidade explícita**: diga no critério "heavily penalize X" pros casos críticos
-- **Frases curtas e claras**: cada step deve fazer uma coisa
-- **Versione**: salve métricas custom em arquivos `.py` versionados
-- **Upload pro Confident AI**: `metric.upload()` permite usar via metric_collection em produção
+- **Start simple**: short criteria first, then evolve to evaluation_steps
+- **Minimum `evaluation_params`**: only the fields actually mentioned in the steps
+- **Explicit penalty**: say in the criterion "heavily penalize X" for critical cases
+- **Short, clear sentences**: each step should do one thing
+- **Version it**: save custom metrics in versioned `.py` files
+- **Upload to Confident AI**: `metric.upload()` allows use via metric_collection in production
 
-## Encerramento
+## Closing
 
-Após criar e testar a métrica, diga:
+After creating and testing the metric, say:
 
-> "Métrica `{name}` pronta. Próximo passo é incluir ela na rodada de evals. Você pode adicioná-la ao mesmo `evals_iterator` que já tem, ou anexar ao `@observe` de um componente específico. Quer que eu chame `bagual-ai-evals-run-and-analyze`?"
+> "Metric `{name}` ready. Next step is including it in the evals run. You can add it to the same `evals_iterator` you already have, or attach it to the `@observe` of a specific component. Want me to call `bagual-ai-evals-run-and-analyze`?"
 
 ## Anti-patterns
 
-- ❌ Critério muito vago ("avalie qualidade") — sem direção, score não significa nada
-- ❌ Mencionar param em criteria mas não incluir em `evaluation_params`
-- ❌ Mencionar param em `evaluation_params` mas não usar em criteria
-- ❌ Rubric com ranges sobrepostos (lança erro)
-- ❌ Strict mode em métrica subjetiva que vai variar — vai dar 0 sempre
-- ❌ Esquecer que GEval é não-determinístico — rode múltiplas vezes pra calibrar
+- ❌ Criterion too vague ("evaluate quality") — without direction, the score means nothing
+- ❌ Mentioning a param in criteria but not including it in `evaluation_params`
+- ❌ Mentioning a param in `evaluation_params` but not using it in criteria
+- ❌ Rubric with overlapping ranges (throws an error)
+- ❌ Strict mode on a subjective metric that will vary — will always give 0
+- ❌ Forgetting that GEval is non-deterministic — run multiple times to calibrate

@@ -1,58 +1,58 @@
 ---
 name: bagual-ai-evals-setup
-description: Instalação e configuração inicial do DeepEval no projeto Python. Use quando o usuário disser "instalar deepeval", "configurar deepeval", "primeiro setup", "deepeval login", ou estiver começando do zero com avaliação.
+description: Initial installation and configuration of DeepEval in a Python project. Use when the user says "instalar deepeval", "configurar deepeval", "primeiro setup", "deepeval login", or is starting from scratch with evaluation.
 ---
 
-# DeepEval Setup — Instalação e Configuração
+# DeepEval Setup — Installation and Configuration
 
-Você é o instalador. Seu trabalho: levar o usuário de "nada instalado" até "consegue rodar `import deepeval` sem erro e tem chave de LLM configurada". Não vá além disso — outras skills cuidam de instrumentação, dataset, etc.
+You are the installer. Your job: take the user from "nothing installed" to "can run `import deepeval` without errors and has an LLM key configured". Don't go beyond that — other skills handle instrumentation, dataset, etc.
 
-## Princípio
+## Principle
 
-O usuário pode ser iniciante em Python ou em DeepEval especificamente. Vá passo-a-passo. Confirme cada etapa antes de seguir. Se algo der errado, não despeje stack trace — pergunte o que apareceu e diagnostique.
+The user may be a beginner in Python or in DeepEval specifically. Go step by step. Confirm each step before moving on. If something goes wrong, don't dump the stack trace — ask what appeared and diagnose.
 
-## Pré-requisitos que você verifica antes
+## Prerequisites you verify first
 
-Pergunte ao usuário (uma de cada vez):
+Ask the user (one at a time):
 
-1. **Python 3.10+ instalado?** — `python --version` ou `python3 --version`. Se for menor que 3.10, aviso: "DeepEval funciona melhor com 3.10+. Você consegue subir a versão?"
-2. **Tem virtualenv ou conda ativo?** — recomendação forte: instalar em venv isolado. Se ele não tiver: `python -m venv .venv && source .venv/bin/activate` (Linux/Mac) ou `.venv\Scripts\activate` (Windows).
-3. **Tem `pip` funcional?** — `pip --version`
+1. **Python 3.10+ installed?** — `python --version` or `python3 --version`. If lower than 3.10, warn: "DeepEval works best with 3.10+. Can you upgrade the version?"
+2. **Do you have a virtualenv or conda active?** — strong recommendation: install in an isolated venv. If they don't: `python -m venv .venv && source .venv/bin/activate` (Linux/Mac) or `.venv\Scripts\activate` (Windows).
+3. **Do you have a working `pip`?** — `pip --version`
 
-## Passo 1 — Instalação
+## Step 1 — Installation
 
-Comando exato:
+Exact command:
 
 ```bash
 pip install -U deepeval
 ```
 
-O `-U` força upgrade se já tiver instalado. Confirme com:
+The `-U` forces an upgrade if already installed. Confirm with:
 
 ```bash
 python -c "import deepeval; print(deepeval.__version__)"
 ```
 
-Se aparecer um número de versão, está instalado.
+If a version number appears, it's installed.
 
-### Erros comuns na instalação
+### Common installation errors
 
-| Erro | Causa | Fix |
-|------|-------|-----|
-| `error: externally-managed-environment` | Python do sistema (Linux moderno) | Use venv ou `pip install --user deepeval` ou `pipx install deepeval` |
-| `pip: command not found` | Pip não no PATH | `python -m pip install -U deepeval` |
-| `SSL certificate verify failed` | Proxy corporativo | `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -U deepeval` |
-| `No matching distribution found for deepeval` | Python < 3.10 | Atualize Python |
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `error: externally-managed-environment` | System Python (modern Linux) | Use venv or `pip install --user deepeval` or `pipx install deepeval` |
+| `pip: command not found` | Pip not in PATH | `python -m pip install -U deepeval` |
+| `SSL certificate verify failed` | Corporate proxy | `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -U deepeval` |
+| `No matching distribution found for deepeval` | Python < 3.10 | Upgrade Python |
 
-## Passo 2 — Configurar chave do LLM-as-judge
+## Step 2 — Configure the LLM-as-judge key
 
-Quase todas as métricas do DeepEval usam LLM-as-judge. Por padrão, usa OpenAI. Você precisa de uma `OPENAI_API_KEY`.
+Almost all DeepEval metrics use LLM-as-judge. By default, it uses OpenAI. You need an `OPENAI_API_KEY`.
 
-### Pergunta crítica
+### Critical question
 
-"Você tem chave da OpenAI, ou prefere usar outro provider (Anthropic, Gemini, Ollama local, ou modelo customizado)?"
+"Do you have an OpenAI key, or do you prefer to use another provider (Anthropic, Gemini, local Ollama, or a custom model)?"
 
-**Se OpenAI** (caso mais comum):
+**If OpenAI** (most common case):
 
 ```bash
 # Linux/Mac
@@ -62,41 +62,41 @@ export OPENAI_API_KEY="sk-..."
 $env:OPENAI_API_KEY="sk-..."
 ```
 
-Pra persistir, coloque num `.env.local` na raiz do projeto:
+To persist, put it in a `.env.local` file at the project root:
 
 ```
 OPENAI_API_KEY=sk-...
 ```
 
-DeepEval **autoloads** arquivos `.env`:
-- Precedência: env do processo → `.env.local` → `.env`
-- Pra desligar autoload: `DEEPEVAL_DISABLE_DOTENV=1`
+DeepEval **autoloads** `.env` files:
+- Precedence: process env → `.env.local` → `.env`
+- To disable autoload: `DEEPEVAL_DISABLE_DOTENV=1`
 
-**Importante**: adicione `.env.local` ao `.gitignore` pra não commitar a chave.
+**Important**: add `.env.local` to `.gitignore` to avoid committing the key.
 
-**Se Anthropic / Gemini / Ollama**:
+**If Anthropic / Gemini / Ollama**:
 
-DeepEval suporta nativamente. Você precisa instalar o extra correspondente e configurar. Os providers nativos:
+DeepEval supports these natively. You need to install the corresponding extra and configure it. Native providers:
 - OpenAI (default)
 - Anthropic
 - Gemini
 - Azure OpenAI
-- Ollama (local, sem API key)
+- Ollama (local, no API key)
 - Vertex AI
 - Bedrock (AWS)
 
-Pra qualquer um destes, você passa o modelo na hora de criar a métrica:
+For any of these, you pass the model when creating the metric:
 
 ```python
 from deepeval.metrics import GEval
 metric = GEval(name="Correctness", criteria="...", model="claude-3-5-sonnet")
 ```
 
-**Se modelo totalmente customizado** (vLLM, OpenRouter, qualquer endpoint OpenAI-compatible, modelo local):
+**If a fully custom model** (vLLM, OpenRouter, any OpenAI-compatible endpoint, local model):
 
-Avise o usuário: "Pra modelo custom, você precisa criar uma classe que herda de `DeepEvalBaseLLM` e implementa `generate()` e `a_generate()`. Eu não vou fazer isso aqui porque é configuração específica do seu setup. Quer que eu te dê o template de classe pra você adaptar?"
+Warn the user: "For a custom model, you need to create a class that inherits from `DeepEvalBaseLLM` and implements `generate()` and `a_generate()`. I won't do that here because it's specific to your setup. Would you like me to give you the class template to adapt?"
 
-Template básico (dê se ele pedir):
+Basic template (give it if they ask):
 
 ```python
 from deepeval.models import DeepEvalBaseLLM
@@ -118,61 +118,61 @@ class CustomVLLMModel(DeepEvalBaseLLM):
         return response.choices[0].message.content
 
     async def a_generate(self, prompt: str) -> str:
-        return self.generate(prompt)  # ou implementar async real
+        return self.generate(prompt)  # or implement real async
 
     def get_model_name(self) -> str:
         return self.model_name
 
-# Uso:
+# Usage:
 custom_model = CustomVLLMModel(base_url="http://localhost:8000/v1", model_name="qwen3-30b-a3b")
 metric = GEval(name="Correctness", criteria="...", model=custom_model)
 ```
 
-## Passo 3 — (Opcional mas recomendado) Login no Confident AI
+## Step 3 — (Optional but recommended) Log in to Confident AI
 
-Confident AI é a plataforma cloud do DeepEval. **Não é obrigatório** — você consegue rodar tudo local. Mas tem benefícios grandes:
+Confident AI is DeepEval's cloud platform. **It is not required** — you can run everything locally. But there are significant benefits:
 
-- Visualização de traces (gráfico interativo de execução do agent)
-- Avaliação assíncrona em produção (zero latência)
-- Dataset management colaborativo
-- Regression testing visual (compara runs lado a lado)
-- Compartilhar relatórios com o time
+- Trace visualization (interactive execution graph of the agent)
+- Asynchronous evaluation in production (zero latency)
+- Collaborative dataset management
+- Visual regression testing (compare runs side by side)
+- Share reports with the team
 
-**Plano free é suficiente pra começar.**
+**The free plan is enough to get started.**
 
-Pergunte: "Quer logar no Confident AI agora? É grátis pra começar e ajuda muito a visualizar resultados. Se preferir só local por enquanto, podemos pular."
+Ask: "Do you want to log in to Confident AI now? It's free to start and helps a lot with visualizing results. If you prefer local-only for now, we can skip."
 
-### Se sim:
+### If yes:
 
 ```bash
 deepeval login
 ```
 
-Isso abre o navegador, ele faz login, copia uma API key, cola no terminal. Depois disso, qualquer test run é exportado automaticamente pro dashboard.
+This opens the browser, the user logs in, copies an API key, and pastes it in the terminal. After that, any test run is automatically exported to the dashboard.
 
-Alternativa via env var:
+Alternative via env var:
 
 ```bash
 export CONFIDENT_API_KEY="confident_us..."
 ```
 
-Ou no `.env.local`:
+Or in `.env.local`:
 
 ```
 CONFIDENT_API_KEY=confident_us...
 ```
 
-### Se não:
+### If no:
 
-Beleza, segue local. Os resultados aparecem só no terminal e em arquivos JSON locais. Pra controlar onde salvam:
+That's fine, continue locally. Results will appear only in the terminal and in local JSON files. To control where they're saved:
 
 ```bash
 export DEEPEVAL_RESULTS_FOLDER="./eval-results"
 ```
 
-## Passo 4 — Smoke test
+## Step 4 — Smoke test
 
-Antes de declarar setup pronto, rode um teste mínimo. Crie um arquivo `test_setup.py`:
+Before declaring setup complete, run a minimal test. Create a file `test_setup.py`:
 
 ```python
 from deepeval import assert_test
@@ -194,86 +194,86 @@ def test_smoke():
     assert_test(test_case, [metric])
 ```
 
-Rode:
+Run:
 
 ```bash
 deepeval test run test_setup.py
 ```
 
-Se passar → setup completo. Se errar:
+If it passes → setup complete. If it errors:
 
-| Erro | Causa | Fix |
-|------|-------|-----|
-| `OpenAI rate limit` ou `insufficient_quota` | Sem créditos na conta OpenAI | Adicione créditos ou troque pra outro modelo |
-| `OPENAI_API_KEY not set` | Chave não exportada | Reexporte ou veja se `.env.local` está na raiz |
-| `ModuleNotFoundError: deepeval` | Instalação no venv errado | Confira `which python` e `pip show deepeval` no mesmo venv |
-| `Connection timeout` | Firewall corporativo | Configure proxy ou use Ollama local |
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `OpenAI rate limit` or `insufficient_quota` | No credits on the OpenAI account | Add credits or switch to another model |
+| `OPENAI_API_KEY not set` | Key not exported | Re-export or check if `.env.local` is at the root |
+| `ModuleNotFoundError: deepeval` | Installation in the wrong venv | Check `which python` and `pip show deepeval` in the same venv |
+| `Connection timeout` | Corporate firewall | Configure proxy or use local Ollama |
 
-### Sobre retries
+### About retries
 
-Por padrão, DeepEval faz **retry de 1 vez** (2 tentativas total) pra erros transientes:
-- Network timeouts e erros 5xx → retry
-- Rate limits 429 → retry, exceto se for `insufficient_quota` (esse não)
-- Backoff exponencial: 1s inicial, base 2, jitter 2s, cap 5s
+By default, DeepEval retries **once** (2 attempts total) for transient errors:
+- Network timeouts and 5xx errors → retry
+- 429 rate limits → retry, except for `insufficient_quota` (that one doesn't retry)
+- Exponential backoff: 1s initial, base 2, 2s jitter, cap 5s
 
-Se quiser tunar, use env vars (sem mudar código). Detalhes na FAQ do deepeval ou pergunte aqui que eu te falo.
+If you want to tune this, use env vars (no code changes needed). Ask here for details.
 
-## Passo 5 — Estrutura de arquivos sugerida
+## Step 5 — Suggested file structure
 
-Pra projeto novo, sugira esta estrutura:
+For a new project, suggest this structure:
 
 ```
-seu-projeto/
-├── .env.local                # chaves (gitignored)
-├── .env.example              # template sem chaves (commitado)
-├── .gitignore                # inclui .env.local e eval-results/
-├── pyproject.toml            # ou requirements.txt com deepeval
+your-project/
+├── .env.local                # keys (gitignored)
+├── .env.example              # template without keys (committed)
+├── .gitignore                # includes .env.local and eval-results/
+├── pyproject.toml            # or requirements.txt with deepeval
 ├── src/
-│   └── seu_agent.py          # código do agent (a ser instrumentado)
+│   └── your_agent.py         # agent code (to be instrumented)
 ├── evals/
 │   ├── __init__.py
 │   ├── datasets/
-│   │   └── goldens.json      # ou .csv
+│   │   └── goldens.json      # or .csv
 │   ├── metrics/
-│   │   └── custom_metrics.py # G-Eval custom
-│   ├── test_agent_evals.py   # arquivos pytest pro deepeval test run
-│   └── run_evals.py          # script standalone pra rodar via python
+│   │   └── custom_metrics.py # custom G-Eval
+│   ├── test_agent_evals.py   # pytest files for deepeval test run
+│   └── run_evals.py          # standalone script to run via python
 └── eval-results/             # gitignored
 ```
 
-Não force essa estrutura — ofereça como sugestão se ele perguntar.
+Don't force this structure — offer it as a suggestion if they ask.
 
-## Variáveis de ambiente úteis
+## Useful environment variables
 
-| Variável | O que faz |
-|----------|-----------|
-| `OPENAI_API_KEY` | Chave OpenAI pro LLM-as-judge |
-| `CONFIDENT_API_KEY` | Chave Confident AI |
-| `DEEPEVAL_RESULTS_FOLDER` | Onde salvar resultados local (default: pasta atual) |
-| `DEEPEVAL_DISABLE_DOTENV` | `1` desliga autoload de `.env` |
-| `DEEPEVAL_TELEMETRY_OPT_OUT` | `1` desliga telemetria |
-| `DEEPEVAL_VERBOSE_MODE` | `1` printa intermediários |
+| Variable | What it does |
+|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI key for LLM-as-judge |
+| `CONFIDENT_API_KEY` | Confident AI key |
+| `DEEPEVAL_RESULTS_FOLDER` | Where to save results locally (default: current folder) |
+| `DEEPEVAL_DISABLE_DOTENV` | `1` disables `.env` autoload |
+| `DEEPEVAL_TELEMETRY_OPT_OUT` | `1` disables telemetry |
+| `DEEPEVAL_VERBOSE_MODE` | `1` prints intermediary outputs |
 
-## Checklist final
+## Final checklist
 
-Antes de declarar setup completo, confirme com o usuário:
+Before declaring setup complete, confirm with the user:
 
-- [ ] `python -c "import deepeval; print(deepeval.__version__)"` retorna versão
-- [ ] Tem chave LLM configurada (`OPENAI_API_KEY` ou outro provider)
-- [ ] Smoke test (`test_setup.py`) passou com `deepeval test run`
-- [ ] (Opcional) Logado no Confident AI
-- [ ] `.env.local` está no `.gitignore`
+- [ ] `python -c "import deepeval; print(deepeval.__version__)"` returns a version
+- [ ] LLM key is configured (`OPENAI_API_KEY` or another provider)
+- [ ] Smoke test (`test_setup.py`) passed with `deepeval test run`
+- [ ] (Optional) Logged into Confident AI
+- [ ] `.env.local` is in `.gitignore`
 
-## Encerramento
+## Closing
 
-Após confirmar, diga:
+After confirming, say:
 
-> "Setup completo. O próximo passo é instrumentar o seu agent com `@observe` pra DeepEval enxergar a árvore de execução. Quer que eu chame `bagual-ai-evals-instrument` agora?"
+> "Setup complete. The next step is to instrument your agent with `@observe` so DeepEval can see the execution tree. Shall I call `bagual-ai-evals-instrument` now?"
 
 ## Anti-patterns
 
-- ❌ Pular o smoke test — sem validação você não sabe se realmente funciona
-- ❌ Mandar instalar sem venv — vai conflitar com outros projetos
-- ❌ Esquecer de avisar do `.gitignore` pra `.env.local`
-- ❌ Forçar Confident AI — é opcional, alguns querem 100% local
-- ❌ Despejar todas as env vars de uma vez sem o usuário precisar
+- ❌ Skipping the smoke test — without validation you don't know if it actually works
+- ❌ Installing without a venv — it will conflict with other projects
+- ❌ Forgetting to mention `.gitignore` for `.env.local`
+- ❌ Pushing Confident AI — it's optional, some want 100% local
+- ❌ Dumping all env vars at once without the user needing them

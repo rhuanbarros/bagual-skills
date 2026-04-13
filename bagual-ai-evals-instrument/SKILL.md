@@ -1,49 +1,49 @@
 ---
 name: bagual-ai-evals-instrument
-description: Instrumentação do código do AI agent com @observe para DeepEval enxergar a árvore de execução. Use quando o usuário disser "instrumentar agent", "adicionar tracing", "como decorar o agent", "usar @observe", "instrumentar langgraph", "instrumentar crewai", ou similar.
+description: Instrumenting AI agent code with @observe so DeepEval can see the execution tree. Use when the user says "instrument agent", "add tracing", "how to decorate the agent", "use @observe", "instrument langgraph", "instrument crewai", or similar.
 ---
 
-# DeepEval Instrument — Adicionando @observe ao Agent
+# DeepEval Instrument — Adding @observe to the Agent
 
-Você é o instrumentador. Seu trabalho: pegar o código de um agent (que pode ser Python puro ou usar um framework) e adicionar os decoradores `@observe` certos pra DeepEval mapear a árvore de execução. Sem isso, métricas como `ToolCorrectnessMetric` e `TaskCompletionMetric` não funcionam.
+You are the instrumenter. Your job: take the code of an agent (which may be plain Python or use a framework) and add the right `@observe` decorators so DeepEval can map the execution tree. Without this, metrics like `ToolCorrectnessMetric` and `TaskCompletionMetric` will not work.
 
-## Conceito central — em uma frase
+## Core concept — in one sentence
 
-Tracing é o que transforma o agent de **caixa-preta** (input → output) em **caixa-de-vidro** (input → reasoning → tool calls → tool outputs → reasoning → ... → output). DeepEval precisa enxergar a árvore inteira pra avaliar componentes individualmente.
+Tracing is what transforms the agent from a **black box** (input → output) into a **glass box** (input → reasoning → tool calls → tool outputs → reasoning → ... → output). DeepEval needs to see the entire tree to evaluate individual components.
 
-## O que `@observe` faz
+## What `@observe` does
 
-- Marca uma função como **span** dentro de uma trace
-- Captura input e output automaticamente
-- Aninha child spans automaticamente baseado na call stack (via `ContextVar`)
-- **Não adiciona latência** — é não-intrusivo
-- Permite anexar métricas direto à função: `@observe(metrics=[...])`
+- Marks a function as a **span** within a trace
+- Captures input and output automatically
+- Nests child spans automatically based on the call stack (via `ContextVar`)
+- **Adds no latency** — it's non-intrusive
+- Allows attaching metrics directly to the function: `@observe(metrics=[...])`
 
-## Os 4 tipos de span
+## The 4 span types
 
-| Tipo | O que representa | Onde colocar |
+| Type | What it represents | Where to place it |
 |------|------------------|--------------|
-| `agent` | Orquestrador raiz, top-level do agent | Função principal do agent |
-| `llm` | Chamada de inferência do LLM | Função que chama `client.chat.completions.create()` ou similar |
-| `tool` | Execução de tool externa (API, função, DB) | Cada função decorada como tool |
-| `retriever` | Fetch de contexto (RAG) | Função que faz busca vetorial / recupera docs |
+| `agent` | Root orchestrator, top-level of the agent | Main agent function |
+| `llm` | LLM inference call | Function that calls `client.chat.completions.create()` or similar |
+| `tool` | External tool execution (API, function, DB) | Each function decorated as a tool |
+| `retriever` | Context fetch (RAG) | Function that does vector search / retrieves docs |
 
-A regra de ouro: **decore as funções, não as classes**. DeepEval rastreia chamadas de função.
+The golden rule: **decorate functions, not classes**. DeepEval tracks function calls.
 
-## Pergunta crítica antes de começar
+## Critical question before starting
 
-"Você está usando algum framework de agent, ou é Python puro?"
+"Are you using any agent framework, or is it plain Python?"
 
-- **Python puro / OpenAI direto** → siga seção "Instrumentação manual"
-- **LangGraph** → seção "LangGraph"
-- **CrewAI** → seção "CrewAI"
-- **LlamaIndex** → seção "LlamaIndex"
-- **Pydantic AI** → seção "Pydantic AI"
-- **OpenAI Agents SDK** → seção "OpenAI Agents"
+- **Plain Python / OpenAI direct** → follow the "Manual instrumentation" section
+- **LangGraph** → "LangGraph" section
+- **CrewAI** → "CrewAI" section
+- **LlamaIndex** → "LlamaIndex" section
+- **Pydantic AI** → "Pydantic AI" section
+- **OpenAI Agents SDK** → "OpenAI Agents" section
 
-## Instrumentação manual (Python puro)
+## Manual instrumentation (plain Python)
 
-Você adiciona decoradores nas funções relevantes. Aqui o exemplo completo de um travel agent:
+You add decorators to the relevant functions. Here is the complete example of a travel agent:
 
 ```python
 import json
@@ -52,18 +52,18 @@ from deepeval.tracing import observe
 
 client = OpenAI()
 
-# Tools — cada uma decorada como type="tool"
+# Tools — each decorated with type="tool"
 @observe(type="tool", description="Search for available flights between two cities")
 def search_flights(origin: str, destination: str, date: str) -> list:
-    # sua API aqui
+    # your API here
     return [{"id": "FL123", "price": 450}, {"id": "FL456", "price": 380}]
 
 @observe(type="tool", description="Book a flight by ID")
 def book_flight(flight_id: str) -> dict:
-    # sua API aqui
+    # your API here
     return {"confirmation": "CONF-789", "flight_id": flight_id}
 
-# A função que chama o LLM — decorada como type="llm"
+# The function that calls the LLM — decorated with type="llm"
 @observe(type="llm")
 def call_llm(messages: list) -> str:
     response = client.chat.completions.create(
@@ -73,7 +73,7 @@ def call_llm(messages: list) -> str:
     )
     return response
 
-# O orquestrador — decorado como type="agent" no topo
+# The orchestrator — decorated with type="agent" at the top
 @observe(
     type="agent",
     available_tools=["search_flights", "book_flight"],
@@ -82,85 +82,85 @@ def travel_agent(user_input: str) -> str:
     messages = [{"role": "user", "content": user_input}]
     while True:
         response = call_llm(messages)
-        # ... lógica de loop ...
+        # ... loop logic ...
         if final_answer:
             return final_answer
 ```
 
-Quando você chama `travel_agent("Reserve um voo NYC→Paris")`, DeepEval automaticamente cria uma árvore:
+When you call `travel_agent("Book a flight NYC→Paris")`, DeepEval automatically creates a tree:
 
 ```
 agent: travel_agent
-├── llm: call_llm (chamada 1)
+├── llm: call_llm (call 1)
 ├── tool: search_flights
-├── llm: call_llm (chamada 2)
+├── llm: call_llm (call 2)
 ├── tool: book_flight
-└── llm: call_llm (chamada 3, gera resposta final)
+└── llm: call_llm (call 3, generates final response)
 ```
 
-### Atributos especiais do `agent` span
+### Special attributes of the `agent` span
 
-| Atributo | O que faz |
+| Attribute | What it does |
 |----------|-----------|
-| `available_tools` | Lista (estática) das tools que o agent pode usar. Aparece no Confident AI e ajuda métricas a entender o universo de opções. |
-| `agent_handoffs` | Lista de outros agents que esse pode delegar pra (multi-agent). |
-| `metric_collection` | Nome de coleção de métricas no Confident AI pra rodar async em produção. |
-| `metrics` | Lista de métricas pra rodar **síncronas** durante dev. |
+| `available_tools` | (Static) list of tools the agent can use. Appears in Confident AI and helps metrics understand the universe of options. |
+| `agent_handoffs` | List of other agents this one can delegate to (multi-agent). |
+| `metric_collection` | Name of a metric collection in Confident AI to run async in production. |
+| `metrics` | List of metrics to run **synchronously** during dev. |
 
-### Atributos do `tool` span
+### Attributes of the `tool` span
 
-| Atributo | O que faz |
+| Attribute | What it does |
 |----------|-----------|
-| `description` | Descrição da tool. Loga no span e propaga automaticamente pro `tools_called` do LLM span pai. |
+| `description` | Description of the tool. Logged on the span and automatically propagated to the `tools_called` attribute of the parent LLM span. |
 
-### Como tools_called é populado automaticamente
+### How tools_called is populated automatically
 
-Quando uma função `type="tool"` executa **dentro** de uma `type="llm"`, DeepEval **automaticamente** infere que essa tool foi chamada por aquela inferência LLM e popula o atributo `tools_called` do LLM span. Você não precisa setar manualmente.
+When a `type="tool"` function executes **inside** a `type="llm"`, DeepEval **automatically** infers that this tool was called by that LLM inference and populates the `tools_called` attribute of the LLM span. You don't need to set it manually.
 
 ```python
 @observe(type="llm")
 def call_openai(messages):
     response = client.chat.completions.create(...)
     
-    # Se aqui dentro alguma função @observe(type="tool") for chamada,
-    # DeepEval anota ela em tools_called do span deste call_openai automaticamente.
+    # If any @observe(type="tool") function is called inside here,
+    # DeepEval records it in tools_called for this call_openai span automatically.
     
     if tool_call:
-        result = search_flights(...)  # type="tool" → vira child span
+        result = search_flights(...)  # type="tool" → becomes a child span
     
     return response
 ```
 
 ## Multi-Agent
 
-Quando um agent delega pra outro agent, DeepEval rastreia automaticamente porque `@observe` usa `ContextVar` pra ver a call stack.
+When one agent delegates to another, DeepEval tracks it automatically because `@observe` uses `ContextVar` to see the call stack.
 
 ```python
 @observe(type="agent", available_tools=["search_hotels"], agent_handoffs=[])
 def hotel_agent(request: str) -> str:
-    # lógica do sub-agent
+    # sub-agent logic
     return result
 
 @observe(
     type="agent",
     available_tools=["search_flights"],
-    agent_handoffs=["hotel_agent"],  # declaração estática do que é POSSÍVEL
+    agent_handoffs=["hotel_agent"],  # static declaration of what is POSSIBLE
 )
 def travel_coordinator(request: str) -> str:
     flights = search_flights(...)
     
-    # Quando travel_coordinator chama hotel_agent, hotel_agent vira
-    # child span do travel_coordinator AUTOMATICAMENTE.
-    hotels = hotel_agent("Hotel pra Dec 1st em LAX")
+    # When travel_coordinator calls hotel_agent, hotel_agent becomes
+    # a child span of travel_coordinator AUTOMATICALLY.
+    hotels = hotel_agent("Hotel for Dec 1st in LAX")
     
-    return f"Voos: {flights}, Hotéis: {hotels}"
+    return f"Flights: {flights}, Hotels: {hotels}"
 ```
 
-**Importante**: `agent_handoffs` é uma **declaração estática** do que é possível. As delegações reais que ocorrem em runtime são capturadas dinamicamente pelo span tree em si.
+**Important**: `agent_handoffs` is a **static declaration** of what is possible. The actual delegations that occur at runtime are captured dynamically by the span tree itself.
 
-## Ground truth pra avaliação — `expected_tools`
+## Ground truth for evaluation — `expected_tools`
 
-Pra `ToolCorrectnessMetric` calcular precisão/recall, ele precisa saber quais tools **deveriam** ter sido chamadas. Você fornece isso via `update_current_span` dentro do LLM span:
+For `ToolCorrectnessMetric` to calculate precision/recall, it needs to know which tools **should** have been called. You provide this via `update_current_span` inside the LLM span:
 
 ```python
 from deepeval.tracing import observe, update_current_span
@@ -170,14 +170,14 @@ from deepeval.test_case import ToolCall
 def call_llm(messages: list, expected_tool_calls: list = None) -> str:
     response = client.chat.completions.create(model="gpt-4o", messages=messages)
     
-    # Anexa ground truth pro componente
+    # Attach ground truth to the component
     if expected_tool_calls:
         update_current_span(expected_tools=expected_tool_calls)
     
     return response
 ```
 
-E o golden do dataset traz essa info:
+And the dataset golden carries this info:
 
 ```python
 from deepeval.dataset import Golden
@@ -189,7 +189,7 @@ golden = Golden(
 )
 ```
 
-Quando você roda `evals_iterator`, o Golden é exposto via `get_current_golden()` e você pega o `expected_tools` dele:
+When you run `evals_iterator`, the Golden is exposed via `get_current_golden()` and you retrieve its `expected_tools`:
 
 ```python
 from deepeval.dataset import get_current_golden
@@ -205,9 +205,9 @@ def call_llm(messages):
     return response
 ```
 
-## LangGraph (auto-instrumentação) — IMPORTANTE PRA QUEM USA LANGGRAPH
+## LangGraph (auto-instrumentation) — IMPORTANT FOR LANGGRAPH USERS
 
-Se você usa LangGraph, **não precisa adicionar `@observe` manualmente**. DeepEval tem uma integração nativa: você passa um `CallbackHandler` no `config` quando invoca o graph, e ele intercepta chain, LLM e tool events automaticamente, montando a árvore de spans.
+If you use LangGraph, **you don't need to add `@observe` manually**. DeepEval has a native integration: you pass a `CallbackHandler` in the `config` when invoking the graph, and it intercepts chain, LLM, and tool events automatically, assembling the span tree.
 
 ```python
 from langgraph.prebuilt import create_react_agent
@@ -223,25 +223,25 @@ agent = create_react_agent(
     prompt="You are a helpful assistant",
 )
 
-# Passa CallbackHandler como config — todos os spans são capturados automaticamente
+# Pass CallbackHandler as config — all spans are captured automatically
 result = agent.invoke(
     input={"messages": [{"role": "user", "content": "What's the weather in Paris?"}]},
     config={"callbacks": [CallbackHandler()]},
 )
 ```
 
-Pra graphs custom (não `create_react_agent`), passa o `CallbackHandler` no mesmo lugar — qualquer execução dentro daquele graph fica rastreada.
+For custom graphs (not `create_react_agent`), pass the `CallbackHandler` in the same place — any execution inside that graph gets traced.
 
-## CrewAI (auto-instrumentação)
+## CrewAI (auto-instrumentation)
 
-Uma linha antes de definir o crew:
+One line before defining the crew:
 
 ```python
 from crewai import Task, Crew, Agent
 from crewai.tools import tool
 from deepeval.integrations.crewai import instrument_crewai
 
-instrument_crewai()  # ← uma linha, registra event listener
+instrument_crewai()  # ← one line, registers event listener
 
 @tool
 def get_weather(city: str) -> str:
@@ -262,10 +262,10 @@ task = Task(
 )
 
 crew = Crew(agents=[agent], tasks=[task])
-crew.kickoff({"city": "Paris"})  # tudo capturado automaticamente
+crew.kickoff({"city": "Paris"})  # everything captured automatically
 ```
 
-## LlamaIndex (auto-instrumentação)
+## LlamaIndex (auto-instrumentation)
 
 ```python
 import llama_index.core.instrumentation as instrument
@@ -273,7 +273,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.core.agent import FunctionAgent
 from deepeval.integrations.llama_index import instrument_llama_index
 
-# One-liner: auto-instrumenta todos os spans
+# One-liner: auto-instruments all spans
 instrument_llama_index(instrument.get_dispatcher())
 
 def get_weather(city: str) -> str:
@@ -290,7 +290,7 @@ import asyncio
 result = asyncio.run(agent.run("What's the weather in Paris?"))
 ```
 
-## Pydantic AI (auto-instrumentação)
+## Pydantic AI (auto-instrumentation)
 
 ```python
 from pydantic_ai import Agent
@@ -299,21 +299,21 @@ from deepeval.integrations.pydantic_ai import ConfidentInstrumentationSettings
 agent = Agent(
     "openai:gpt-4o-mini",
     instructions="You are a helpful travel assistant.",
-    instrument=ConfidentInstrumentationSettings(),  # ← exporta via OTel
+    instrument=ConfidentInstrumentationSettings(),  # ← exports via OTel
 )
 
 result = agent.run_sync("Book me a flight from JFK to LAX.")
 ```
 
-Esse exporta via OpenTelemetry pro Confident AI automaticamente.
+This exports via OpenTelemetry to Confident AI automatically.
 
-## OpenAI Agents SDK (auto-instrumentação)
+## OpenAI Agents SDK (auto-instrumentation)
 
 ```python
 from agents import Runner, add_trace_processor
 from deepeval.openai_agents import Agent, DeepEvalTracingProcessor
 
-# Registra global, uma vez
+# Register globally, once
 add_trace_processor(DeepEvalTracingProcessor())
 
 travel_agent = Agent(
@@ -324,88 +324,88 @@ travel_agent = Agent(
 result = Runner.run_sync(travel_agent, "Book me a flight from JFK to LAX.")
 ```
 
-## Verificando que funcionou — acesso local ao trace
+## Verifying it worked — local trace access
 
-Mesmo sem Confident AI, você pode ver as traces capturadas in-memory:
+Even without Confident AI, you can see the captured traces in-memory:
 
 ```python
 from deepeval.tracing import trace_manager
 
-# Roda o agent
-travel_agent("Reserve voo NYC→Paris")
+# Run the agent
+travel_agent("Book flight NYC→Paris")
 
-# Pega todas as traces como dicts Python
+# Get all traces as Python dicts
 traces = trace_manager.get_all_traces_dict()
 
 for trace in traces:
     print(f"Input: {trace.get('input')}")
     print(f"Output: {trace.get('output')}")
     
-    # Inspeciona cada span
+    # Inspect each span
     for span_type in ["agentSpans", "llmSpans", "toolSpans"]:
         for span in trace.get(span_type, []):
             print(f"  [{span_type}] {span.get('name')}: {span.get('input')} → {span.get('output')}")
 ```
 
-**Tip**: use `trace_manager.clear_traces()` entre rodadas pra não acumular traces antigas em memória.
+**Tip**: use `trace_manager.clear_traces()` between runs to avoid accumulating old traces in memory.
 
-## Roteiro de instrumentação que você segue com o usuário
+## Instrumentation script you follow with the user
 
-1. **Pergunta**: "Qual framework? Python puro / LangGraph / CrewAI / LlamaIndex / Pydantic AI / OpenAI Agents?"
-2. **Pergunta**: "Pode me mostrar o código atual do seu agent? Ou pelo menos a estrutura: qual função é o orquestrador, quais funções são tools, qual chama o LLM?"
-3. **Diagnóstico**: olhe o código e identifique:
-   - Função orquestradora → vai virar `@observe(type="agent")`
-   - Função(ões) que chamam LLM → vai virar `@observe(type="llm")`
-   - Funções que chamam APIs/DB/funções externas → vão virar `@observe(type="tool")`
-   - Se tem RAG → função de retrieval vira `@observe(type="retriever")`
-4. **Aplica**: edite o código junto com o usuário, mostrando antes/depois.
-5. **Valida**: rode uma vez, depois `trace_manager.get_all_traces_dict()` e mostre o trace dict.
+1. **Question**: "What framework? Plain Python / LangGraph / CrewAI / LlamaIndex / Pydantic AI / OpenAI Agents?"
+2. **Question**: "Can you show me the current code of your agent? Or at least the structure: which function is the orchestrator, which functions are tools, which one calls the LLM?"
+3. **Diagnosis**: look at the code and identify:
+   - Orchestrator function → will become `@observe(type="agent")`
+   - Function(s) that call the LLM → will become `@observe(type="llm")`
+   - Functions that call APIs/DB/external functions → will become `@observe(type="tool")`
+   - If there's RAG → the retrieval function becomes `@observe(type="retriever")`
+4. **Apply**: edit the code together with the user, showing before/after.
+5. **Validate**: run it once, then `trace_manager.get_all_traces_dict()` and show the trace dict.
 
-## Erros comuns na instrumentação
+## Common instrumentation errors
 
-| Erro | Causa | Fix |
+| Error | Cause | Fix |
 |------|-------|-----|
-| Spans não nidificam | Está chamando função não decorada no meio | Decore a função intermediária, ou faça call direto |
-| `tools_called` vazio | Tool não tá decorada como `type="tool"` | Confira o decorator |
-| Métrica não roda | Não tá usando `evals_iterator` | Use o pattern `for golden in dataset.evals_iterator(metrics=[...]): your_agent(golden.input)` |
-| Traces vazias | Não rodou o agent dentro do contexto rastreável | Confira que o `@observe(type="agent")` está aplicado |
-| Multi-agent não nidifica | Sub-agent foi chamado fora do call stack do parent | Garanta que sub-agent é chamado de dentro do parent diretamente |
+| Spans don't nest | Calling an undecorated function in the middle | Decorate the intermediate function, or make a direct call |
+| `tools_called` is empty | Tool is not decorated with `type="tool"` | Check the decorator |
+| Metric doesn't run | Not using `evals_iterator` | Use the pattern `for golden in dataset.evals_iterator(metrics=[...]): your_agent(golden.input)` |
+| Empty traces | Agent was not run inside a traceable context | Check that `@observe(type="agent")` is applied |
+| Multi-agent doesn't nest | Sub-agent was called outside the parent's call stack | Ensure the sub-agent is called directly from within the parent |
 
-## Como rodar evals com agent instrumentado
+## How to run evals with an instrumented agent
 
-Esse padrão você vai usar muito (e tá detalhado em `bagual-ai-evals-run-and-analyze`):
+You'll use this pattern often (and it's detailed in `bagual-ai-evals-run-and-analyze`):
 
 ```python
 from deepeval.dataset import EvaluationDataset, Golden
 from deepeval.metrics import TaskCompletionMetric
 
 dataset = EvaluationDataset(goldens=[
-    Golden(input="Reserve um voo de NYC pra Paris pra próxima segunda"),
+    Golden(input="Book a flight from NYC to Paris for next Monday"),
 ])
 
 task_completion = TaskCompletionMetric(threshold=0.7)
 
-# Loop através do dataset
+# Loop through the dataset
 for golden in dataset.evals_iterator(metrics=[task_completion]):
-    travel_agent(golden.input)  # qualquer função decorada com @observe(type="agent")
+    travel_agent(golden.input)  # any function decorated with @observe(type="agent")
 ```
 
-DeepEval automaticamente coleta as traces dentro do `evals_iterator` e roda as métricas nelas.
+DeepEval automatically collects the traces inside `evals_iterator` and runs the metrics on them.
 
-## Encerramento
+## Closing
 
-Após instrumentar e validar, o próximo passo depende de onde o usuário está:
+After instrumenting and validating, the next step depends on where the user is:
 
-**Se já tem tráfego de produção ou pode rodar o agent contra inputs reais**:
-> "Beleza, agent instrumentado. Agora que você consegue gerar traces reais, o próximo passo crítico é **trace review** — ler 30-50 outputs do agent pra descobrir os modos de falha reais antes de escrever evals. Isso é o que separa eval system real de vibe-check disfarçado. Quer que eu chame `bagual-ai-evals-error-analysis`?"
+**If they already have production traffic or can run the agent against real inputs**:
+> "Great, agent instrumented. Now that you can generate real traces, the critical next step is **trace review** — reading 30-50 agent outputs to discover the real failure modes before writing evals. This is what separates a real eval system from a disguised vibe-check. Want me to call `bagual-ai-evals-error-analysis`?"
 
-**Se ainda não tem como gerar traces reais**:
-> "Beleza, agent instrumentado. Próximo passo é criar dataset inicial de goldens pra conseguir rodar o agent e gerar traces. Quer que eu chame `bagual-ai-evals-build-dataset`? Depois disso, recomendo fortemente fazer trace review via `bagual-ai-evals-error-analysis` antes de escolher métricas — é o passo que a maioria dos times pula e que mais determina qualidade dos evals."
+**If they can't yet generate real traces**:
+> "Great, agent instrumented. Next step is creating an initial golden dataset to be able to run the agent and generate traces. Want me to call `bagual-ai-evals-build-dataset`? After that, I strongly recommend doing trace review via `bagual-ai-evals-error-analysis` before choosing metrics — it's the step most teams skip and the one that most determines eval quality."
 
 ## Anti-patterns
 
-- ❌ Decorar **todas** as funções — só decore as relevantes (orchestrator, LLM call, tools, retriever)
-- ❌ Usar `@observe()` sem `type=` — funciona mas perde a semântica e a visualização piora
-- ❌ Esquecer de `update_current_span(expected_tools=...)` quando vai usar `ToolCorrectnessMetric`
-- ❌ Misturar instrumentação manual com auto-instrument do framework — escolha um caminho
-- ❌ Decorar uma função e chamar ela fora do contexto do `evals_iterator` esperando que métricas rodem
+- ❌ Decorating **all** functions — only decorate the relevant ones (orchestrator, LLM call, tools, retriever)
+- ❌ Using `@observe()` without `type=` — it works but loses semantics and the visualization degrades
+- ❌ Forgetting `update_current_span(expected_tools=...)` when you're going to use `ToolCorrectnessMetric`
+- ❌ Mixing manual instrumentation with the framework's auto-instrumentation — choose one path
+- ❌ Decorating a function and calling it outside the `evals_iterator` context expecting metrics to run

@@ -1,44 +1,44 @@
 ---
 name: bagual-ai-evals-pick-metrics
-description: Seleção das métricas DeepEval certas para o tipo de agent e objetivos. Use quando o usuário disser "qual métrica usar", "escolher métricas", "que métricas pra meu agent", "tool correctness", "task completion", "métricas de planning" ou similar.
+description: Selecting the right DeepEval metrics for the agent type and objectives. Use when the user says "which metric to use", "pick metrics", "what metrics for my agent", "tool correctness", "task completion", "planning metrics", or similar.
 ---
 
-# DeepEval Pick Metrics — Escolhendo as Métricas Certas
+# DeepEval Pick Metrics — Choosing the Right Metrics
 
-Você é o consultor de métricas. Seu trabalho: ajudar o usuário a escolher o conjunto **mínimo necessário** de métricas pro caso dele, e configurar elas com `threshold` e escopo (end-to-end vs component-level) corretos.
+You are the metrics consultant. Your job: help the user choose the **minimum necessary** set of metrics for their case, and configure them with the correct `threshold` and scope (end-to-end vs component-level).
 
-## ⚠️ Leia antes: métricas built-in não substituem judges product-specific
+## ⚠️ Read first: built-in metrics don't replace product-specific judges
 
-Antes de escolher métricas built-in, confirme com o usuário: **as 6 métricas built-in do DeepEval são "genéricas" por design**. Elas cobrem os layers (reasoning/action/execution) de um jeito que funciona pra qualquer agent, mas **elas não substituem evals product-specific** derivadas de trace review.
+Before choosing built-in metrics, confirm with the user: **DeepEval's 6 built-in metrics are "generic" by design**. They cover the layers (reasoning/action/execution) in a way that works for any agent, but **they don't replace product-specific evals** derived from trace review.
 
-A recomendação ideal é **combinar os dois**:
+The ideal recommendation is to **combine both**:
 
-| Camada de eval | Como construir | O que pega |
+| Eval layer | How to build | What it catches |
 |----------------|----------------|------------|
-| **Built-in (essa skill)** | Escolha das 6 métricas — TaskCompletion, ToolCorrectness, etc | Falhas estruturais genéricas (não completou, tool errada, ineficiente) |
-| **Product-specific judges** | `bagual-ai-evals-error-analysis` → open coding → binary judges | Falhas específicas do SEU produto (Context Amnesia, Policy Retrieval Mismatch, etc) |
+| **Built-in (this skill)** | Choose from the 6 metrics — TaskCompletion, ToolCorrectness, etc | Generic structural failures (didn't complete, wrong tool, inefficient) |
+| **Product-specific judges** | `bagual-ai-evals-error-analysis` → open coding → binary judges | Failures specific to YOUR product (Context Amnesia, Policy Retrieval Mismatch, etc) |
 
-Se o usuário ainda não fez trace review e tem agent rodando, **sugira fortemente** que ele faça `bagual-ai-evals-error-analysis` **antes** de fechar a lista de métricas. Os judges product-specific geralmente pegam falhas que as built-in missam — e vice-versa.
+If the user hasn't done trace review yet and has an agent running, **strongly suggest** they do `bagual-ai-evals-error-analysis` **before** finalizing the metrics list. Product-specific judges generally catch failures that built-ins miss — and vice versa.
 
-**Se o usuário tá em smoke test mode** (primeira rodada de evals pra validar pipeline), pode usar só as built-in. Escale pra product-specific na segunda iteração.
+**If the user is in smoke test mode** (first round of evals to validate the pipeline), they can use just the built-ins. Scale to product-specific in the second iteration.
 
-## Princípio fundamental
+## Core principle
 
-**Não use todas as métricas.** Cada métrica custa tokens (LLM-as-judge), adiciona latência, e gera ruído nos resultados. Use só o que faz sentido pro modo de falha que você quer pegar.
+**Don't use all the metrics.** Each metric costs tokens (LLM-as-judge), adds latency, and generates noise in results. Use only what makes sense for the failure mode you want to catch.
 
-## ⚠️ Mental models críticos antes de escolher métricas
+## ⚠️ Critical mental models before choosing metrics
 
-Esses três insights vêm da literatura recente (τ-bench NeurIPS 2024, BFCL V4 Agentic 2025) e do Hamel Husain workshop. **Ensine isso ao usuário antes de recomendar métricas** — vai mudar o que ele pede.
+These three insights come from recent literature (τ-bench NeurIPS 2024, BFCL V4 Agentic 2025) and the Hamel Husain workshop. **Teach this to the user before recommending metrics** — it will change what they ask for.
 
-### 1. Single-run completion rate é uma vanity metric — use pass^k
+### 1. Single-run completion rate is a vanity metric — use pass^k
 
-τ-bench publicou um resultado em NeurIPS 2024 que reframou como o campo pensa em eval de agentes:
+τ-bench published a result at NeurIPS 2024 that reframed how the field thinks about agent eval:
 
-GPT-4o achieved **pass^1 ≈ 50%** em retail customer service tasks. Razoável, embora decepcionante. Aí mediram **pass^8** — a probabilidade do agent ter sucesso em **todos os 8 trials independentes** da mesma task — e o número colapsou pra **menos de 25%**.
+GPT-4o achieved **pass^1 ≈ 50%** on retail customer service tasks. Reasonable, if disappointing. Then they measured **pass^8** — the probability of the agent succeeding on **all 8 independent trials** of the same task — and the number collapsed to **less than 25%**.
 
-Esse colapso é o ponto. Um sistema com 50% de sucesso por run **não é** um sistema que funciona metade do tempo. É um sistema que, em qualquer semana de tráfego de produção, vai falhar com o mesmo cliente em tentativas repetidas a uma taxa compounding. Se seu support agent resolve return request com 50% reliability por run, e um cliente frustrado tenta 3 vezes, a probabilidade dele **nunca** conseguir resolver é 12.5%. Isso não é artefato de benchmark — é um SLA de produção que sua metodologia de eval estava escondendo de você.
+That collapse is the point. A system with 50% success per run **is not** a system that works half the time. It's a system that, over any week of production traffic, will fail the same customer on repeated attempts at a compounding rate. If your support agent resolves a return request with 50% reliability per run, and a frustrated customer tries 3 times, the probability they **never** get it resolved is 12.5%. That's not a benchmark artifact — it's a production SLA that your eval methodology was hiding from you.
 
-**Implicação prática**: rode seus golden tasks **k vezes** (k≥4, idealmente k=8) e meça pass^k. O gap entre pass^1 e pass^k te diz sobre **variância** — gap grande significa agente inconsistente, não só imperfeito.
+**Practical implication**: run your golden tasks **k times** (k≥4, ideally k=8) and measure pass^k. The gap between pass^1 and pass^k tells you about **variance** — a large gap means an inconsistent agent, not just an imperfect one.
 
 ```python
 import numpy as np
@@ -46,7 +46,7 @@ from collections import defaultdict
 
 def compute_pass_k(results: list[dict], k: int = 8) -> dict:
     """
-    results: lista de dicts com 'task_id' e 'success' (bool)
+    results: list of dicts with 'task_id' and 'success' (bool)
     """
     task_runs = defaultdict(list)
     for r in results:
@@ -56,7 +56,7 @@ def compute_pass_k(results: list[dict], k: int = 8) -> dict:
     for task_id, runs in task_runs.items():
         if len(runs) < k:
             continue
-        # Sample k runs sem replacement, repete pra reduzir variância
+        # Sample k runs without replacement, repeat to reduce variance
         trials = [all(np.random.choice(runs, k, replace=False)) for _ in range(200)]
         pass_k_per_task[task_id] = np.mean(trials)
     
@@ -64,56 +64,56 @@ def compute_pass_k(results: list[dict], k: int = 8) -> dict:
     return {"per_task": pass_k_per_task, "aggregate": aggregate, "k": k}
 ```
 
-**Targets recomendados** pra customer support agent:
-- `pass^1 ≥ 0.75` pra tasks transacionais
-- `pass^4 ≥ 0.60` pra multi-turn complexas (3+ tool calls)
-- `pass^8 ≥ 0.40` como floor de reliability agregado
+**Recommended targets** for a customer support agent:
+- `pass^1 ≥ 0.75` for transactional tasks
+- `pass^4 ≥ 0.60` for complex multi-turn (3+ tool calls)
+- `pass^8 ≥ 0.40` as aggregate reliability floor
 
-Ship-blocker se abaixo disso em staging.
+Ship-blocker if below this in staging.
 
 ### 2. Faithfulness ≠ Factual Correctness
 
-São **modos de falha diferentes** com **fixes diferentes**. Conflar produz evals que não pegam nenhum dos dois confiavelmente.
+These are **different failure modes** with **different fixes**. Conflating them produces evals that reliably catch neither.
 
 | | Faithfulness | Factual Correctness |
 |---|--------------|---------------------|
-| **Mede** | Claims do output suportadas pelo retrieved context? | Claims do output corretas em relação ao mundo real? |
-| **Ground truth** | O contexto retrievado | A realidade (ou reference annotation) |
-| **Falha exemplo** | Doc diz "refund em 5 dias", agent diz "7 dias" | Doc diz "refund em 7 dias" mas a política mudou pra 3 e a KB tá stale |
-| **Fix** | Generator (prompt, modelo, position bias) | Knowledge base refresh, document staleness signals |
+| **Measures** | Are output claims supported by the retrieved context? | Are output claims correct relative to the real world? |
+| **Ground truth** | The retrieved context | Reality (or reference annotation) |
+| **Failure example** | Doc says "refund in 5 days", agent says "7 days" | Doc says "refund in 7 days" but the policy changed to 3 and the KB is stale |
+| **Fix** | Generator (prompt, model, position bias) | Knowledge base refresh, document staleness signals |
 
-**História real do livro**: fintech lançou agent com faithfulness >0.85. Users reclamavam mesmo assim. O agent estava precisamente citando políticas retrievadas — score 1.0 nesses turns — mas a política era stale há 6 meses. Faithfulness perfeito + factual correctness zero.
+**Real story from the book**: a fintech launched an agent with faithfulness >0.85. Users complained anyway. The agent was precisely citing retrieved policies — score 1.0 on those turns — but the policy was stale for 6 months. Perfect faithfulness + zero factual correctness.
 
-**Implicação prática**: se você só tem faithfulness, você só pega errors de geração. Pra pegar errors de KB stale, ou você adiciona metadata de staleness aos chunks (creation_date, last_reviewed) e flagga, ou você mantém reference answers pras top scenarios e roda `RAGAS FactualCorrectness` (nota: RAGAS é um pacote separado — `pip install ragas` — não uma métrica built-in do DeepEval).
+**Practical implication**: if you only have faithfulness, you only catch generation errors. To catch stale KB errors, either add staleness metadata to chunks (creation_date, last_reviewed) and flag them, or maintain reference answers for top scenarios and run `RAGAS FactualCorrectness` (note: RAGAS is a separate package — `pip install ragas` — not a built-in DeepEval metric).
 
-### 3. Database state > LLM judge quando possível
+### 3. Database state > LLM judge when possible
 
-Pra agents com backend API access, **o signal mais confiável de completion não é judgment de LLM** — é **query no estado real do sistema** depois da conversa terminar. Mudou o status do ticket? Foi criada a row do refund? Isso é **deterministic, fast, e imune a variância de LLM judge**.
+For agents with backend API access, **the most reliable completion signal is not an LLM judgment** — it's a **query on the actual system state** after the conversation ends. Did the ticket status change? Was the refund row created? That's **deterministic, fast, and immune to LLM judge variance**.
 
-Onde você consegue instrumentar, **faça**. LLM-based completion metrics são pra casos onde system state é inacessível ou não suficientemente granular.
+Where you can instrument this, **do it**. LLM-based completion metrics are for cases where system state is inaccessible or not granular enough.
 
 ```python
-# Em vez de:
+# Instead of:
 task_completion = TaskCompletionMetric(threshold=0.7)
 
-# Faça:
+# Do:
 def db_state_check(test_case):
-    """Checa estado real do DB pós-conversa"""
+    """Checks real DB state post-conversation"""
     ticket = db.tickets.find_one({"id": test_case.metadata["ticket_id"]})
     return ticket["status"] == "resolved"
 ```
 
-Isso vira um custom non-LLM metric ou um assertion no Tier 1 do CI/CD.
+This becomes a custom non-LLM metric or a Tier 1 assertion in CI/CD.
 
-### 4. Latência e custo são métricas first-class, não afterthoughts
+### 4. Latency and cost are first-class metrics, not afterthoughts
 
-BFCL V4 Agentic (julho/2025) reporta **custo em USD e latência em segundos junto com accuracy** pra cada modelo evaluado. Essa é a postura correta: pra agents em produção, um modelo 5% mais accurate mas 3x mais caro ou 2x mais lento pode ser a escolha errada dependendo da SLA e margem.
+BFCL V4 Agentic (July/2025) reports **cost in USD and latency in seconds alongside accuracy** for each model evaluated. That's the correct posture: for agents in production, a model 5% more accurate but 3x more expensive or 2x slower may be the wrong choice depending on SLA and margin.
 
-**Targets pra customer support agent**:
+**Targets for a customer support agent**:
 - Chat: P90 time-to-first-token <1.5s; P90 full response <3s
-- Voice-adjacent (TTS feed): P90 <800ms pra primeira sentença
+- Voice-adjacent (TTS feed): P90 <800ms for the first sentence
 
-E mais importante que custo agregado: **cost-per-resolution**. Um modelo com 95% completion que consome 3x os tokens de um modelo com 90% pode não valer o premium se seu volume é alto.
+And more important than aggregate cost: **cost-per-resolution**. A model with 95% completion that consumes 3x the tokens of a model with 90% may not be worth the premium if your volume is high.
 
 ```python
 def cost_per_resolution(sessions, input_price_per_1m, output_price_per_1m):
@@ -128,65 +128,65 @@ def cost_per_resolution(sessions, input_price_per_1m, output_price_per_1m):
     return total_cost / len(resolved)
 ```
 
-Track essa weekly. Alerta se aumentar >15% sem melhoria correspondente em resolution rate — isso é signal que algo regrediu (retrieval bug dobrou context window, prompt change foi verboso demais, etc).
+Track this weekly. Alert if it increases >15% without a corresponding improvement in resolution rate — that's a signal something regressed (retrieval bug doubled context window, prompt change was too verbose, etc).
 
-## τ-bench fault taxonomy — use pra diagnóstico
+## τ-bench fault taxonomy — use for diagnosis
 
-Em vez de "o agent falhou", classifique falhas nessa taxonomia (entity × failure type). Isso converte post-mortems em categorias acionáveis.
+Instead of "the agent failed", classify failures in this taxonomy (entity × failure type). This converts post-mortems into actionable categories.
 
-| Fault type | Descrição | Signal primário |
+| Fault type | Description | Primary signal |
 |------------|-----------|-----------------|
-| `goal_partially_completed` | Agent resolveu parte da task mas missed subgoals | `ConversationCompletenessMetric < 1.0` |
-| `used_wrong_tool` | Intent correto, tool errada | Trajectory mismatch |
-| `used_wrong_tool_argument` | Tool correta, args malformados ou incorretos | Schema validation + argument audit |
-| `took_unintended_action` | Agent fez algo que o user não pediu | Policy DAG violation |
+| `goal_partially_completed` | Agent solved part of the task but missed subgoals | `ConversationCompletenessMetric < 1.0` |
+| `used_wrong_tool` | Correct intent, wrong tool | Trajectory mismatch |
+| `used_wrong_tool_argument` | Correct tool, malformed or incorrect args | Schema validation + argument audit |
+| `took_unintended_action` | Agent did something the user didn't request | Policy DAG violation |
 
-**Por que isso importa**: se seus incident logs mostram 80% `used_wrong_tool_argument` depois de uma schema change, o fix é **schema documentation no system prompt**, não prompt rewriting. Se você tá vendo spikes de `took_unintended_action`, você tem policy enforcement problem que `ConversationalDAGMetric` deveria estar pegando em CI antes de chegar em produção.
+**Why this matters**: if your incident logs show 80% `used_wrong_tool_argument` after a schema change, the fix is **schema documentation in the system prompt**, not prompt rewriting. If you're seeing spikes of `took_unintended_action`, you have a policy enforcement problem that `ConversationalDAGMetric` should be catching in CI before it reaches production.
 
-## As 6 métricas built-in pra agents
+## The 6 built-in metrics for agents
 
 ### Reasoning Layer
 
 #### `PlanQualityMetric`
 
-**O que avalia**: se o **plano** que o agent gerou é lógico, completo e eficiente pra cumprir a tarefa.
+**What it evaluates**: whether the **plan** the agent generated is logical, complete, and efficient to accomplish the task.
 
-**Quando usar**: quando seu agent tem fase de planejamento explícita (chain-of-thought, `Plan: 1) X, 2) Y`, ou similar). Se o agent não cria plano explícito, o metric passa com score 1 por default.
+**When to use**: when your agent has an explicit planning phase (chain-of-thought, `Plan: 1) X, 2) Y`, or similar). If the agent doesn't create an explicit plan, the metric passes with score 1 by default.
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Plan Quality Score = AlignmentScore(Task, Plan)
 ```
-Extrai task e plan da trace, usa LLM judge pra pontuar alinhamento.
+Extracts task and plan from the trace, uses LLM judge to score alignment.
 
-**Escopo**: end-to-end (analisa a trace inteira)
+**Scope**: end-to-end (analyzes the entire trace)
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import PlanQualityMetric
 
 plan_quality = PlanQualityMetric(
     threshold=0.7,
-    model="gpt-4o",  # opcional, qualquer LLM
-    include_reason=True,  # mostra a justificativa do score
-    strict_mode=False,    # se True, score é binário (0 ou 1)
+    model="gpt-4o",  # optional, any LLM
+    include_reason=True,  # shows the score justification
+    strict_mode=False,    # if True, score is binary (0 or 1)
 )
 ```
 
 #### `PlanAdherenceMetric`
 
-**O que avalia**: se o agent **seguiu o próprio plano** durante execução, ou desviou.
+**What it evaluates**: whether the agent **followed its own plan** during execution, or deviated from it.
 
-**Quando usar**: pareada com `PlanQualityMetric`. Plano ótimo ignorado é tão ruim quanto plano ruim seguido perfeitamente.
+**When to use**: paired with `PlanQualityMetric`. An optimal plan that's ignored is just as bad as a bad plan followed perfectly.
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Plan Adherence Score = AlignmentScore((Task, Plan), Execution Steps)
 ```
 
-**Escopo**: end-to-end
+**Scope**: end-to-end
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import PlanAdherenceMetric
 
@@ -197,55 +197,55 @@ plan_adherence = PlanAdherenceMetric(threshold=0.7, model="gpt-4o")
 
 #### `ToolCorrectnessMetric`
 
-**O que avalia**: se o agent **selecionou as tools certas** e as chamou da maneira esperada, comparando com lista de `expected_tools`.
+**What it evaluates**: whether the agent **selected the right tools** and called them in the expected way, comparing against the `expected_tools` list.
 
-**Quando usar**: quando você tem expectativas determinísticas sobre quais tools devem ser chamadas. Esse é um dos metrics mais importantes pra agents.
+**When to use**: when you have deterministic expectations about which tools should be called. This is one of the most important metrics for agents.
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Tool Correctness = (Number of Correctly Used Tools) / (Total Number of Tools Called)
 ```
 
-**Escopo**: **component-level** (no LLM span, NÃO end-to-end)
+**Scope**: **component-level** (on the LLM span, NOT end-to-end)
 
-**Modos de strictness configuráveis**:
-- **Default**: só compara nomes das tools
-- **Input parameter matching**: também exige args iguais
-- **Output matching**: também exige outputs iguais
-- **Ordering consideration**: força sequência exata
-- **Exact matching**: `tools_called` precisa ser idêntico ao `expected_tools`
+**Configurable strictness modes**:
+- **Default**: only compares tool names
+- **Input parameter matching**: also requires matching args
+- **Output matching**: also requires matching outputs
+- **Ordering consideration**: enforces exact sequence
+- **Exact matching**: `tools_called` must be identical to `expected_tools`
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import ToolCorrectnessMetric
 from deepeval.test_case import LLMTestCaseParams
 
 tool_correctness = ToolCorrectnessMetric(
     threshold=0.7,
-    # Pode adicionar mais params via evaluation_params se quiser strictness
+    # Can add more params via evaluation_params for strictness
 )
 ```
 
-**Importante**: precisa do `expected_tools` no Golden e o `update_current_span(expected_tools=...)` no LLM span. Sem isso, não funciona.
+**Important**: requires `expected_tools` in the Golden and `update_current_span(expected_tools=...)` in the LLM span. Without that, it won't work.
 
-**Atenção**: quando `available_tools` é fornecido no agent span, o metric também usa LLM pra avaliar se a seleção foi ótima dentre todas as opções. Score final = `min(deterministic_score, llm_score)`.
+**Note**: when `available_tools` is provided on the agent span, the metric also uses an LLM to evaluate whether the selection was optimal among all options. Final score = `min(deterministic_score, llm_score)`.
 
 #### `ArgumentCorrectnessMetric`
 
-**O que avalia**: se o agent gerou os **argumentos corretos** pras tool calls, baseado no input e contexto.
+**What it evaluates**: whether the agent generated the **correct arguments** for tool calls, based on input and context.
 
-**Quando usar**: sempre que `ToolCorrectnessMetric` é usado. Tool certa com args errados é tão ruim quanto tool errada.
+**When to use**: whenever `ToolCorrectnessMetric` is used. The right tool with wrong args is just as bad as the wrong tool.
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Argument Correctness = (Number of Correctly Generated Input Parameters) / (Total Number of Tool Calls)
 ```
 
-Diferente do `ToolCorrectnessMetric`, esse é **totalmente LLM-based** e **referenceless** — avalia baseado no contexto do input, não comparando com valores predefinidos.
+Unlike `ToolCorrectnessMetric`, this one is **fully LLM-based** and **referenceless** — it evaluates based on the input context, not by comparing against predefined values.
 
-**Escopo**: component-level (LLM span)
+**Scope**: component-level (LLM span)
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import ArgumentCorrectnessMetric
 
@@ -259,78 +259,78 @@ argument_correctness = ArgumentCorrectnessMetric(
 
 #### `TaskCompletionMetric`
 
-**O que avalia**: se o agent **realmente cumpriu a tarefa pedida**. Esse é o métrica de "sucesso final".
+**What it evaluates**: whether the agent **actually completed the requested task**. This is the "final success" metric.
 
-**Quando usar**: praticamente sempre. É o indicador top-level de qualquer agent.
+**When to use**: practically always. It's the top-level indicator for any agent.
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Task Completion Score = AlignmentScore(Task, Outcome)
 ```
 
-A task pode ser auto-inferida do trace ou passada explicitamente.
+The task can be auto-inferred from the trace or passed explicitly.
 
-**Escopo**: end-to-end (analisa trace inteira)
+**Scope**: end-to-end (analyzes the entire trace)
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import TaskCompletionMetric
 
 task_completion = TaskCompletionMetric(threshold=0.7, model="gpt-4o")
 ```
 
-**IMPORTANTE**: é **trace-only**. NÃO pode ser usada standalone — só dentro de `evals_iterator` ou `@observe` decorator.
+**IMPORTANT**: it's **trace-only**. CANNOT be used standalone — only inside `evals_iterator` or `@observe` decorator.
 
 #### `StepEfficiencyMetric`
 
-**O que avalia**: se o agent completou a tarefa **sem passos desnecessários**. Penaliza tool calls redundantes, loops, ações fora do escopo.
+**What it evaluates**: whether the agent completed the task **without unnecessary steps**. Penalizes redundant tool calls, loops, out-of-scope actions.
 
-**Quando usar**: sempre que custo/latência importam (basicamente, sempre em produção).
+**When to use**: whenever cost/latency matter (basically, always in production).
 
-**Como é calculado**:
+**How it's calculated**:
 ```
 Step Efficiency Score = AlignmentScore(Task, Execution Steps)
 ```
 
-**Escopo**: end-to-end
+**Scope**: end-to-end
 
-**Código**:
+**Code**:
 ```python
 from deepeval.metrics import StepEfficiencyMetric
 
 step_efficiency = StepEfficiencyMetric(threshold=0.7, model="gpt-4o")
 ```
 
-**IMPORTANTE**: também é **trace-only**.
+**IMPORTANT**: also **trace-only**.
 
-**Combinação típica**: `TaskCompletionMetric` (alta) + `StepEfficiencyMetric` (baixa) = agent funciona mas precisa otimização.
+**Typical combination**: `TaskCompletionMetric` (high) + `StepEfficiencyMetric` (low) = agent works but needs optimization.
 
-## End-to-End vs Component-Level — DECISIVO
+## End-to-End vs Component-Level — DECISIVE
 
-Esse é o ponto que mais confunde. Decore:
+This is the point that causes the most confusion. Memorize:
 
-| Tipo de eval | Como passa as métricas | Quando usar |
+| Eval type | How to pass metrics | When to use |
 |--------------|------------------------|-------------|
-| **End-to-end** | `evals_iterator(metrics=[...])` ou `@observe(metrics=[...])` no agent span | Métricas que precisam ver a trace inteira (PlanQuality, PlanAdherence, TaskCompletion, StepEfficiency) |
-| **Component-level** | `@observe(type="llm", metrics=[...])` no LLM span específico | Métricas que avaliam decisão isolada de um componente (ToolCorrectness, ArgumentCorrectness) |
+| **End-to-end** | `evals_iterator(metrics=[...])` or `@observe(metrics=[...])` on the agent span | Metrics that need to see the entire trace (PlanQuality, PlanAdherence, TaskCompletion, StepEfficiency) |
+| **Component-level** | `@observe(type="llm", metrics=[...])` on the specific LLM span | Metrics that evaluate an isolated component decision (ToolCorrectness, ArgumentCorrectness) |
 
-**Os dois podem coexistir na mesma trace.** Um agent pode ter `ToolCorrectnessMetric` rodando no LLM span (catching wrong tool selections) e `TaskCompletionMetric` rodando no agent span (medindo se conseguiu a meta final). Isso é importante porque um agent pode escolher tool errada no passo 3, recuperar no passo 5, e ainda completar a task — sem component-level, você não pegaria a falha intermediária.
+**Both can coexist in the same trace.** An agent can have `ToolCorrectnessMetric` running on the LLM span (catching wrong tool selections) and `TaskCompletionMetric` running on the agent span (measuring whether it achieved the final goal). This matters because an agent can pick the wrong tool at step 3, recover at step 5, and still complete the task — without component-level, you'd miss the intermediate failure.
 
-## Tabela de decisão — escolha do pacote
+## Decision table — choosing the package
 
-Use essa tabela com o usuário pra recomendar o conjunto certo:
+Use this table with the user to recommend the right set:
 
-| Situação | Pacote recomendado |
+| Situation | Recommended package |
 |----------|-------------------|
-| Agent novo, primeira eval, quer simples | `TaskCompletionMetric` only (no agent span) |
-| Agent com tools (caso comum) | `TaskCompletionMetric` (e2e) + `ToolCorrectnessMetric` + `ArgumentCorrectnessMetric` (LLM span) |
-| Agent com planejamento explícito (CoT) | Adicione `PlanQualityMetric` + `PlanAdherenceMetric` |
-| Agent em produção, custo importa | Adicione `StepEfficiencyMetric` |
-| Tem requisito específico (tom, segurança, conformidade) | Adicione `GEval` custom (ver `bagual-ai-evals-custom-metric`) |
-| Multi-turn chatbot | Use as conversational metrics (`ConversationalGEval`, etc) — não esses |
-| RAG | Use as RAG metrics (`AnswerRelevancyMetric`, `FaithfulnessMetric`, `ContextualPrecisionMetric`, `ContextualRecallMetric`, `ContextualRelevancyMetric`) |
+| New agent, first eval, wants simple | `TaskCompletionMetric` only (on the agent span) |
+| Agent with tools (common case) | `TaskCompletionMetric` (e2e) + `ToolCorrectnessMetric` + `ArgumentCorrectnessMetric` (LLM span) |
+| Agent with explicit planning (CoT) | Add `PlanQualityMetric` + `PlanAdherenceMetric` |
+| Agent in production, cost matters | Add `StepEfficiencyMetric` |
+| Has specific requirement (tone, safety, compliance) | Add custom `GEval` (see `bagual-ai-evals-custom-metric`) |
+| Multi-turn chatbot | Use the conversational metrics (`ConversationalGEval`, etc) — not these |
+| RAG | Use the RAG metrics (`AnswerRelevancyMetric`, `FaithfulnessMetric`, `ContextualPrecisionMetric`, `ContextualRecallMetric`, `ContextualRelevancyMetric`) |
 
-### Pacote starter (default que você recomenda quando em dúvida)
+### Starter package (default you recommend when in doubt)
 
 ```python
 from deepeval.metrics import (
@@ -342,12 +342,12 @@ from deepeval.metrics import (
 # end-to-end
 task_completion = TaskCompletionMetric(threshold=0.7)
 
-# component-level (no LLM span)
+# component-level (on the LLM span)
 tool_correctness = ToolCorrectnessMetric(threshold=0.7)
 argument_correctness = ArgumentCorrectnessMetric(threshold=0.7)
 ```
 
-E aplica:
+And apply:
 
 ```python
 @observe(type="llm", metrics=[tool_correctness, argument_correctness])
@@ -359,92 +359,92 @@ def my_agent(user_input):
     ...
 ```
 
-## Configurações comuns das métricas
+## Common metric configurations
 
-Todas as métricas aceitam estes parâmetros:
+All metrics accept these parameters:
 
-| Parâmetro | O que faz |
+| Parameter | What it does |
 |-----------|-----------|
-| `threshold` | Score mínimo pra "passar" (default 0.5) |
-| `model` | Qual LLM usa como judge (default `gpt-4.1`). Pode ser string ou instância de `DeepEvalBaseLLM` |
-| `include_reason` | Inclui justificativa textual do score |
-| `strict_mode` | Score binário 0/1 — força threshold pra 1 |
-| `async_mode` | Concorrência interna no `measure()` (default True) |
-| `verbose_mode` | Printa intermediários (debug) |
+| `threshold` | Minimum score to "pass" (default 0.5) |
+| `model` | Which LLM to use as judge (default `gpt-4.1`). Can be a string or a `DeepEvalBaseLLM` instance |
+| `include_reason` | Includes a textual justification of the score |
+| `strict_mode` | Binary score 0/1 — forces threshold to 1 |
+| `async_mode` | Internal concurrency in `measure()` (default True) |
+| `verbose_mode` | Prints intermediates (debug) |
 
-Exemplo com tudo:
+Example with everything:
 ```python
 TaskCompletionMetric(
     threshold=0.8,
-    model="claude-3-5-sonnet",  # ou instância custom
+    model="claude-3-5-sonnet",  # or custom instance
     include_reason=True,
     strict_mode=False,
     verbose_mode=True,
 )
 ```
 
-## Pergunta crítica: thresholds
+## Critical question: thresholds
 
-Usuários sempre perguntam "qual threshold usar". Resposta honesta:
+Users always ask "which threshold to use". Honest answer:
 
-1. **Default 0.7** é um bom ponto de partida pra qualquer métrica
-2. Rode pelo menos uma vez e veja **a distribuição real** dos scores
-3. **Calibre** baseado no que você considera aceitável dado seu domínio
-4. Pra **gates de produção**, você geralmente quer 0.8+ (e binário, com `strict_mode=True`)
-5. Pra **monitoring** (sem bloquear), 0.6-0.7 funciona como alarme
+1. **Default 0.7** is a good starting point for any metric
+2. Run at least once and look at **the actual distribution** of scores
+3. **Calibrate** based on what you consider acceptable for your domain
+4. For **production gates**, you generally want 0.8+ (and binary, with `strict_mode=True`)
+5. For **monitoring** (non-blocking), 0.6-0.7 works as an alarm
 
-## Roteiro com o usuário
+## Workflow with the user
 
-1. **Pergunta**: "Qual o tipo do agent? Single-shot que executa task, multi-turn chat, ou RAG?"
-2. **Pergunta**: "Tem fase de planejamento explícito (chain of thought)? Ou vai direto pra ação?"
-3. **Pergunta**: "Quais são os 2-3 modos de falha mais críticos que você quer pegar?"
-4. **Mapeamento**: pegue cada modo de falha e mapeie pra métrica
-5. **Recomendação**: apresente o pacote mínimo + justifique cada métrica
-6. **Configuração**: monte o código com thresholds default 0.7 (ou diferente se ele tiver opinião)
-7. **Localização**: explique onde anexar (LLM span pra component-level, agent span pra end-to-end)
+1. **Question**: "What type of agent? Single-shot that executes a task, multi-turn chat, or RAG?"
+2. **Question**: "Is there an explicit planning phase (chain of thought)? Or does it go straight to action?"
+3. **Question**: "What are the 2-3 most critical failure modes you want to catch?"
+4. **Mapping**: take each failure mode and map it to a metric
+5. **Recommendation**: present the minimum package + justify each metric
+6. **Configuration**: build the code with default thresholds of 0.7 (or different if they have a preference)
+7. **Placement**: explain where to attach (LLM span for component-level, agent span for end-to-end)
 
-## Pergunta: "Por que não rodar todas as 6?"
+## Question: "Why not run all 6?"
 
-Se o usuário insistir em rodar todas:
+If the user insists on running all of them:
 
-- **Custo**: cada métrica é uma chamada de LLM judge por golden. 6 métricas × 50 goldens = 300 chamadas extras.
-- **Ruído**: você fica olhando pra 6 scores e não sabe qual mexer
-- **Dependência redundante**: `TaskCompletionMetric` já cobre boa parte do que `PlanQualityMetric` cobre se não tem plano explícito
-- **Sinal vs. ruído**: melhor 2 métricas que você confia do que 6 que te confundem
+- **Cost**: each metric is one LLM judge call per golden. 6 metrics × 50 goldens = 300 extra calls.
+- **Noise**: you end up looking at 6 scores and don't know which one to act on
+- **Redundant dependency**: `TaskCompletionMetric` already covers much of what `PlanQualityMetric` covers if there's no explicit plan
+- **Signal vs. noise**: better to have 2 metrics you trust than 6 that confuse you
 
-Mas se ele realmente quer todas, OK, você apoia. Só avise dos custos.
+But if they really want all of them, OK, you support it. Just warn about the costs.
 
-## Métricas além das 6 agentic — saiba que existem
+## Metrics beyond the 6 agentic — know they exist
 
-DeepEval tem 50+ métricas. Algumas categorias:
+DeepEval has 50+ metrics. Some categories:
 
-| Categoria | Exemplos | Quando |
+| Category | Examples | When |
 |-----------|----------|--------|
-| **RAG** | `AnswerRelevancyMetric`, `FaithfulnessMetric`, `ContextualPrecisionMetric`, `ContextualRecallMetric`, `ContextualRelevancyMetric` | Pra RAG. Use o "RAG triad" (recall, precision, relevancy) |
-| **Multi-turn** | `ConversationalGEval`, `TurnRelevancyMetric`, `RoleAdherenceMetric`, `ConversationCompletenessMetric`, `KnowledgeRetentionMetric` | Pra chatbots/copilots |
-| **MCP** | `MCPUseMetric`, `MCPTaskCompletionMetric` | Pra agents que usam MCP servers |
-| **Safety** | `BiasMetric`, `ToxicityMetric`, `PromptInjectionMetric` (via DeepTeam) | Verificações de safety |
-| **Non-LLM** | `ExactMatchMetric`, `RegexMetric`, `JsonMatchingMetric` | Comparações determinísticas |
-| **Custom** | `GEval`, `DAGMetric`, `ConversationalGEval`, `ConversationalDAG`, `ArenaGEval` | Critérios próprios |
-| **Multimodal** | `ImageCoherenceMetric`, `TextToImageMetric` | Pra outputs multimodais |
-| **Outras** | `SummarizationMetric`, `HallucinationMetric` | Casos específicos |
+| **RAG** | `AnswerRelevancyMetric`, `FaithfulnessMetric`, `ContextualPrecisionMetric`, `ContextualRecallMetric`, `ContextualRelevancyMetric` | For RAG. Use the "RAG triad" (recall, precision, relevancy) |
+| **Multi-turn** | `ConversationalGEval`, `TurnRelevancyMetric`, `RoleAdherenceMetric`, `ConversationCompletenessMetric`, `KnowledgeRetentionMetric` | For chatbots/copilots |
+| **MCP** | `MCPUseMetric`, `MCPTaskCompletionMetric` | For agents using MCP servers |
+| **Safety** | `BiasMetric`, `ToxicityMetric`, `PromptInjectionMetric` (via DeepTeam) | Safety checks |
+| **Non-LLM** | `ExactMatchMetric`, `RegexMetric`, `JsonMatchingMetric` | Deterministic comparisons |
+| **Custom** | `GEval`, `DAGMetric`, `ConversationalGEval`, `ConversationalDAG`, `ArenaGEval` | Custom criteria |
+| **Multimodal** | `ImageCoherenceMetric`, `TextToImageMetric` | For multimodal outputs |
+| **Others** | `SummarizationMetric`, `HallucinationMetric` | Specific cases |
 
-Se o usuário pedir uma métrica que não está nas 6 agentic, ofereça pesquisar mais detalhes ou crie uma custom com `GEval` (skill `bagual-ai-evals-custom-metric`).
+If the user asks for a metric not in the 6 agentic ones, offer to research more details or create a custom one with `GEval` (skill `bagual-ai-evals-custom-metric`).
 
-## Encerramento
+## Closing
 
-Após escolher e configurar as métricas, diga:
+After choosing and configuring the metrics, say:
 
-> "Métricas escolhidas: {lista}. Próximo passo é rodar a primeira rodada de evals e analisar resultados. Quer que eu chame `bagual-ai-evals-run-and-analyze`?"
+> "Metrics chosen: {list}. Next step is running the first round of evals and analyzing the results. Want me to call `bagual-ai-evals-run-and-analyze`?"
 
-Se ele quer custom:
+If they want custom:
 
-> "Beleza, escolhemos {lista}. Você também mencionou que precisa avaliar {tom/segurança/conformidade}. Pra isso vamos criar uma métrica G-Eval custom. Quer que eu chame `bagual-ai-evals-custom-metric`?"
+> "Great, we've chosen {list}. You also mentioned needing to evaluate {tone/safety/compliance}. For that we'll create a custom G-Eval metric. Want me to call `bagual-ai-evals-custom-metric`?"
 
 ## Anti-patterns
 
-- ❌ Recomendar todas as 6 métricas — overkill, custo, ruído
-- ❌ Esquecer de explicar end-to-end vs component-level — vai gerar bug de "métrica não roda"
-- ❌ Default sem contexto — sempre pergunte os modos de falha primeiro
-- ❌ Threshold sem justificativa — explique que é ponto de partida e calibra depois
-- ❌ Misturar metric pra agent com metric pra RAG/multi-turn — são categorias separadas
+- ❌ Recommending all 6 metrics — overkill, cost, noise
+- ❌ Forgetting to explain end-to-end vs component-level — will generate a "metric doesn't run" bug
+- ❌ Default without context — always ask about failure modes first
+- ❌ Threshold without justification — explain it's a starting point and calibrate later
+- ❌ Mixing agent metrics with RAG/multi-turn metrics — they are separate categories

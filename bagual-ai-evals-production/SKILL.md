@@ -1,53 +1,53 @@
 ---
 name: bagual-ai-evals-production
-description: Migração de DeepEval para produção com Confident AI, evals assíncronos, monitoring contínuo e CI/CD com pytest. Use quando o usuário disser "deepeval em produção", "metric collection", "monitoring", "ci/cd evals", "regression testing", "async evals" ou similar.
+description: Migrating DeepEval to production with Confident AI, async evals, continuous monitoring and CI/CD with pytest. Use when the user says "deepeval in production", "metric collection", "monitoring", "ci/cd evals", "regression testing", "async evals" or similar.
 ---
 
-# DeepEval Production — Levando Evals pra Produção
+# DeepEval Production — Taking Evals to Production
 
-Você é o engenheiro de produção. Tem três trabalhos:
+You are the production engineer. You have three jobs:
 
-1. **Migrar evals de dev pra prod** com `metric_collection` no Confident AI (zero latência)
-2. **Configurar CI/CD** com `deepeval test run` em pytest
-3. **Estabelecer monitoring contínuo** que avisa quando o agent regride
+1. **Migrate evals from dev to prod** with `metric_collection` in Confident AI (zero latency)
+2. **Configure CI/CD** with `deepeval test run` in pytest
+3. **Establish continuous monitoring** that alerts when the agent regresses
 
-## Pré-requisito crítico
+## Critical prerequisite
 
-O usuário **precisa** ter conta no Confident AI pra production evals. Sem isso, não tem como rodar evals async sem inflar a latência do agent. Confirme:
+The user **must** have a Confident AI account for production evals. Without it, there's no way to run async evals without inflating agent latency. Confirm:
 
 ```bash
 deepeval login
 ```
 
-Se não tem, pause aqui e mande logar antes de continuar. É grátis pra começar.
+If they don't have one, pause here and ask them to log in before continuing. It's free to start.
 
-## Por que produção é diferente de dev
+## Why production is different from dev
 
-Em dev, você roda evals síncronas: o agent espera o eval terminar pra responder. Isso é OK em testes locais. Em produção, **não dá**:
+In dev, you run synchronous evals: the agent waits for the eval to finish before responding. That's fine for local testing. In production, **it's not**:
 
-- Eval síncrona = latência adicionada (LLM-as-judge é lento)
-- Eval bloqueante = falha do judge derruba o agent
-- Inicialização local de métrica = overhead
+- Synchronous eval = added latency (LLM-as-judge is slow)
+- Blocking eval = judge failure brings down the agent
+- Local metric initialization = overhead
 
-A solução do DeepEval: **exportar traces pro Confident AI**, que avalia tudo **assíncrono** lá. O agent não espera. Ele só faz `@observe` normal e os traces saem via OpenTelemetry-like protocol.
+DeepEval's solution: **export traces to Confident AI**, which evaluates everything **asynchronously** there. The agent doesn't wait. It just does normal `@observe` and traces go out via an OpenTelemetry-like protocol.
 
-## Conceito central: `metric_collection`
+## Core concept: `metric_collection`
 
-Em dev você passa `metrics=[...]` direto no `@observe`. Em produção, você cria uma **metric collection** no Confident AI (uma coleção nomeada de métricas), e referencia pelo nome:
+In dev you pass `metrics=[...]` directly in `@observe`. In production, you create a **metric collection** in Confident AI (a named collection of metrics), and reference it by name:
 
 ```python
-# Dev (síncrono)
+# Dev (synchronous)
 @observe(type="agent", metrics=[task_completion, step_efficiency])
 def my_agent(input):
     ...
 
-# Produção (assíncrono)
+# Production (asynchronous)
 @observe(type="agent", metric_collection="agent-task-completion-metrics")
 def my_agent(input):
     ...
 ```
 
-Você pode ter as duas coexistindo no mesmo código, controladas por variável de ambiente:
+You can have both coexisting in the same code, controlled by an environment variable:
 
 ```python
 import os
@@ -63,48 +63,48 @@ def my_agent(input):
     ...
 ```
 
-## Passo 1 — Criar metric collection no Confident AI
+## Step 1 — Create metric collection in Confident AI
 
-No dashboard do Confident AI:
+In the Confident AI dashboard:
 
-1. Login em `app.confident-ai.com`
-2. Navega pra "Metrics" no menu lateral
+1. Log in at `app.confident-ai.com`
+2. Navigate to "Metrics" in the side menu
 3. "Create Collection"
-4. Nome (ex: `agent-task-completion-metrics`)
-5. Adiciona as métricas que quer rodar (TaskCompletion, StepEfficiency, etc)
-6. Configura threshold de cada uma
+4. Name (e.g., `agent-task-completion-metrics`)
+5. Add the metrics you want to run (TaskCompletion, StepEfficiency, etc)
+6. Configure the threshold for each one
 7. Save
 
-A coleção fica disponível pra qualquer agent referenciar pelo nome.
+The collection becomes available for any agent to reference by name.
 
-### Onde anexar metric_collection
+### Where to attach metric_collection
 
-Igual em dev — o escopo dita onde anexar:
+Same as in dev — scope dictates where to attach:
 
-| Escopo | Onde anexar |
+| Scope | Where to attach |
 |--------|-------------|
 | End-to-end (TaskCompletion, StepEfficiency, PlanQuality, PlanAdherence) | `@observe(type="agent", metric_collection="...")` |
 | Component-level (ToolCorrectness, ArgumentCorrectness) | `@observe(type="llm", metric_collection="...")` |
 
-Os dois podem coexistir na mesma trace:
+Both can coexist in the same trace:
 
 ```python
-# Component-level — avalia decisões de tool calling em cada step LLM
+# Component-level — evaluates tool calling decisions on each LLM step
 @observe(type="llm", metric_collection="tool-correctness-metrics")
 def call_llm(messages):
     ...
 
-# End-to-end — avalia trajetória inteira após task completar
+# End-to-end — evaluates entire trajectory after task completes
 @observe(type="agent", metric_collection="agent-task-completion-metrics")
 def travel_agent(user_input):
     ...
 ```
 
-Isso é importante porque um agent pode escolher tool errada no passo 3, recuperar no passo 5, e ainda completar a task — sem o component-level, você não pegaria a falha intermediária.
+This matters because an agent can pick the wrong tool at step 3, recover at step 5, and still complete the task — without component-level, you'd miss the intermediate failure.
 
-## Passo 2 — Tags e metadata
+## Step 2 — Tags and metadata
 
-Pra organizar runs em produção, use `update_current_trace`:
+To organize runs in production, use `update_current_trace`:
 
 ```python
 from deepeval.tracing import observe, update_current_trace
@@ -123,95 +123,95 @@ def travel_agent(user_request: str) -> str:
             "user_segment": "premium",
         },
     )
-    # ... lógica do agent
+    # ... agent logic
 ```
 
-No dashboard você pode filtrar/agrupar traces por tags e metadata. Útil pra:
+In the dashboard you can filter/group traces by tags and metadata. Useful for:
 
-- Comparar `v3.0` vs `v3.1`
-- Detectar regressão depois de deploy
-- Isolar falhas por região / segmento de user
+- Comparing `v3.0` vs `v3.1`
+- Detecting regression after a deploy
+- Isolating failures by region / user segment
 
-## Passo 3 — Validar exportação
+## Step 3 — Validate export
 
-Antes de declarar produção pronta, faça uma chamada de teste e confirme que aparece no dashboard:
+Before declaring production ready, make a test call and confirm it shows up in the dashboard:
 
-1. Roda o agent localmente com o env var de produção setado
-2. Vai em `app.confident-ai.com` → "Observability" → "Traces"
-3. Confirma que a trace apareceu (pode demorar alguns segundos)
-4. Click na trace pra ver a árvore de spans
-5. Confirma que as métricas rodaram (aparece `Pending` → depois score)
+1. Run the agent locally with the production env var set
+2. Go to `app.confident-ai.com` → "Observability" → "Traces"
+3. Confirm the trace appeared (may take a few seconds)
+4. Click the trace to view the span tree
+5. Confirm the metrics ran (shows `Pending` → then score)
 
-## Three-Mode Architecture pra spans em produção
+## Three-Mode Architecture for spans in production
 
-Confident AI distingue três tipos de evals em produção:
+Confident AI distinguishes three types of evals in production:
 
 ### 1. Trace evals (end-to-end)
 
-Avaliam um trace inteiro do começo ao fim. Tipo:
+Evaluate an entire trace from start to finish. For example:
 
-- Task completou?
-- O usuário ficou satisfeito?
-- Foi eficiente?
+- Did the task complete?
+- Was the user satisfied?
+- Was it efficient?
 
-Anexa na agent span via `metric_collection`.
+Attach to the agent span via `metric_collection`.
 
 ### 2. Span evals (component-level)
 
-Avaliam um componente específico isoladamente. Tipo:
+Evaluate a specific component in isolation. For example:
 
-- Esse step de LLM escolheu a tool certa?
-- Esse retrieval recuperou contexto relevante?
+- Did this LLM step pick the right tool?
+- Did this retrieval step recover relevant context?
 
-Anexa na LLM/retriever span via `metric_collection`.
+Attach to the LLM/retriever span via `metric_collection`.
 
 ### 3. Thread evals (multi-turn / conversation)
 
-Avaliam uma conversa inteira (várias traces da mesma sessão). Tipo:
+Evaluate an entire conversation (multiple traces from the same session). For example:
 
-- A conversa toda teve coesão?
-- O agent aprendeu durante a conversa?
-- O usuário ficou satisfeito no fim?
+- Did the full conversation have coherence?
+- Did the agent learn during the conversation?
+- Was the user satisfied at the end?
 
-Configurado via `thread_id` na trace e usa métricas multi-turn.
+Configured via `thread_id` on the trace and uses multi-turn metrics.
 
-## ⚠️ A Three-Tier Eval Gate Strategy (recomendada)
+## ⚠️ The Three-Tier Eval Gate Strategy (recommended)
 
-Antes de mergulhar em production setup, ensine essa arquitetura ao usuário. É a estrutura recomendada pra balancear **custo, frequência, e cobertura**.
+Before diving into production setup, teach this architecture to the user. It's the recommended structure for balancing **cost, frequency, and coverage**.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ TIER 1 — Toda commit          < 10s    Zero LLM    Bloqueia     │
+│ TIER 1 — Every commit         < 10s    Zero LLM    Blocks       │
 │ Schema validation, regex guards, format constraints              │
 │ Custom DeepEval JsonCorrectnessMetric, regex assertions          │
-│ Catch: format failures, PII leakage óbvios, prompt fragments    │
+│ Catch: format failures, obvious PII leakage, prompt fragments   │
 ├──────────────────────────────────────────────────────────────────┤
-│ TIER 2 — Toda PR              2-5min    < $2/run   Flag-not-block│
-│ 100-200 test cases, mix de assertions + LLM judges               │
-│ Faithfulness, tool correctness, custom GEval product-specific    │
-│ Use gpt-4o-mini ou Selene Mini como judge                        │
-│ Catch: quality regressions em workflows core                     │
+│ TIER 2 — Every PR             2-5min    < $2/run   Flag-not-block│
+│ 100-200 test cases, mix of assertions + LLM judges               │
+│ Faithfulness, tool correctness, custom product-specific GEval    │
+│ Use gpt-4o-mini or Selene Mini as judge                          │
+│ Catch: quality regressions in core workflows                     │
 ├──────────────────────────────────────────────────────────────────┤
-│ TIER 3 — Nightly              Horas     Maior      Ship-blocker  │
-│ Full benchmark, pass^k (k≥4), multi-turn coherence completo      │
-│ End-to-end task completion sobre 50+ tasks                       │
-│ Use gpt-4o ou Claude pra calibração                              │
-│ Catch: drift, regressão sutil, reliability issues                │
+│ TIER 3 — Nightly              Hours     Higher     Ship-blocker  │
+│ Full benchmark, pass^k (k≥4), complete multi-turn coherence      │
+│ End-to-end task completion over 50+ tasks                        │
+│ Use gpt-4o or Claude for calibration                             │
+│ Catch: drift, subtle regression, reliability issues              │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-**Gates de comportamento**:
-- **Tier 1 falhou** → bloqueia commit/CI imediatamente
-- **Tier 2 regrediu** > 5 pontos week-over-week → flagga, humano review da PR
-- **Tier 3 caiu** > 10 pontos em pass^k → ship-blocker pro próximo release
+**Behavior gates**:
+- **Tier 1 failed** → blocks commit/CI immediately
+- **Tier 2 regressed** > 5 points week-over-week → flags, human reviews the PR
+- **Tier 3 dropped** > 10 points in pass^k → ship-blocker for next release
 
-**Por que três tiers**: cada um resolve um problema diferente. Tier 1 catch falhas óbvias **a custo zero**. Tier 2 catch quality regressions a custo controlado por PR. Tier 3 catch reliability issues que só aparecem em volume — e que custariam absurdo rodar a cada commit.
+**Why three tiers**: each one solves a different problem. Tier 1 catches obvious failures **at zero cost**. Tier 2 catches quality regressions at a controlled cost per PR. Tier 3 catches reliability issues that only appear at volume — and that would cost an absurd amount to run on every commit.
 
-A **maioria dos times tem só Tier 3** (manual, esporádico, "deixa eu rodar evals semana que vem") e nunca consegue ship com confiança porque o feedback loop é longo demais. Outros têm só Tier 1 e acham que tão "fazendo evals" porque tem assertion no CI — mas as assertions só pegam falhas óbvias. Three-tier resolve os dois.
+**Most teams only have Tier 3** (manual, sporadic, "let me run evals next week") and never ship with confidence because the feedback loop is too long. Others only have Tier 1 and think they're "doing evals" because they have assertions in CI — but the assertions only catch obvious failures. Three-tier solves both.
 
-## Cost-per-resolution: a métrica de eficiência que importa
+## Cost-per-resolution: the efficiency metric that matters
 
-Aggregate token cost é vanity metric. **Cost-per-resolution** é o que importa em produção — leva em conta que algumas interações exigem mais turns, mais tool calls e mais retrieval pra alcançar o mesmo outcome.
+Aggregate token cost is a vanity metric. **Cost-per-resolution** is what matters in production — it accounts for the fact that some interactions require more turns, more tool calls, and more retrieval to reach the same outcome.
 
 ```python
 from dataclasses import dataclass
@@ -223,7 +223,7 @@ class SessionCostMetrics:
     total_input_tokens: int
     total_output_tokens: int
     tool_calls_count: int
-    resolved: bool  # do downstream system state ou human review
+    resolved: bool  # from downstream system state or human review
     model: str
     
     def cost_usd(self, input_price_per_1m: float, output_price_per_1m: float) -> float:
@@ -240,33 +240,33 @@ def cost_per_resolution(sessions, input_price, output_price):
     return total_cost / len(resolved)
 ```
 
-**Track weekly. Alerta se aumentar >15% sem melhora correspondente em resolution rate** — esse é o signal que algo regrediu numa prompt change ou retrieval config.
+**Track weekly. Alert if it increases >15% without a corresponding improvement in resolution rate** — that's the signal something regressed in a prompt change or retrieval config.
 
-Times que **não** instrumentam isso descobrem quando um retrieval bug dobrou o tamanho do context window via cost tracking. Times que **não** medem resolution rate separadamente de interaction completion miss que o agent tá "completando" conversas (chegando a uma conclusão) sem realmente **resolver** o problema do user.
+Teams that **don't** instrument this find out when a retrieval bug doubled the context window size via cost tracking. Teams that **don't** measure resolution rate separately from interaction completion miss that the agent is "completing" conversations (reaching a conclusion) without actually **solving** the user's problem.
 
 ## Judge drift monitoring
 
-Em produção, judges driftam silenciosamente. Não deixe a calibração vencer.
+In production, judges silently drift. Don't let calibration decay.
 
-**Cadência mínima**: a cada 2 semanas:
+**Minimum cadence**: every 2 weeks:
 
-1. Sample estratificado: 10 traces marcados PASS pelo judge, 10 marcados FAIL
-2. Você (ou domain expert) labeia manualmente
-3. Recalcula TPR e TNR
-4. Track tendências rolling 7-day e 30-day, não single sessions
+1. Stratified sample: 10 traces marked PASS by the judge, 10 marked FAIL
+2. You (or a domain expert) manually label them
+3. Recalculate TPR and TNR
+4. Track rolling 7-day and 30-day trends, not single sessions
 
-**Triggers de recalibração**:
-- TPR < 0.75 → judge missing failures reais
-- TNR < 0.75 → judge gerando ruído / false positives
-- Cohen's κ < 0.7 → agreement com humanos rachou
+**Recalibration triggers**:
+- TPR < 0.75 → judge is missing real failures
+- TNR < 0.75 → judge is generating noise / false positives
+- Cohen's κ < 0.7 → agreement with humans has broken down
 
-**Não confie em aggregate agreement**. Um judge que chama tudo de PASS tem 70% agreement se 70% das traces realmente são PASS — mas TNR é 0. Track os dois lados.
+**Don't trust aggregate agreement**. A judge that calls everything PASS has 70% agreement if 70% of traces are actually PASS — but TNR is 0. Track both sides.
 
-## CI/CD — Regression testing com `deepeval test run`
+## CI/CD — Regression testing with `deepeval test run`
 
-CI/CD é o segundo pilar de produção. A ideia: cada PR roda evals contra um dataset de regressão e bloqueia merge se algo regrediu.
+CI/CD is the second pillar of production. The idea: every PR runs evals against a regression dataset and blocks merging if something regressed.
 
-### Estrutura do test file
+### Test file structure
 
 ```python
 # tests/test_agent_evals.py
@@ -276,11 +276,11 @@ from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import TaskCompletionMetric, ToolCorrectnessMetric
 
-# Carrega dataset (pull do Confident AI ou load local)
+# Load dataset (pull from Confident AI or load locally)
 dataset = EvaluationDataset()
 dataset.pull(alias="regression-dataset-v1")
 
-# Gera test cases rodando o agent
+# Generate test cases by running the agent
 for golden in dataset.goldens:
     test_case = LLMTestCase(
         input=golden.input,
@@ -288,20 +288,20 @@ for golden in dataset.goldens:
     )
     dataset.add_test_case(test_case)
 
-# Pytest parameteriza sobre os test cases
+# Pytest parameterizes over the test cases
 @pytest.mark.parametrize("test_case", dataset.test_cases)
 def test_agent(test_case: LLMTestCase):
     metric = TaskCompletionMetric(threshold=0.8)
     assert_test(test_case=test_case, metrics=[metric])
 ```
 
-### Rodar localmente
+### Run locally
 
 ```bash
 deepeval test run tests/test_agent_evals.py
 ```
 
-### Rodar em GitHub Actions
+### Run in GitHub Actions
 
 ```yaml
 # .github/workflows/eval.yml
@@ -332,133 +332,133 @@ jobs:
         run: deepeval test run tests/test_agent_evals.py
 ```
 
-Se algum eval falhar, exit code é não-zero → PR fica bloqueado.
+If any eval fails, the exit code is non-zero → PR is blocked.
 
-### Comparar runs visualmente (regression testing)
+### Visually compare runs (regression testing)
 
-Após o segundo run (e qualquer um depois), Confident AI gera **relatório de regressão** automaticamente:
+After the second run (and any subsequent one), Confident AI automatically generates a **regression report**:
 
-- Linhas verdes: test case melhorou
-- Linhas vermelhas: test case regrediu
-- Linhas neutras: sem mudança
+- Green rows: test case improved
+- Red rows: test case regressed
+- Neutral rows: no change
 
-Você acessa pelo dashboard → "Test Runs" → "Compare".
+You access it via dashboard → "Test Runs" → "Compare".
 
-Pra acessar via CLI:
+To access via CLI:
 
 ```bash
 deepeval view
 ```
 
-### Strict mode pra blocking gates
+### Strict mode for blocking gates
 
-Se um eval **deve** ser bloqueante, use strict mode:
+If an eval **must** be blocking, use strict mode:
 
 ```python
 metric = TaskCompletionMetric(threshold=0.8, strict_mode=True)
 ```
 
-Strict mode força score binário (0 ou 1), e como threshold é 1, qualquer "imperfeição" falha. Útil pra gates absolutos (ex: PII leakage = NUNCA).
+Strict mode forces a binary score (0 or 1), and since threshold is 1, any "imperfection" fails. Useful for absolute gates (e.g., PII leakage = NEVER).
 
-## Monitoring contínuo
+## Continuous monitoring
 
-Após produção rolando, você quer monitorar:
+Once production is running, you want to monitor:
 
-| O que monitorar | Como |
+| What to monitor | How |
 |-----------------|------|
-| Score médio das métricas ao longo do tempo | Dashboard "Performance Trends" |
-| Quedas súbitas | Alertas configurados no Confident AI |
-| Regressões depois de deploy | Compare runs antes/depois |
-| Outliers (test cases muito ruins) | Filtra por score < threshold |
-| Tool selection patterns | Aggregate de `tools_called` |
-| Latência (não é métrica DeepEval, mas é importante) | Plot de duração das traces |
+| Average metric scores over time | Dashboard "Performance Trends" |
+| Sudden drops | Alerts configured in Confident AI |
+| Regressions after deploy | Compare runs before/after |
+| Outliers (very bad test cases) | Filter by score < threshold |
+| Tool selection patterns | Aggregate of `tools_called` |
+| Latency (not a DeepEval metric, but important) | Plot trace durations |
 
-### Alertas
+### Alerts
 
-Confident AI permite configurar alertas tipo:
+Confident AI lets you configure alerts like:
 
-- "Avise se TaskCompletion médio cair abaixo de 0.7 por mais de 1h"
-- "Avise se ToolCorrectness regredir mais de 10% em 24h"
-- "Avise se PII leakage > 0 em qualquer trace"
+- "Notify if average TaskCompletion drops below 0.7 for more than 1h"
+- "Notify if ToolCorrectness regresses more than 10% in 24h"
+- "Notify if PII leakage > 0 in any trace"
 
-## Async export — como funciona por baixo
+## Async export — how it works under the hood
 
-Quando você usa `metric_collection`, DeepEval:
+When you use `metric_collection`, DeepEval:
 
-1. Captura a trace localmente (memory)
-2. Exporta via OpenTelemetry-like protocol pro Confident AI (background thread, não bloqueia)
-3. Confident AI recebe a trace
-4. Roda as métricas da metric collection associada (async, no servidor)
-5. Salva resultados no dashboard
+1. Captures the trace locally (memory)
+2. Exports via an OpenTelemetry-like protocol to Confident AI (background thread, non-blocking)
+3. Confident AI receives the trace
+4. Runs the metrics from the associated metric collection (async, on the server)
+5. Saves results to the dashboard
 
-**Latência adicionada ao agent: zero.** O export é fire-and-forget.
+**Latency added to the agent: zero.** The export is fire-and-forget.
 
-## Custos em produção
+## Costs in production
 
-Cada trace que entra no Confident AI roda as métricas via LLM judge. Isso é tokens. Pense em:
+Each trace entering Confident AI runs metrics via LLM judge. That's tokens. Think about:
 
-- Quantas requests por dia → quantas traces por dia
-- Quantas métricas por collection → quantas chamadas de judge
-- Modelo do judge (gpt-4o > claude-haiku em precisão mas mais caro)
+- How many requests per day → how many traces per day
+- How many metrics per collection → how many judge calls
+- Judge model (gpt-4o > claude-haiku in precision but more expensive)
 
-Estratégias de redução:
+Cost reduction strategies:
 
-1. **Sample**: avalie só uma % das traces (não todas)
-2. **Filter**: avalie só traces que matcham certo critério
-3. **Modelo barato**: use claude-haiku ou gpt-4o-mini como judge
-4. **Métricas leves**: use só 2-3 metrics, não todas
+1. **Sample**: only evaluate a % of traces (not all)
+2. **Filter**: only evaluate traces that match a certain criterion
+3. **Cheap model**: use claude-haiku or gpt-4o-mini as judge
+4. **Light metrics**: use only 2-3 metrics, not all
 
-Confident AI oferece controle de sampling e filtering nas configurações da metric collection.
+Confident AI offers sampling and filtering control in the metric collection settings.
 
-## Versionamento de prompts e modelos
+## Versioning prompts and models
 
-Conforme você itera, vai querer rastrear:
+As you iterate, you'll want to track:
 
-- Qual versão do prompt foi usada
-- Qual modelo foi usado
-- Qual versão do agent (semver)
+- Which version of the prompt was used
+- Which model was used
+- Which version of the agent (semver)
 
-Use `tags` e `metadata` na trace pra isso. E mantenha um changelog dos prompts.
+Use `tags` and `metadata` on the trace for that. And maintain a prompt changelog.
 
-DeepEval também tem suporte a [`Prompt`](https://deepeval.com/docs/evaluation-prompts) pra versionamento — vale a pena conhecer se vai mexer muito em prompts.
+DeepEval also has support for [`Prompt`](https://deepeval.com/docs/evaluation-prompts) for versioning — worth knowing if you'll be iterating heavily on prompts.
 
-## Roteiro com o usuário
+## Workflow with the user
 
-1. **Verificar Confident AI login** — sem isso, pause
-2. **Criar metric collection** — junto com o usuário no dashboard
-3. **Atualizar `@observe`** — trocar `metrics=[]` por `metric_collection=""`
-4. **Smoke test** — rodar uma chamada e confirmar que aparece no dashboard
-5. **Adicionar tags/metadata** — pra organizar
-6. **Configurar CI/CD** — montar test file + workflow
-7. **Configurar alertas** — quais regressões devem avisar
-8. **Definir cadência de revisão** — semanal? por sprint? por deploy?
+1. **Verify Confident AI login** — without this, pause
+2. **Create metric collection** — together with the user in the dashboard
+3. **Update `@observe`** — replace `metrics=[]` with `metric_collection=""`
+4. **Smoke test** — run a call and confirm it appears in the dashboard
+5. **Add tags/metadata** — for organization
+6. **Configure CI/CD** — build test file + workflow
+7. **Configure alerts** — which regressions should notify
+8. **Define review cadence** — weekly? per sprint? per deploy?
 
-## Checklist pra "produção pronta"
+## Checklist for "production ready"
 
-- [ ] `deepeval login` feito, API key configurada
-- [ ] Metric collections criadas no Confident AI
-- [ ] `@observe` usa `metric_collection` (não `metrics=[]`)
-- [ ] Tags e metadata sendo populados via `update_current_trace`
-- [ ] Smoke test em ambiente de prod aparece no dashboard
-- [ ] CI/CD com `deepeval test run` em PRs
-- [ ] Dataset de regressão versionado (preferencialmente no Confident AI)
-- [ ] Alertas configurados pras métricas críticas
-- [ ] Sampling/filtering configurado se volume é alto (custo)
-- [ ] Documentação interna do que cada métrica significa
-- [ ] Cadência de revisão de resultados definida
+- [ ] `deepeval login` done, API key configured
+- [ ] Metric collections created in Confident AI
+- [ ] `@observe` uses `metric_collection` (not `metrics=[]`)
+- [ ] Tags and metadata being populated via `update_current_trace`
+- [ ] Smoke test in prod environment appears in dashboard
+- [ ] CI/CD with `deepeval test run` on PRs
+- [ ] Regression dataset versioned (preferably in Confident AI)
+- [ ] Alerts configured for critical metrics
+- [ ] Sampling/filtering configured if volume is high (cost)
+- [ ] Internal documentation of what each metric means
+- [ ] Results review cadence defined
 
-## Encerramento
+## Closing
 
-Após production setup completo, diga:
+After production setup is complete, say:
 
-> "Produção configurada. A partir de agora, toda chamada do seu agent é capturada no Confident AI e avaliada async. Pra ver o estado em qualquer momento: rode `deepeval view` ou abra o dashboard. Se quiser revisitar qualquer parte (regression testing, alertas, custom metrics), me chama. O ciclo de evals nunca termina — você itera pra sempre."
+> "Production configured. From now on, every call to your agent is captured in Confident AI and evaluated async. To see the state at any time: run `deepeval view` or open the dashboard. If you want to revisit any part (regression testing, alerts, custom metrics), just call me. The eval cycle never ends — you iterate forever."
 
 ## Anti-patterns
 
-- ❌ Usar `metrics=[]` em código de produção — adiciona latência
-- ❌ Não criar dataset de regressão — sem ele, CI/CD não tem como testar
-- ❌ Avaliar 100% das traces sem sampling em produção de alto volume — custo absurdo
-- ❌ Esquecer de configurar alertas — você só descobre regressão quando o cliente reclama
-- ❌ Deploy sem rodar test suite — defeats the purpose of CI/CD
-- ❌ Mudar prompt/modelo sem atualizar tag de versão — perde rastreabilidade
-- ❌ Ignorar o dashboard depois de configurar — dashboard sem revisão é só decoração
+- ❌ Using `metrics=[]` in production code — adds latency
+- ❌ Not creating a regression dataset — without it, CI/CD has nothing to test against
+- ❌ Evaluating 100% of traces without sampling in high-volume production — absurd cost
+- ❌ Forgetting to configure alerts — you only discover regression when the customer complains
+- ❌ Deploying without running the test suite — defeats the purpose of CI/CD
+- ❌ Changing prompt/model without updating the version tag — loses traceability
+- ❌ Ignoring the dashboard after configuring — a dashboard without review is just decoration
