@@ -1,5 +1,5 @@
 ---
-name: bagual-evals-setup
+name: bagual-ai-evals-evals-setup
 description: Installs the DeepEval Evals module into a BMad project. Use when the user says "instalar bagual-evals", "setup deepeval module", "registrar deepeval no bmad", or similar.
 ---
 
@@ -94,25 +94,25 @@ Show the user a summary of what was written:
 ✓ Output folder:     {eval_output_folder}
 
 Skills now available:
-  [DH]   bagual-help         — Router and diagnostic
-  [DEST] bagual-strategy     — Eval plan document
-  [DSU]  bagual-setup        — pip install + API keys
-  [DIN]  bagual-instrument   — @observe decorators
-  [DBD]  bagual-build-dataset — Goldens / dataset
-  [DEA]  bagual-error-analysis — ⭐ Trace review (most important)
-  [DPM]  bagual-pick-metrics  — Built-in metric selection
-  [DCM]  bagual-custom-metric — GEval / DAGMetric
-  [DRA]  bagual-run-and-analyze — Execute + interpret
-  [DPD]  bagual-production   — Confident AI + CI/CD
+  [DH]   bagual-ai-evals-help         — Router and diagnostic
+  [DEST] bagual-ai-evals-strategy     — Eval plan document
+  [DSU]  bagual-ai-evals-setup        — pip install + API keys
+  [DIN]  bagual-ai-evals-instrument   — @observe decorators
+  [DBD]  bagual-ai-evals-build-dataset — Goldens / dataset
+  [DEA]  bagual-ai-evals-error-analysis — ⭐ Trace review (most important)
+  [DPM]  bagual-ai-evals-pick-metrics  — Built-in metric selection
+  [DCM]  bagual-ai-evals-custom-metric — GEval / DAGMetric
+  [DRA]  bagual-ai-evals-run-and-analyze — Execute + interpret
+  [DPD]  bagual-ai-evals-production   — Confident AI + CI/CD
 
-Start with:  bagual-help
+Start with:  bagual-ai-evals-help
 ```
 
 ## Encerramento
 
 Após mostrar o summary:
 
-> "Módulo instalado. Comece com `bagual-help` — ele vai perguntar uma coisa de cada vez e rotear pro skill certo pro seu estágio atual."
+> "Módulo instalado. Comece com `bagual-ai-evals-help` — ele vai perguntar uma coisa de cada vez e rotear pro skill certo pro seu estágio atual."
 
 ## Anti-patterns
 

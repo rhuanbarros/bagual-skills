@@ -1,5 +1,5 @@
 ---
-name: bagual-run-and-analyze
+name: bagual-ai-evals-run-and-analyze
 description: Execução de evals locais e análise/interpretação de resultados de DeepEval. Use quando o usuário disser "rodar evals", "analisar resultados", "interpretar score", "evals_iterator", "deepeval test run", "diagnosticar falha", ou similar.
 ---
 
@@ -12,10 +12,10 @@ Você é o executor e analista. Tem dois trabalhos:
 
 ## Pré-requisitos — confira antes de começar
 
-- [ ] Agent instrumentado com `@observe` (skill `bagual-instrument`)
-- [ ] Dataset com goldens criados (skill `bagual-build-dataset`)
-- [ ] Métricas definidas e configuradas (skill `bagual-pick-metrics`)
-- [ ] Chave LLM configurada (skill `bagual-setup`)
+- [ ] Agent instrumentado com `@observe` (skill `bagual-ai-evals-instrument`)
+- [ ] Dataset com goldens criados (skill `bagual-ai-evals-build-dataset`)
+- [ ] Métricas definidas e configuradas (skill `bagual-ai-evals-pick-metrics`)
+- [ ] Chave LLM configurada (skill `bagual-ai-evals-setup`)
 
 Se faltar alguma coisa, rote pra skill correspondente antes de prosseguir.
 
@@ -160,7 +160,7 @@ deepeval test run test_my_agent.py
 
 Esse comando trata cada test case como um teste pytest separado. Vai mostrar PASSED/FAILED por test case, e o exit code é não-zero se algum falhar — perfeito pra CI/CD.
 
-Pra detalhes de CI/CD, veja a skill `bagual-production`.
+Pra detalhes de CI/CD, veja a skill `bagual-ai-evals-production`.
 
 ## Após rodar — análise dos resultados
 
@@ -265,10 +265,10 @@ Esses 3 insights mudam radicalmente como você lê resultados de evals.
 
 | Pass rate inicial | Diagnóstico | Ação |
 |-------------------|-------------|------|
-| **95%+** | Falsa segurança. Suite não testa coisas que falham. | Volte pro `bagual-error-analysis`, faça trace review, derive critérios product-specific. |
+| **95%+** | Falsa segurança. Suite não testa coisas que falham. | Volte pro `bagual-ai-evals-error-analysis`, faça trace review, derive critérios product-specific. |
 | **70-85%** | **Healthy.** Tem signal real. | Itere no agent, não nos evals. |
 | **40-70%** | OK também — agent precisa trabalho mas evals tão calibrados | Priorize as categorias com pior score. |
-| **<40%** | Definições muito loose OU agent fundamentalmente quebrado | Re-valide as definições dos judges (bagual-custom-metric). |
+| **<40%** | Definições muito loose OU agent fundamentalmente quebrado | Re-valide as definições dos judges (bagual-ai-evals-custom-metric). |
 
 Se o usuário roda evals e tudo passa, **isso é vermelho**, não verde. A função do eval é catch failures — se não tá pegando nada, não tá fazendo o trabalho.
 
@@ -408,13 +408,13 @@ Quando os resultados forem ruins, essas hipóteses são as primeiras a testar:
 Após rodar e analisar, dependendo do resultado:
 
 **Se está pronto pra produção**:
-> "Resultados ótimos! Próximo passo é levar isso pra produção com monitoring contínuo. Quer que eu chame `bagual-production`?"
+> "Resultados ótimos! Próximo passo é levar isso pra produção com monitoring contínuo. Quer que eu chame `bagual-ai-evals-production`?"
 
 **Se precisa iterar**:
 > "Vou sugerir uma mudança baseada no diagnóstico: {hipótese}. Aplica e re-rodamos. Quando re-rodar, me chama de novo aqui pra analisarmos a comparação."
 
 **Se precisa custom metric**:
-> "Pelo que vimos, existe um critério não coberto pelas métricas built-in: {coisa}. Pra avaliar isso, vamos criar um GEval custom. Quer que eu chame `bagual-custom-metric`?"
+> "Pelo que vimos, existe um critério não coberto pelas métricas built-in: {coisa}. Pra avaliar isso, vamos criar um GEval custom. Quer que eu chame `bagual-ai-evals-custom-metric`?"
 
 ## Anti-patterns
 

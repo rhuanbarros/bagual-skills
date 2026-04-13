@@ -1,5 +1,5 @@
 ---
-name: bagual-strategy
+name: bagual-ai-evals-strategy
 description: Planejamento de estratégia de avaliação de AI agents antes de codar nada. Use quando o usuário disser "planejar evals", "estratégia de avaliação", "por onde começar avaliação", "como evaluar meu agente", ou estiver no início de um projeto novo.
 ---
 
@@ -48,7 +48,7 @@ A resolução prática: **use os princípios de infraestrutura do EDD** (build h
 | **EDD puro** (evals antes de código) | Tools bem-escopadas com critérios claros (function calling determinístico, parsers) | Agents open-ended — você escreve evals pra problemas imaginados enquanto failures reais ficam invisíveis |
 | **Error-analysis-first** (Hamel) | Qualquer agent em produção ou near-prod | Quando você não tem traces ainda — aí gera sintéticos |
 
-**Recomendação default**: error-analysis-first. Se o usuário tá começando do zero sem código, faça o setup mínimo (instrument + 5 goldens manuais), gere traces, **e depois** rote pra `bagual-error-analysis` pra construir os evals reais.
+**Recomendação default**: error-analysis-first. Se o usuário tá começando do zero sem código, faça o setup mínimo (instrument + 5 goldens manuais), gere traces, **e depois** rote pra `bagual-ai-evals-error-analysis` pra construir os evals reais.
 
 ## Princípio: assuma ignorância técnica
 
@@ -226,7 +226,7 @@ Exemplo: o customer support agent dele pode ter falhas tipo "cita endpoint depre
 | 40-70% | OK também, mas agent precisa trabalho |
 | <40% | Definições loose ou agent fundamentalmente quebrado |
 
-A skill `bagual-error-analysis` é o caminho pra construir evals product-specific — recomenda fortemente que o usuário faça o trace review depois de instrumentar.
+A skill `bagual-ai-evals-error-analysis` é o caminho pra construir evals product-specific — recomenda fortemente que o usuário faça o trace review depois de instrumentar.
 
 ### Bloco 8 — Roadmap
 
@@ -234,26 +234,26 @@ Apresente o roadmap nesta ordem (a não ser que o usuário tenha contexto que su
 
 ```
 Sprint 1 (essa semana):
-  - Setup DeepEval no projeto (skill: bagual-setup)
-  - Instrumentar agent com @observe (skill: bagual-instrument)
-  - Criar 5-10 goldens manualmente baseados nos failure_examples (skill: bagual-build-dataset)
+  - Setup DeepEval no projeto (skill: bagual-ai-evals-setup)
+  - Instrumentar agent com @observe (skill: bagual-ai-evals-instrument)
+  - Criar 5-10 goldens manualmente baseados nos failure_examples (skill: bagual-ai-evals-build-dataset)
 
 Sprint 2 (próxima):
-  - **Trace review (open coding) + axial coding** (skill: bagual-error-analysis) ← CRITICAL
+  - **Trace review (open coding) + axial coding** (skill: bagual-ai-evals-error-analysis) ← CRITICAL
   - Construir judges product-specific calibrados via AlignEval
-  - Configurar as 3 métricas do pacote starter (skill: bagual-pick-metrics)
-  - Rodar primeira rodada de evals locais (skill: bagual-run-and-analyze)
+  - Configurar as 3 métricas do pacote starter (skill: bagual-ai-evals-pick-metrics)
+  - Rodar primeira rodada de evals locais (skill: bagual-ai-evals-run-and-analyze)
   - Iterar baseado no que aparecer
 
 Sprint 3+:
   - Expandir dataset (Synthesizer pra gerar mais goldens)
   - Adicionar métricas custom (GEval) se aparecer requisito específico
-  - Configurar produção via Confident AI com three-tier strategy (skill: bagual-production)
+  - Configurar produção via Confident AI com three-tier strategy (skill: bagual-ai-evals-production)
   - CI/CD com deepeval test run
   - Cadência de calibração biweekly de TPR/TNR dos judges
 ```
 
-**O passo crítico que a maioria dos times pula é o trace review (bagual-error-analysis)**. Sem isso, você fica preso em métricas genéricas que não pegam suas falhas reais.
+**O passo crítico que a maioria dos times pula é o trace review (bagual-ai-evals-error-analysis)**. Sem isso, você fica preso em métricas genéricas que não pegam suas falhas reais.
 
 ## Output final — o documento de plano
 
@@ -287,19 +287,19 @@ Ao final da conversa, **gere o documento** abaixo. Apresente em chat. O usuário
 ## Roadmap
 
 ### Sprint 1
-- [ ] Setup (bagual-setup)
-- [ ] Instrumentação (bagual-instrument)
-- [ ] Dataset inicial com {N} goldens (bagual-build-dataset)
+- [ ] Setup (bagual-ai-evals-setup)
+- [ ] Instrumentação (bagual-ai-evals-instrument)
+- [ ] Dataset inicial com {N} goldens (bagual-ai-evals-build-dataset)
 
 ### Sprint 2
-- [ ] Métricas configuradas (bagual-pick-metrics)
-- [ ] Primeira rodada de evals (bagual-run-and-analyze)
+- [ ] Métricas configuradas (bagual-ai-evals-pick-metrics)
+- [ ] Primeira rodada de evals (bagual-ai-evals-run-and-analyze)
 - [ ] Iteração baseada em resultados
 
 ### Sprint 3+
 - [ ] Expansão de dataset via Synthesizer
 - [ ] Métricas custom (GEval)
-- [ ] Produção (bagual-production)
+- [ ] Produção (bagual-ai-evals-production)
 - [ ] CI/CD
 
 ## Critérios de "pronto pra produção"
@@ -314,7 +314,7 @@ Ao final da conversa, **gere o documento** abaixo. Apresente em chat. O usuário
 
 Após gerar o plano, sempre termine com:
 
-> "Beleza, plano traçado. O próximo passo é o **Sprint 1**. Quer que eu chame a skill `bagual-setup` agora pra começar a instalação?"
+> "Beleza, plano traçado. O próximo passo é o **Sprint 1**. Quer que eu chame a skill `bagual-ai-evals-setup` agora pra começar a instalação?"
 
 ## Anti-patterns
 
