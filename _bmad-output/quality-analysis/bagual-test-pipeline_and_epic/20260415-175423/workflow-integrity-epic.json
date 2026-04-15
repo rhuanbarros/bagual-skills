@@ -1,0 +1,49 @@
+{
+  "scanner": "workflow-integrity-prepass",
+  "script": "prepass-workflow-integrity.py",
+  "version": "1.0.0",
+  "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-bmad-implement-quick-epic",
+  "timestamp": "2026-04-15T20:54:34.052940+00:00",
+  "status": "warning",
+  "metadata": {
+    "frontmatter": {
+      "name": "bagual-bmad-implement-quick-epic",
+      "description": "Faster epic pipeline: create-story \u2192 dev-story \u2192 code-review (max 2 loops, deferred findings batched at end via bmad-quick-dev) \u2192 retrospective. Use when the user says \"run quick epic {N}\" or \"quick pipeline epic {N}\""
+    },
+    "sections": [],
+    "workflow_type": "simple-utility"
+  },
+  "stage_summary": {
+    "total_stages": 0,
+    "referenced": [],
+    "actual": [],
+    "missing_stages": [],
+    "orphaned_stages": []
+  },
+  "prompt_details": [],
+  "issues": [
+    {
+      "file": "SKILL.md",
+      "line": 1,
+      "severity": "high",
+      "category": "sections",
+      "issue": "Missing ## Overview section"
+    },
+    {
+      "file": "SKILL.md",
+      "line": 1,
+      "severity": "high",
+      "category": "sections",
+      "issue": "Missing ## On Activation section"
+    }
+  ],
+  "summary": {
+    "total_issues": 2,
+    "by_severity": {
+      "critical": 0,
+      "high": 2,
+      "medium": 0,
+      "low": 0
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "scanner": "execution-efficiency-prepass",
+  "script": "prepass-execution-deps.py",
+  "version": "1.0.0",
+  "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-bmad-implement-quick-epic",
+  "timestamp": "2026-04-15T20:54:34.051477+00:00",
+  "status": "fail",
+  "dependency_graph": {
+    "stages": [
+      "story-processor",
+      "workflow"
+    ],
+    "hard_dependencies": {},
+    "soft_dependencies": {},
+    "cycles": [],
+    "transitive_redundancies": [],
+    "parallel_groups": [
+      [
+        "story-processor",
+        "workflow"
+      ]
+    ]
+  },
+  "sequential_patterns": [
+    {
+      "file": "story-processor.md",
+      "type": "subagent-chain-violation",
+      "count": 1,
+      "issue": "Subagent file references spawning other subagents \u2014 subagents cannot spawn subagents"
+    },
+    {
+      "file": "workflow.md",
+      "type": "subagent-chain-violation",
+      "count": 1,
+      "issue": "Subagent file references spawning other subagents \u2014 subagents cannot spawn subagents"
+    }
+  ],
+  "issues": [
+    {
+      "file": "story-processor.md",
+      "severity": "critical",
+      "category": "subagent-chain-violation",
+      "issue": "Subagent file references spawning other subagents \u2014 subagents cannot spawn subagents"
+    },
+    {
+      "file": "workflow.md",
+      "severity": "critical",
+      "category": "subagent-chain-violation",
+      "issue": "Subagent file references spawning other subagents \u2014 subagents cannot spawn subagents"
+    }
+  ],
+  "summary": {
+    "total_issues": 2,
+    "by_severity": {
+      "critical": 2,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    }
+  }
+}

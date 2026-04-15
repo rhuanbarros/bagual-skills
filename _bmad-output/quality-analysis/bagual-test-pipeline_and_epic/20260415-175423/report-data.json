@@ -1,0 +1,580 @@
+{
+  "meta": {
+    "skill_name": "bagual-test-pipeline + bagual-bmad-implement-quick-epic",
+    "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-test-pipeline + bagual-bmad-implement-quick-epic",
+    "timestamp": "2026-04-15T17:54:23",
+    "scanner_count": 8
+  },
+  "narrative": "These two skills are analyzed as an integrated system: an epic implementation pipeline (bagual-bmad-implement-quick-epic) that produces feature code, and a test pipeline (bagual-test-pipeline) that is meant to verify it. The pair suffered real production failures — the agent assumed a JS stack on a C# project, ran E2E tests silently against stopped services, accepted error responses as test success, generated a separate VisualTestSuite.cs instead of integrating screenshots, and marked an entire epic done without running a single test.\n\nThe test pipeline has been substantially repaired. Stack detection now runs before any command is issued. E2E runs fail loudly if any required service is down. The mocking audit catalogs six violation types by name. The Integration Mandate explicitly names the VisualTestSuite.cs anti-pattern. All six critical production failures that touched the test pipeline alone are addressed in the current prompt text.\n\nThe epic pipeline has not been repaired. It still has no testing phase. Stories are marked done after code review without any test execution. The test pipeline is never invoked. The two skills do not interact.\n\nBeyond the integration gap, a deeper structural problem runs across both skills: nearly every deterministic gate — stack detection, service health checks, mock pattern scanning, coverage threshold comparison — is delegated to LLM reasoning at runtime. When these gates fail, they fail silently or with hallucinated results. The production failures were not failures of intent; the mandates were present. They were failures of enforcement: LLM reasoning substituted for deterministic scripts at every critical checkpoint.\n\nThe result is a skill pair that is aspirationally complete but structurally non-enforcing. The rules exist. The gates do not.",
+  "grade": "Poor",
+  "broken": [
+    {
+      "title": "Subagent-chain violation — story-processor.md loaded as subagent but spawns subagents",
+      "file": "bagual-bmad-implement-quick-epic/story-processor.md",
+      "line": 0,
+      "detail": "story-processor.md is loaded as a subagent by workflow.md Step 2. Inside it, Steps A, B, and C each spawn their own Agent subagents (bmad-create-story, bmad-dev-story, bmad-code-review). Subagents cannot spawn subagents. The pipeline cannot execute as written.",
+      "action": "Treat story-processor.md as an instruction document the orchestrator reads and follows directly, not a file delegated to a subagent. Remove the 'Spawn Agent to read story-processor.md' pattern; replace with 'Read story-processor.md and execute its steps.'",
+      "severity": "critical",
+      "source": "execution-deps-epic.json"
+    },
+    {
+      "title": "Subagent-chain violation — workflow.md Step 2 spawns a subagent that itself spawns subagents",
+      "file": "bagual-bmad-implement-quick-epic/workflow.md",
+      "line": 0,
+      "detail": "workflow.md Step 2 is the source of the spawn that produces the chain violation. The violation is at both orchestrator and processor levels. Same root cause as story-processor.md violation.",
+      "action": "Restructure Step 2 so the orchestrator executes story-processor logic directly instead of delegating to a subagent that then re-delegates.",
+      "severity": "critical",
+      "source": "execution-deps-epic.json"
+    },
+    {
+      "title": "Epic pipeline has no testing phase — stories marked done without any test execution",
+      "file": "bagual-bmad-implement-quick-epic/workflow.md",
+      "line": 0,
+      "detail": "The pipeline ends at retrospective without any invocation of bagual-test-pipeline or any test execution. Stories are marked done after code review, which is static analysis only. This reproduces the exact production failure: 'implemented all stories then marked done without verifying anything works.'",
+      "action": "Add a step between Step 4 (deferred findings) and Step 5 (retrospective) that invokes /bagual-test-pipeline high yolo. Add soft-fail mode to bagual-test-pipeline so the epic can receive a failure report and continue to retrospective rather than halting.",
+      "severity": "critical",
+      "source": "prompt-craft-analysis.md + execution-efficiency-analysis.md + skill-cohesion-analysis.md"
+    },
+    {
+      "title": "Mocking audit runs before test generation and never re-runs after — violations from generator are invisible",
+      "file": "bagual-test-pipeline/references/workflow.md",
+      "line": 0,
+      "detail": "Step 0.5 (mocking audit) is positioned before Step 2 (test generation). Violations introduced by bmad-testarch-atdd and bmad-testarch-automate in Step 2 are never audited. This is the exact root cause of the KnowledgeSearchTestDataFixture failure: the stub was created after the audit ran.",
+      "action": "Add a second mocking audit immediately after Step 2 (test generation) completes, before Step 3 runs unit tests. Same procedure as Step 0.5; placement is the only change.",
+      "severity": "critical",
+      "source": "enhancement-opportunities-analysis.md"
+    },
+    {
+      "title": "HALT recovery messages reference wrong skill name /bagual-bmad-implement-epic",
+      "file": "bagual-bmad-implement-quick-epic/workflow.md",
+      "line": 133,
+      "detail": "Two HALT messages tell the user to re-run /bagual-bmad-implement-epic (missing 'quick'). The correct skill name is /bagual-bmad-implement-quick-epic. A user following the recovery instruction invokes a nonexistent skill.",
+      "action": "Change both occurrences at lines 133 and 143 from /bagual-bmad-implement-epic to /bagual-bmad-implement-quick-epic.",
+      "severity": "high",
+      "source": "workflow-integrity-analysis.md"
+    },
+    {
+      "title": "Both SKILL.md files missing required ## Overview and ## On Activation sections",
+      "file": "bagual-test-pipeline/SKILL.md + bagual-bmad-implement-quick-epic/SKILL.md",
+      "line": 1,
+      "detail": "Both files jump from frontmatter directly to prose without the required structural sections. Scanner framework requires these sections to prime AI comprehension and declare the activation entry point. Content exists but is unheadered.",
+      "action": "Add ## Overview before opening prose and ## On Activation with a minimal delegation line in both SKILL.md files.",
+      "severity": "high",
+      "source": "workflow-integrity-pipeline.json + workflow-integrity-epic.json"
+    },
+    {
+      "title": "Story-processor Step D has no action body — agent must infer behavior from goal attribute",
+      "file": "bagual-bmad-implement-quick-epic/story-processor.md",
+      "line": 232,
+      "detail": "Step D ('Mark story as done') has a goal attribute and an output tag but no <action> block. The agent must infer what to do from XML attribute text. The parent orchestrator halts the pipeline if this step fails to produce the correct disk state change.",
+      "action": "Add explicit <action> elements: read {sprint_status}, update story key status to 'done', update last_updated, write the file. Repeat for the story file's Status field.",
+      "severity": "high",
+      "source": "workflow-integrity-analysis.md + prompt-craft-analysis.md"
+    }
+  ],
+  "opportunities": [
+    {
+      "name": "LLM Doing Deterministic Work at Every Critical Gate",
+      "description": "Stack detection, service health checks, mock pattern scanning, and coverage threshold comparison are all delegated to LLM reasoning instead of deterministic scripts. Each of these is 100% deterministic work with zero-hallucination risk if scripted. As LLM reasoning, each carries a probability of being wrong, slow, or silently accepted even when incorrect. Estimated 3.5-7 minutes of unnecessary LLM reasoning per full pipeline run.",
+      "severity": "critical",
+      "impact": "Every documented production failure traces directly to an LLM-reasoned gate that was wrong: JS detected on C# project, services checked via LLM simulation not TCP connect, mocks missed because LLM pattern search is not ripgrep, coverage threshold bypassed because LLM arithmetic on stdout is unreliable.",
+      "action": "Implement scripts/check-services.sh (TCP connect), scripts/detect-stack.sh (filesystem check), scripts/scan-e2e-mocks.sh (ripgrep on E2E paths), scripts/check-coverage.sh (parse XML/stdout), in that priority order. Scripts emit exit codes; LLM reads them and acts. LLM retains judgment work: generating tests, writing fix prompts, interpreting ambiguous results.",
+      "finding_count": 10,
+      "findings": [
+        {
+          "title": "Stack detection is LLM reasoning — failed in production (JS detected on C# project)",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Step 0 asks the LLM to look for stack indicators. This failed in production when a C# + xUnit project was identified as JS/TS. A filesystem script (ls *.csproj; ls pytest.ini) is 100% reliable.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Service health check is LLM simulation — failed in production (silent E2E with all services down)",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "e2e-runner Step A instructs LLM to 'attempt GET to /health or TCP connect.' LLMs simulate this check rather than executing it. TCP connect script with exit code is deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Mock/stub scan is LLM pattern inspection — missed KnowledgeSearchTestDataFixture in production",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Step 0.5 asks LLM to scan for violation patterns. ripgrep with exact patterns on E2E paths is deterministic and does not miss files.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Coverage threshold check is LLM arithmetic — thresholds silently bypassed in production",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Fix loop exit condition requires LLM to parse coverage output and compare to threshold. Script parsing cobertura XML (dotnet) / pytest stdout (python) / coverage-summary.json (js) is 100% deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Port/endpoint detection is LLM multi-file read — risk of reading wrong config",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "e2e-runner told to detect web app port from launchSettings.json, appsettings, .env, playwright.config. jq + grep script is deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Story queue building is LLM YAML parsing — risk of including retrospective/epic keys",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md",
+          "line": 0,
+          "detail": "Orchestrator reads sprint-status.yaml to build story queue. Python YAML parser with regex filter is 99% deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "E2E test file discovery is LLM grep — may undercount or overcount",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Diagnostic scan asks LLM to count E2E test files. grep -rl for IPage/PlaywrightFixture in test directories is deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Data seeding/teardown check is absent — systematically forgotten in production",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "No step checks whether E2E test files contain lifecycle hooks (SetUp/TearDown/beforeEach/afterEach). A grep-based lifecycle checker would catch files with zero hooks.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Visual validation enablement check is LLM filesystem reasoning",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "e2e-runner decides whether visual validation applies by detecting frontend indicators via LLM. Shell script checking *.cshtml, wwwroot/, package.json is deterministic.",
+          "source": "script-opportunities-analysis.md"
+        },
+        {
+          "title": "Screenshot/requirement coverage sync is LLM set-difference reasoning",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "Step B2 asks LLM to identify screenshot names not in visual-requirements.yaml. Regex extraction + YAML key set-difference is deterministic.",
+          "source": "script-opportunities-analysis.md"
+        }
+      ]
+    },
+    {
+      "name": "No Integration Between Epic and Test Pipeline",
+      "description": "The two skills do not interact. The epic pipeline never invokes the test pipeline. Stories are marked done after static code review. Epics are marked done without test execution. The system as a whole does not deliver verified software — it delivers implemented software.",
+      "severity": "critical",
+      "impact": "An epic can be fully 'done' in sprint-status.yaml while the implemented code has never been tested end-to-end. Code review (bmad-code-review) reviews code against the story spec, not against running behavior. This is the direct cause of the production failure that motivated this analysis.",
+      "action": "Add a test pipeline gate between Step 4 (deferred findings) and Step 5 (retrospective) in epic workflow.md. Add soft-fail mode to bagual-test-pipeline. Pass high coverage level explicitly. Thread test report path to retrospective invocation. Optionally add a per-story lightweight test gate in story-processor.md after dev-story.",
+      "finding_count": 5,
+      "findings": [
+        {
+          "title": "No invocation of bagual-test-pipeline anywhere in epic workflow.md or story-processor.md",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md",
+          "line": 0,
+          "detail": "Complete absence of any /bagual-test-pipeline invocation. The missing link between the two skills.",
+          "source": "execution-efficiency-analysis.md"
+        },
+        {
+          "title": "bagual-test-pipeline HALTs on 3 failed iterations — interface mismatch with epic desired soft-fail",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "The epic's desired behavior is 'warn but continue to retrospective.' The test pipeline HALTs. No soft-fail mode exists. The interface mismatch must be resolved before integration is possible.",
+          "source": "skill-cohesion-analysis.md"
+        },
+        {
+          "title": "Coverage level defaults to medium (80%) in yolo mode — epic should invoke at high (95%)",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "When the epic pipeline invokes /bagual-test-pipeline yolo without explicit coverage arg, the default is medium. Post-epic validation gate should require high coverage. Epic invocation must pass 'high' explicitly.",
+          "source": "skill-cohesion-analysis.md + enhancement-opportunities-analysis.md"
+        },
+        {
+          "title": "Retrospective receives no test outcome signal",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md",
+          "line": 0,
+          "detail": "bmad-retrospective is called with 'epic {epic_num} yolo' only. It receives no coverage result, no fix iteration count, no pass/fail signal. Once integration exists, retrospective invocation must include test report path.",
+          "source": "skill-cohesion-analysis.md"
+        },
+        {
+          "title": "Phase A (test creation) and Phase B (test execution) entirely absent from epic workflow",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md",
+          "line": 0,
+          "detail": "The desired end state described in production failure context requires Phase A (create tests) and Phase B (run everything with service confirmation and fix loops) to be added to the epic workflow. Neither exists.",
+          "source": "skill-cohesion-analysis.md"
+        }
+      ]
+    },
+    {
+      "name": "Audit and Enforcement Gaps — Rules Without Structural Gates",
+      "description": "The mandates are present but the enforcement mechanisms have holes. The mocking audit does not re-run after test generation. The visual integration mandate has no verification step after test generation. The E2E fix loop enters code-fix mode even when the failure is infrastructure. Data seeding is declared as a mandate but has no structural step or verification.",
+      "severity": "high",
+      "impact": "Rules can be forgotten or overridden by other instructions in context. Gates cannot. Each gap here is an independent path by which an agent can comply with the prompt structure while violating the rule's intent — exactly as happened in production.",
+      "action": "Add post-generation mocking audit (after Step 2). Add visual integration verification step that scans for *Visual*/*VisualTest* files after test generation. Add infrastructure-failure discriminator before E2E fix loop entry. Add e2e-runner Step A2 (data seeding) and Step E2 (cleanup).",
+      "finding_count": 6,
+      "findings": [
+        {
+          "title": "Post-generation mocking audit absent — violations from bmad-testarch-atdd never caught",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Step 0.5 audits pre-existing tests only. Tests generated in Step 2 are never re-audited. This was the root cause of the KnowledgeSearchTestDataFixture production failure.",
+          "source": "enhancement-opportunities-analysis.md"
+        },
+        {
+          "title": "Visual integration mandate has no verification step — separate screenshot classes would go undetected",
+          "file": "bagual-test-pipeline/references/visual-validation.md",
+          "line": 0,
+          "detail": "The mandate prohibits creating a separate test class for screenshots but no step checks whether a *Visual* or *VisualTest* file was created by the generator. The original VisualTestSuite.cs failure would not be caught by the current prompt structure.",
+          "source": "enhancement-opportunities-analysis.md"
+        },
+        {
+          "title": "E2E fix loop enters code-fix mode on infrastructure failures — wastes all 3 iterations",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Step 5 always spawns bmad-quick-dev regardless of failure type. If e2e-runner Step A returned 'Required services not running,' code fixes cannot help. The orchestrator should detect this failure reason and HALT with environment-setup message instead.",
+          "source": "enhancement-opportunities-analysis.md + execution-efficiency-analysis.md"
+        },
+        {
+          "title": "Data seeding and cleanup absent from all four pipeline files",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "e2e-runner confirms services are running but never populates them with test data. E2E tests against a real database will fail or produce false results without a known data state. Listed as a production failure and not yet addressed.",
+          "source": "skill-cohesion-analysis.md"
+        },
+        {
+          "title": "dotnet test in e2e-runner does not filter to E2E project — runs unit tests again",
+          "file": "bagual-test-pipeline/references/e2e-runner.md",
+          "line": 0,
+          "detail": "dotnet test without project path filter runs all test projects. In a .NET solution with both unit and E2E projects, the e2e-runner's Step C reruns unit tests, wastes time, and produces confusing output.",
+          "source": "skill-cohesion-analysis.md"
+        },
+        {
+          "title": "Mocking violation catalog is keyword-based — custom DI-registered fakes not caught",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Step 0.5 searches for WireMock, MockHttp, HttpListener, UseInMemoryDatabase etc. A custom class like KnowledgeSearchTestDataFixture wrapping a fake IKnowledgeSearchService does not match any catalog keyword unless the agent reads and understands the class implementation.",
+          "source": "enhancement-opportunities-analysis.md"
+        }
+      ]
+    },
+    {
+      "name": "Epic Skill Structural Defects",
+      "description": "The epic skill has two critical subagent-chain violations, a missing action body in Step D, a stale iteration count in an error message, four path-standards violations, and wrong skill name in HALT recovery messages. These are structural defects that make the skill non-executable in its current form.",
+      "severity": "critical",
+      "impact": "The pipeline cannot run as written due to the subagent-chain violations. The remaining defects produce misleading error messages, ambiguous agent behavior at a critical step, and files placed outside the BMad convention structure.",
+      "action": "Fix subagent-chain violations (restructure workflow.md Step 2). Add action body to story-processor.md Step D. Fix /5 to /2 in story-processor.md:199. Fix wrong skill name in workflow.md:133,143. Move workflow.md and story-processor.md to references/. Fix bare _bmad path references.",
+      "finding_count": 6,
+      "findings": [
+        {
+          "title": "Subagent-chain: story-processor.md (subagent) spawns further subagents",
+          "file": "bagual-bmad-implement-quick-epic/story-processor.md",
+          "line": 0,
+          "detail": "Critical — pipeline non-executable.",
+          "source": "execution-deps-epic.json"
+        },
+        {
+          "title": "Subagent-chain: workflow.md Step 2 is the spawn source of the chain violation",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md",
+          "line": 0,
+          "detail": "Critical — same root cause.",
+          "source": "execution-deps-epic.json"
+        },
+        {
+          "title": "story-processor.md Step D: no action body, agent must infer from goal attribute",
+          "file": "bagual-bmad-implement-quick-epic/story-processor.md",
+          "line": 232,
+          "detail": "High — orchestrator halts if disk state is not updated. Agent has no explicit instructions.",
+          "source": "workflow-integrity-analysis.md"
+        },
+        {
+          "title": "story-processor.md:199 HALT message says '/5' but loop cap is 2",
+          "file": "bagual-bmad-implement-quick-epic/story-processor.md",
+          "line": 199,
+          "detail": "Medium — stale copy-paste artifact, misleading error output.",
+          "source": "prompt-craft-analysis.md"
+        },
+        {
+          "title": "workflow.md and story-processor.md placed at skill root instead of references/",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md + story-processor.md",
+          "line": 0,
+          "detail": "High path-standards violation — all progressive disclosure content must be in ./references/.",
+          "source": "path-standards-epic.json"
+        },
+        {
+          "title": "Bare _bmad references without {project-root} prefix in SKILL.md:21 and story-processor.md:19",
+          "file": "bagual-bmad-implement-quick-epic/SKILL.md + story-processor.md",
+          "line": 21,
+          "detail": "High path-standards violation — bare _bmad references break portability.",
+          "source": "path-standards-epic.json"
+        }
+      ]
+    },
+    {
+      "name": "Missing Structural Sections and Minor Prompt Gaps",
+      "description": "Both SKILL.md files are missing ## Overview and ## On Activation sections. Several minor prompt gaps exist: stale iteration count, wrong command name in HALT messages, e2e_runner_path passed as relative to subagent, Co-Authored-By footer inconsistency.",
+      "severity": "high",
+      "impact": "Missing structural sections prevent scanner compliance and may degrade AI comprehension at skill activation. Minor gaps produce misleading error messages and occasional path resolution failures.",
+      "action": "Add required headers to both SKILL.md files. Fix stale /5 to /2. Fix wrong skill name in HALT messages. Resolve e2e_runner_path to absolute path using {project-root} before passing to E2E sub-agent. Standardize Co-Authored-By footer format.",
+      "finding_count": 5,
+      "findings": [
+        {
+          "title": "Both SKILL.md files missing ## Overview section",
+          "file": "bagual-test-pipeline/SKILL.md + bagual-bmad-implement-quick-epic/SKILL.md",
+          "line": 1,
+          "detail": "Required section for scanner compliance and AI priming.",
+          "source": "workflow-integrity-pipeline.json + workflow-integrity-epic.json"
+        },
+        {
+          "title": "Both SKILL.md files missing ## On Activation section",
+          "file": "bagual-test-pipeline/SKILL.md + bagual-bmad-implement-quick-epic/SKILL.md",
+          "line": 1,
+          "detail": "Required section declaring activation entry point.",
+          "source": "workflow-integrity-pipeline.json + workflow-integrity-epic.json"
+        },
+        {
+          "title": "e2e_runner_path set as relative path but passed to isolated E2E sub-agent",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Low — if sub-agent uses different working directory, relative path resolves incorrectly. Should be resolved to absolute path using {project-root} before passing to sub-agent.",
+          "source": "prompt-craft-analysis.md"
+        },
+        {
+          "title": "Co-Authored-By footer inconsistent — epic uses 'Claude Opus 4.6 (1M context)', pipeline uses 'Claude Sonnet 4.6'",
+          "file": "bagual-bmad-implement-quick-epic/workflow.md + story-processor.md",
+          "line": 200,
+          "detail": "Low — non-standard suffix '(1M context)' will be embedded in git history. Cosmetic but creates inconsistency.",
+          "source": "workflow-integrity-analysis.md"
+        },
+        {
+          "title": "Step 0.5 mocking audit runs before framework install — finds nothing on first-run new projects",
+          "file": "bagual-test-pipeline/references/workflow.md",
+          "line": 0,
+          "detail": "Low — on first pipeline run when no E2E test files exist yet, Step 0.5 runs but finds nothing. Harmless but wastes agent effort. Primary use case (re-runs on existing projects) is unaffected.",
+          "source": "skill-cohesion-analysis.md"
+        }
+      ]
+    }
+  ],
+  "strengths": [
+    {
+      "title": "Stack detection is thorough and prioritized correctly — addresses root cause of JS-on-C# failure",
+      "detail": "workflow.md Step 0 detects dotnet first (.csproj, .sln, global.json), then python, then js — with explicit priority ordering that matches real-world precedence. The detection result gates every subsequent command via {detected_stack}. This addresses the original production failure at the design level."
+    },
+    {
+      "title": "No-mock mandate is layered across four independent checkpoints",
+      "detail": "No-mocking is enforced in the RULES section, Step 0.5 pre-run audit, e2e-runner Anti-Patterns Mandate table, and the fix-loop mandate. Each appears in a different agent's context window. A single mandate can be forgotten; four layered ones are structurally harder to violate."
+    },
+    {
+      "title": "Visual validation Integration Mandate is unambiguous and names the failure pattern by example",
+      "detail": "visual-validation.md explicitly names the anti-pattern (VisualTestSuite.cs), explains why it is wrong, and repeats the prohibition verbatim in e2e-runner.md Step B2. The dual-placement is intentional and correct for context isolation across agent boundaries."
+    },
+    {
+      "title": "Service verification is fail-loud, immediate, and per-service",
+      "detail": "e2e-runner Step A builds a per-service manifest, checks each service independently, and returns E2E RUNNER RESULT: FAILED immediately on any DOWN service. Also creates docs/e2e-startup.md if no startup script exists. This directly addresses the silent E2E failure mode."
+    },
+    {
+      "title": "Fix loops are capped, bounded, and mandated not to cheat",
+      "detail": "Every fix loop (unit tests, E2E) is capped at 3 iterations with a structured HALT on exhaustion. The fix mandate explicitly prohibits weakening tests, lowering thresholds, or introducing mocks as a fix. The loop exits on confirmed pass, not on 'no errors in fix agent output.'"
+    },
+    {
+      "title": "Mandate injection into subagent prompts eliminates context gap failures",
+      "detail": "The Adversarial Testing Mandate and E2E Anti-Patterns Mandate are inserted verbatim into every subagent prompt rather than referenced by pointer. A subagent reading only its own prompt file still receives the full mandate. This is the correct pattern for distributed agent execution with no shared context."
+    },
+    {
+      "title": "Epic deferred-findings pattern is pragmatic and prevents story-level blocking",
+      "detail": "Per-story review loops cap at 2 iterations and defer remaining findings to a batch fix at epic end. The batch fix re-validates each finding before acting (some may already be resolved). This balances throughput against quality without permanently deferring debt."
+    },
+    {
+      "title": "Fail-fast story gating via disk state verification prevents silent sub-agent failures",
+      "detail": "The orchestrator re-reads sprint-status.yaml after each story agent completes and halts if the story is not marked done. This prevents silent failures where a sub-agent reports success but produces no disk state change — the communication channel is the file, not the agent's output text."
+    }
+  ],
+  "detailed_analysis": {
+    "structure": {
+      "assessment": "Test pipeline passes all path standards and has clean four-file structure. Epic skill has four high-severity path-standards violations and two SKILL.md structural section gaps shared with test pipeline.",
+      "findings": [
+        "bagual-test-pipeline: all files correctly in references/ or at skill root; zero path-standards violations",
+        "bagual-bmad-implement-quick-epic: workflow.md and story-processor.md at skill root — both should be in references/",
+        "bagual-bmad-implement-quick-epic: bare _bmad references in SKILL.md:21 and story-processor.md:19 lack {project-root} prefix",
+        "Both SKILL.md files: missing ## Overview and ## On Activation sections — required by scanner framework",
+        "Both skills: thin SKILL.md dispatch shell pattern is architecturally appropriate for orchestrator-style skills",
+        "Pre-pass classifies both as simple-utility with 0 stages — this is a scanner gap, not a skill defect; both delegate to external reference/workflow files which the prepass does not traverse"
+      ]
+    },
+    "craft": {
+      "assessment": "Test pipeline prompt craft is STRONG — optimal SKILL.md size, full progressive disclosure, verbatim mandate injection pattern. Epic skill prompt craft is ADEQUATE for its current (incomplete) scope.",
+      "overview_quality": "Both SKILL.md files are 24 lines / ~285-323 tokens — optimal entry point size. Content is clear and activation-trigger language is well-specified.",
+      "progressive_disclosure": "Test pipeline fully implements progressive disclosure: SKILL.md defers entirely to references/ loaded on demand. Epic skill partially implements it: workflow.md and story-processor.md loaded together at ~6,050 tokens, larger than ideal but within acceptable range.",
+      "findings": [
+        "Test pipeline: 0 waste patterns, 0 back-references, 0 token inefficiencies detected",
+        "Epic skill: 0 waste patterns, 0 back-references; prompts have config headers and progression conditions",
+        "Adversarial Testing Mandate copied verbatim into every subagent prompt (~120 words each) — technically a token cost but functionally necessary for mandate propagation across agent boundaries",
+        "story-processor.md Step D: no <action> block; agent must infer from goal XML attribute — structurally ambiguous",
+        "story-processor.md:199: HALT message reads '/5' but loop cap is 2 — stale artifact from previous version",
+        "e2e_runner_path set as relative path in INITIALIZATION — risk of mis-resolution when passed to isolated E2E subagent"
+      ]
+    },
+    "cohesion": {
+      "assessment": "Test pipeline internal cohesion is STRONG. Cross-skill cohesion between test pipeline and epic is effectively zero — no invocation path, no shared interface contract, no handoff point.",
+      "dimensions": {
+        "stage_flow": {
+          "score": "Strong (test pipeline) / Adequate-Incomplete (epic)",
+          "notes": "Test pipeline flow: Diagnostic → Mocking Audit → Framework → Unit Tests → Fix Loop → E2E Runner → E2E Fix Loop → Report. Each step has clear entry/exit conditions. Epic flow: Queue → Per-story (create→dev→review→done→commit) → Deferred Findings → Retrospective. Clean for implementation-only goal. Missing: test verification phase after implementation."
+        }
+      },
+      "findings": [
+        "Test pipeline: all four files (SKILL.md, workflow.md, e2e-runner.md, visual-validation.md) are internally consistent in instructions, anti-patterns, and variable threading",
+        "Epic skill: workflow.md and story-processor.md are internally coherent but operate as implementation-only pipeline with no testing integration",
+        "Cross-skill: no invocation path from epic to test pipeline; no interface contract; no test result signal to retrospective",
+        "Interface mismatch: test pipeline HALTs on 3 failed iterations; epic desired behavior is warn-and-continue — no soft-fail mode exists",
+        "Step 0.5 ordering: mocking audit before framework install is harmless on re-runs but wastes effort on first-run new projects",
+        "Redundancy R1: mocking anti-patterns enumerated in three places across pipeline files — necessary redundancy for context isolation, not a defect",
+        "Retrospective receives no test outcome signal — once integration exists, bmad-retrospective invocation must include test report path"
+      ]
+    },
+    "efficiency": {
+      "assessment": "Test pipeline is structurally efficient. Epic skill has two critical subagent-chain violations preventing execution. E2E runner re-runs full setup on every fix iteration unnecessarily.",
+      "findings": [
+        "CRITICAL: story-processor.md subagent-chain violation — subagent cannot spawn subagents",
+        "CRITICAL: workflow.md Step 2 is source of chain violation at orchestrator level",
+        "MEDIUM: e2e-runner Steps A and B re-run on every fix iteration in Step 5 — service status and log fixtures do not change between fix attempts; skip_setup flag on re-run iterations would reduce per-iteration latency by 15-30 seconds",
+        "LOW: Step 4 initial E2E run + Step 5 3-iteration fix loop = effectively 4 total E2E runner executions; cap semantics are ambiguous",
+        "LOW: Adversarial Testing Mandate copied verbatim into multiple subagent prompts — fixed cost per agent invocation, not blocking",
+        "LOW: deferred findings file accumulates across failed partial runs — batch fix re-validates before acting, partially mitigating stale entries",
+        "EFFICIENT: Stack detection runs once, result threaded to all subsequent steps and subagents",
+        "EFFICIENT: Diagnostic + mocking audit run before any subagent spawned — prevents wasted invocations on invalid state",
+        "EFFICIENT: Fix loops capped at 3 iterations with structured HALT — no infinite retry spirals",
+        "EFFICIENT: Visual validation activation conditional on frontend detection — backend-only projects skip screenshot overhead"
+      ]
+    },
+    "experience": {
+      "assessment": "Test pipeline provides meaningful diagnostic output, structured final report, and actionable HALT messages. Epic pipeline experience is adequate for implementation but opaque on quality — no test output, no coverage report, no verification artifact.",
+      "journeys": [
+        {
+          "archetype": "Agent running quick-epic on a new C# project",
+          "summary": "Stories implemented and marked done via code review. Epic completed. No tests ever run. Developer discovers failures only post-delivery.",
+          "friction_points": [
+            "No testing phase anywhere in the story or epic flow",
+            "Code review is static analysis — does not verify running behavior",
+            "Retrospective receives no quality signal — documents implementation velocity, not quality",
+            "Epic 'done' state gives false confidence that the software works"
+          ],
+          "bright_spots": [
+            "Story isolation via independent subagents prevents context bleed",
+            "Deferred findings batch fix prevents story-level blocking",
+            "Disk state verification after each story prevents silent sub-agent failures"
+          ]
+        },
+        {
+          "archetype": "Agent running test-pipeline on C# project with E2E stubs",
+          "summary": "Stack correctly detected as dotnet. Mocking audit runs before test generation. Service check verifies port occupancy but not service identity — a stub on the expected port passes as UP.",
+          "friction_points": [
+            "Service health check verifies 'something is listening' not 'the real service is listening' — stub on expected port passes",
+            "Mocking audit does not re-run after test generation — violations from generator are invisible",
+            "DI-registered fakes with custom class names not caught by keyword catalog"
+          ],
+          "bright_spots": [
+            "Stack detection is correct and gates all commands",
+            "Step 0.5 catches pre-existing violations before any test runs",
+            "Service hard-fail is correct pattern when services are genuinely absent"
+          ]
+        },
+        {
+          "archetype": "Developer with unknown/non-standard stack (Go, Rust, Elixir)",
+          "summary": "Step 0 falls to 'unknown.' Framework install tries dotnet, pytest, npx vitest in sequence — all wrong for non-JS/non-Python/non-.NET. Pipeline produces generic failures with no useful guidance.",
+          "friction_points": [
+            "Unknown stack degrades to try-each-in-order with no signal to user",
+            "No mechanism to prompt user for stack help or halt gracefully",
+            "All subsequent steps use wrong commands"
+          ],
+          "bright_spots": [
+            "At least stack is detected as unknown rather than silently misidentified",
+            "Script-based detection (Opportunity 1) would make this failure explicit and immediate"
+          ]
+        }
+      ],
+      "autonomous": {
+        "potential": "High for test pipeline standalone. Low for epic pipeline as a quality-delivery system.",
+        "notes": "Test pipeline runs fully headless in yolo mode with all prompts bypassed. Epic pipeline runs fully headless but produces unverified output. In yolo/pipeline mode, the E2E phase pause (services running check) disappears — the human gate that would have caught the silent-services failure is removed by design. Service verification script (Opportunity 2) would restore this safety without requiring human interaction."
+      },
+      "findings": [
+        "Both skills run fully headless with yolo bypass on all user prompts",
+        "Mandate injection is correct for headless operation — mandates travel to sub-skills in invocation prompts",
+        "Result parsing is fragile: orchestrator detects E2E result by checking if output 'contains E2E RUNNER RESULT: PASSED' — minor output variation could cause false failure interpretation",
+        "E2E fix loop cannot distinguish infrastructure failure from code failure without explicit discriminator step",
+        "startup doc (docs/e2e-startup.md) referenced in failure message but may scroll past unnoticed in non-interactive pipeline output"
+      ]
+    },
+    "scripts": {
+      "assessment": "Neither skill has any scripts/. Every deterministic operation is delegated to LLM reasoning. This is the root cause of all documented production failures. Estimated 3.5-7 minutes of unnecessary LLM reasoning per full pipeline run with non-zero hallucination probability at each gate.",
+      "token_savings": "Implementing all 10 script opportunities eliminates an estimated 215-425 seconds of LLM reasoning per pipeline run. The three critical scripts (service health, stack detection, mock scanner) directly caused the three most severe production failures.",
+      "findings": [
+        "CRITICAL: No scripts/check-services.sh — service health is LLM simulation, caused silent E2E production failure",
+        "CRITICAL: No scripts/detect-stack.sh — stack is LLM reasoning, caused JS commands on C# project in production",
+        "CRITICAL: No scripts/scan-e2e-mocks.sh — mock scanning is LLM grep, missed KnowledgeSearchTestDataFixture in production",
+        "HIGH: No scripts/check-coverage.sh — coverage threshold is LLM arithmetic on stdout, thresholds silently bypassed",
+        "HIGH: No scripts/check-e2e-lifecycle.sh — data seeding hooks never checked, systematically forgotten in production",
+        "MEDIUM: No scripts/detect-port.sh — web app port detection is LLM multi-file read, risk of reading wrong config",
+        "MEDIUM: No scripts/build-story-queue.py — YAML parsing is LLM reasoning, risk of including wrong keys in story queue",
+        "MEDIUM: No scripts/find-e2e-tests.sh — E2E test file discovery is LLM grep, may undercount or overcount",
+        "LOW: No scripts/check-frontend.sh — visual validation enablement is LLM filesystem reasoning",
+        "LOW: No scripts/check-screenshot-coverage.sh — screenshot/requirement sync is LLM set-difference"
+      ]
+    }
+  },
+  "recommendations": [
+    {
+      "rank": 1,
+      "action": "Fix subagent-chain violations in epic skill by restructuring workflow.md Step 2 to execute story-processor logic directly rather than delegating to a subagent that re-delegates",
+      "resolves": "Epic pipeline non-executable (broken items 1-2, Theme 4)",
+      "effort": "Medium"
+    },
+    {
+      "rank": 2,
+      "action": "Add test pipeline integration to epic workflow: insert /bagual-test-pipeline high yolo step between Step 4 and Step 5, add soft-fail mode to test pipeline, thread test report path to retrospective invocation",
+      "resolves": "No testing phase in epic pipeline (broken item 3, Theme 2)",
+      "effort": "High"
+    },
+    {
+      "rank": 3,
+      "action": "Add a second mocking audit execution immediately after Step 2 (test generation) completes and before Step 3 runs unit tests",
+      "resolves": "Post-generation violations invisible to audit (broken item 4, Theme 3)",
+      "effort": "Low"
+    },
+    {
+      "rank": 4,
+      "action": "Implement the three critical deterministic scripts: scripts/check-services.sh (TCP connect), scripts/detect-stack.sh (filesystem check), scripts/scan-e2e-mocks.sh (ripgrep on E2E paths), replacing LLM reasoning at each gate",
+      "resolves": "LLM doing deterministic work at every critical gate — root cause of all production failures (Theme 1)",
+      "effort": "Medium"
+    },
+    {
+      "rank": 5,
+      "action": "Move workflow.md and story-processor.md to references/ in epic skill; fix bare _bmad path references to use {project-root} prefix",
+      "resolves": "Path-standards violations in epic skill (Theme 5, path-standards-epic.json)",
+      "effort": "Low"
+    },
+    {
+      "rank": 6,
+      "action": "Add ## Overview and ## On Activation sections to both SKILL.md files",
+      "resolves": "Missing structural sections in both skills (Theme 5, workflow-integrity findings)",
+      "effort": "Low"
+    },
+    {
+      "rank": 7,
+      "action": "Add data seeding step (Step A2) and cleanup step (Step E2) to e2e-runner.md; optionally define _bmad/test-data/seed.yaml contract backed by scripts/check-e2e-lifecycle.sh",
+      "resolves": "Data seeding and cleanup systematically absent (Theme 3, skill-cohesion finding 2)",
+      "effort": "Medium"
+    },
+    {
+      "rank": 8,
+      "action": "Add infrastructure-failure discriminator before E2E fix loop entry in workflow.md Step 5: if failure reason is 'Required services not running', HALT with environment-setup message instead of entering code fix loop",
+      "resolves": "Fix loop wasted on infrastructure failures (Theme 3, enhancement-opportunities finding 2)",
+      "effort": "Low"
+    },
+    {
+      "rank": 9,
+      "action": "Fix stale /5 to /2 in story-processor.md:199; fix /bagual-bmad-implement-epic to /bagual-bmad-implement-quick-epic in workflow.md:133,143; add <action> body to story-processor.md Step D",
+      "resolves": "Misleading error messages and missing action body in epic skill (broken items 5,7, Theme 4)",
+      "effort": "Trivial"
+    },
+    {
+      "rank": 10,
+      "action": "Implement scripts/check-coverage.sh and scripts/build-story-queue.py to remove LLM from coverage threshold enforcement and story queue parsing",
+      "resolves": "Coverage thresholds silently bypassed; YAML parsing risk in epic queue builder (Theme 1)",
+      "effort": "Medium"
+    }
+  ]
+}

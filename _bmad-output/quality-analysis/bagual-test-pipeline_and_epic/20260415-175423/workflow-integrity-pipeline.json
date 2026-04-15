@@ -1,0 +1,49 @@
+{
+  "scanner": "workflow-integrity-prepass",
+  "script": "prepass-workflow-integrity.py",
+  "version": "1.0.0",
+  "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-test-pipeline",
+  "timestamp": "2026-04-15T20:54:34.053840+00:00",
+  "status": "warning",
+  "metadata": {
+    "frontmatter": {
+      "name": "bagual-test-pipeline",
+      "description": "Automated adversarial test pipeline \u2014 auto-setup + unit tests + full-stack E2E with browser/server log capture + visual validation (Vision AI) + auto-fix loops. Use when the user says \"run test pipeline\", \"test everything\", \"automate tests\", or \"bagual-test-pipeline\"."
+    },
+    "sections": [],
+    "workflow_type": "simple-utility"
+  },
+  "stage_summary": {
+    "total_stages": 0,
+    "referenced": [],
+    "actual": [],
+    "missing_stages": [],
+    "orphaned_stages": []
+  },
+  "prompt_details": [],
+  "issues": [
+    {
+      "file": "SKILL.md",
+      "line": 1,
+      "severity": "high",
+      "category": "sections",
+      "issue": "Missing ## Overview section"
+    },
+    {
+      "file": "SKILL.md",
+      "line": 1,
+      "severity": "high",
+      "category": "sections",
+      "issue": "Missing ## On Activation section"
+    }
+  ],
+  "summary": {
+    "total_issues": 2,
+    "by_severity": {
+      "critical": 0,
+      "high": 2,
+      "medium": 0,
+      "low": 0
+    }
+  }
+}

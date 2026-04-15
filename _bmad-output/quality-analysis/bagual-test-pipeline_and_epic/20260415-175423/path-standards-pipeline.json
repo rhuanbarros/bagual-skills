@@ -1,0 +1,35 @@
+{
+  "scanner": "path-standards",
+  "script": "scan-path-standards.py",
+  "version": "3.0.0",
+  "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-test-pipeline",
+  "timestamp": "2026-04-15T20:54:34.014966+00:00",
+  "files_scanned": [
+    "SKILL.md",
+    "references/e2e-runner.md",
+    "references/visual-validation.md",
+    "references/workflow.md"
+  ],
+  "status": "pass",
+  "findings": [],
+  "assessments": {},
+  "summary": {
+    "total_findings": 0,
+    "by_severity": {
+      "critical": 0,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "by_category": {
+      "double_prefix": 0,
+      "bare_bmad": 0,
+      "absolute_path": 0,
+      "relative_prefix": 0,
+      "cross_dir_dot_slash": 0,
+      "frontmatter": 0,
+      "structure": 0
+    },
+    "assessment": "Path standards scan complete"
+  }
+}

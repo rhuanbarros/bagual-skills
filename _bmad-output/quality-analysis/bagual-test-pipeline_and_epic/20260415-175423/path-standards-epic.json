@@ -1,0 +1,71 @@
+{
+  "scanner": "path-standards",
+  "script": "scan-path-standards.py",
+  "version": "3.0.0",
+  "skill_path": "/home/rhuan/2_temporario/bagual-skills/bagual-bmad-implement-quick-epic",
+  "timestamp": "2026-04-15T20:54:34.012051+00:00",
+  "files_scanned": [
+    "SKILL.md",
+    "story-processor.md",
+    "workflow.md"
+  ],
+  "status": "fail",
+  "findings": [
+    {
+      "file": "workflow.md",
+      "line": 0,
+      "severity": "high",
+      "category": "structure",
+      "title": "Prompt file at skill root: workflow.md",
+      "detail": "All progressive disclosure content must be in ./references/ \u2014 only SKILL.md belongs at root",
+      "action": "Move workflow.md to references/workflow.md"
+    },
+    {
+      "file": "story-processor.md",
+      "line": 0,
+      "severity": "high",
+      "category": "structure",
+      "title": "Prompt file at skill root: story-processor.md",
+      "detail": "All progressive disclosure content must be in ./references/ \u2014 only SKILL.md belongs at root",
+      "action": "Move story-processor.md to references/story-processor.md"
+    },
+    {
+      "file": "SKILL.md",
+      "line": 21,
+      "severity": "high",
+      "category": "bare-bmad",
+      "title": "Bare _bmad reference without {project-root} prefix",
+      "detail": "**Config dependency:** Requires `_bmad/bmm/config.yaml` (BMad Method Module).",
+      "action": ""
+    },
+    {
+      "file": "story-processor.md",
+      "line": 19,
+      "severity": "high",
+      "category": "bare-bmad",
+      "title": "Bare _bmad reference without {project-root} prefix",
+      "detail": "- `{config_path}` \u2014 path to `_bmad/bmm/config.yaml`",
+      "action": ""
+    }
+  ],
+  "assessments": {},
+  "summary": {
+    "total_findings": 4,
+    "by_severity": {
+      "critical": 0,
+      "high": 4,
+      "medium": 0,
+      "low": 0
+    },
+    "by_category": {
+      "double_prefix": 0,
+      "bare_bmad": 2,
+      "absolute_path": 0,
+      "relative_prefix": 0,
+      "cross_dir_dot_slash": 0,
+      "frontmatter": 0,
+      "structure": 2
+    },
+    "assessment": "Path standards scan complete"
+  }
+}
