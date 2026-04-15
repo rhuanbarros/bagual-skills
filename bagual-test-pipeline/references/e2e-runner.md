@@ -6,6 +6,26 @@
 
 ---
 
+## E2E ANTI-PATTERNS MANDATE — NON-NEGOTIABLE
+
+Any of the following found in an E2E test is a **blocker** that must be reported and cannot be tolerated:
+
+| Pattern | Why it's wrong |
+|---------|----------------|
+| HTTP stub listeners / fake servers replacing real services | Hides real integration failures. The stub passes when the real API would fail. |
+| In-memory database replacing real DB | Schema diffs, type coercions, and constraint violations only appear with the real DB. |
+| "Accept error as valid outcome" (`assert success OR error`) | Makes the test always pass regardless of system state. Provides zero quality signal. |
+| Silent skip when service unavailable | Masks infrastructure problems. CI appears green while the system is broken. |
+| `try/catch` swallowing connection errors in setup | Same as silent skip — test runs as if services are up when they're not. |
+| `[Ignore]` / `pytest.mark.skip` / `.skip()` on E2E tests | E2E tests must run. If a service is missing, fix the environment, not the test. |
+
+**The rule:** E2E tests must FAIL LOUDLY and IMMEDIATELY if any required service is not running.
+A test that passes without all services running is not a test — it is a false guarantee.
+
+---
+
+---
+
 ## INPUTS
 
 Received from orchestrator:
@@ -17,10 +37,12 @@ Received from orchestrator:
 
 Derived:
 - `{browser_log_file}` = `{project_root}/test-results/browser-console-{date}.log`
+- `{browser_log_dir}` = `{project_root}/test-results`
 - `{server_log_file}` = `{project_root}/test-results/server-{date}.log`
 - `{screenshots_dir}` = `{project_root}/test-artifacts/screenshots`
 - `{visual_report}` = `{project_root}/_bmad-output/test-artifacts/visual-validation/latest.json`
 - `{visual_validation_enabled}` = true if frontend project detected and not explicitly disabled
+- `{services_manifest}` = list of all required services with their expected ports and check status (built during Step A)
 
 ---
 
@@ -28,41 +50,108 @@ Derived:
 
 <workflow>
 
-  <!-- ==================== STEP A: Verify Server Running ==================== -->
-  <step name="A" goal="Confirm server and database are reachable before running any tests">
-    <action>Detect the server port based on {detected_stack}:
-      - dotnet: Read `Properties/launchSettings.json` for `applicationUrl`; read `appsettings.json` or `appsettings.Development.json` for port hints; read `.env` for PORT or API_URL; default to 5000 (HTTP) or 7000 (HTTPS)
-      - python: Read `pytest.ini` or `conftest.py` for base_url; read `.env` for PORT or API_URL; default to 8000
-      - js: Read `playwright.config.ts` or `playwright.config.js` for `baseURL`; read `package.json` scripts for port hints (--port, PORT=); read `.env`, `.env.test`, `.env.local` for PORT or API_URL; default to 3000
-      - unknown: Try reading all of the above sources in order; default to 3000
+  <!-- ==================== STEP A: Verify All Required Services ==================== -->
+  <step name="A" goal="Confirm ALL required services are reachable before running any tests — fail loudly if any are missing">
+
+    <action>
+      *** SERVICE VERIFICATION MANDATE ***
+      E2E tests require ALL services to be running. A missing service is not a reason to skip or mock —
+      it is a blocker that must cause immediate failure with a clear, actionable message.
+      Never proceed if any required service is down.
+      *** END MANDATE ***
     </action>
 
-    <action>Run health check: attempt GET to each until one responds (max 3s timeout each):
-      1. `http://localhost:{detected_port}/health`
-      2. `http://localhost:{detected_port}/api/health`
-      3. `http://localhost:{detected_port}/`
+    <!-- ── 1. Discover required services ──────────────────────────────────────── -->
+    <action>Discover all services this project needs by reading:
+      - Config files: `appsettings.json`, `appsettings.Development.json`, `.env`, `.env.test`, `.env.local`
+      - Connection strings: look for `ConnectionStrings`, `DATABASE_URL`, `REDIS_URL`, `RABBITMQ_URL`, etc.
+      - External API base URLs: look for `AiService:BaseUrl`, `AI_API_URL`, `EXTERNAL_API_URL`, etc. — any HTTP endpoint the app calls
+      - Playwright/test config: `baseURL`, `webServer` config
+
+      Build a {required_services} list. For each service record:
+      - name (e.g. "Web App (.NET)", "PostgreSQL", "Python AI API", "Redis")
+      - expected host:port
+      - check URL or TCP check
+      - whether it is the web app, a database, or an external API
     </action>
 
-    <check if="all health checks fail (no response or connection refused)">
+    <!-- ── 2. Check for startup script ────────────────────────────────────────── -->
+    <action>Check if a startup script exists:
+      Look for: `start-all.sh`, `start-services.sh`, `docker-compose.yml`, `docker-compose.test.yml`,
+      `Makefile` with a `start` or `run` target, `scripts/start.sh`, `run.sh`
+    </action>
+
+    <check if="no startup script found">
+      <action>Create a startup reference file at `{project_root}/docs/e2e-startup.md` (or append to existing):
+        # E2E Test — Required Services
+
+        Before running E2E tests, ensure ALL of the following services are running:
+
+        {for each required_service:}
+        ## {service.name}
+        - **Port:** {service.port}
+        - **How to start:** {best-effort instruction based on project config}
+        {/for}
+
+        Tip: Create a `start-e2e-services.sh` script to start all services at once.
+      </action>
+      <output>[E2E Step A] No startup script found. Created docs/e2e-startup.md with service list.</output>
+    </check>
+
+    <!-- ── 3. Verify each service ─────────────────────────────────────────────── -->
+    <action>For each service in {required_services}:
+      - Web app / HTTP service: attempt GET to /health, /api/health, or / (max 3s timeout each)
+      - PostgreSQL / SQL Server: attempt TCP connect to host:port (max 3s)
+      - Redis: attempt TCP connect (max 3s)
+      - External API (Python AI, etc.): attempt GET to {base_url}/health or HEAD to {base_url} (max 5s)
+
+      Record result: { service_name, port, status: "UP" | "DOWN", error_detail }
+      Build {services_manifest} from all results.
+    </action>
+
+    <!-- ── 4. Detect port-based stack config ─────────────────────────────────── -->
+    <action>Detect the web app port (for use in Playwright) based on {detected_stack}:
+      - dotnet: Read `Properties/launchSettings.json` `applicationUrl`; or `appsettings.Development.json`; or `.env` PORT; default 5000
+      - python: Read `pytest.ini` or `conftest.py` `base_url`; or `.env` PORT; default 8000
+      - js: Read `playwright.config.ts` / `.js` `baseURL`; or `package.json` scripts; or `.env` PORT; default 3000
+      Set {web_app_port}.
+    </action>
+
+    <!-- ── 5. Fail loudly if any service is down ──────────────────────────────── -->
+    <check if="any service in {services_manifest} has status DOWN">
       <output>
         ## E2E RUNNER RESULT: FAILED
 
-        ### Reason: Server not running
+        ### Reason: Required services not running
 
-        The server is not responding on port {detected_port}.
+        E2E tests require ALL services to be running. The following are DOWN:
 
-        E2E tests require a real running server and database — no mocking allowed.
+        {for each DOWN service:}
+        ❌ {service.name} — expected at {service.host}:{service.port}
+           Error: {service.error_detail}
+        {/for}
 
-        **Start the full stack before running the pipeline:**
-        - Server: `npm run dev` / `yarn dev` / `python manage.py runserver` / etc.
-        - Database: ensure your DB service is running and migrations are applied
+        **Services confirmed UP:**
+        {for each UP service:}
+        ✓ {service.name} at {service.host}:{service.port}
+        {/for}
 
-        Then re-run: /bagual-test-pipeline {coverage_target}
+        **How to fix:**
+        {if startup script exists: "Run: {startup_script_path}"}
+        {else: "See docs/e2e-startup.md for instructions on starting each service"}
+
+        E2E tests must run against a real stack — no mocking, no skipping.
+        Fix the environment and re-run: /bagual-test-pipeline
       </output>
       <action>HALT and return failure to orchestrator</action>
     </check>
 
-    <output>[E2E Step A] Server confirmed running at http://localhost:{detected_port}</output>
+    <output>
+      [E2E Step A] All required services are running:
+      {for each service in services_manifest:}
+      ✓ {service.name} at {service.host}:{service.port}
+      {/for}
+    </output>
   </step>
 
   <!-- ==================== STEP B: Set Up Log Capture ==================== -->
@@ -370,9 +459,13 @@ Derived:
         **Tests:** {passed_count} passed, 0 failed
         **Duration:** {duration}
         **Visual Validation:** {if visual_validation_enabled: "PASSED — all screenshots match requirements" else: "disabled"}
-        **Server:** http://localhost:{detected_port} (real — no mocks)
+
+        ### Services (all real — no mocks)
+        {for each service in services_manifest:}
+        ✓ {service.name} at {service.host}:{service.port}
+        {/for}
       </output>
-      <action>Return success to orchestrator</action>
+      <action>Return success to orchestrator, including {services_manifest}</action>
     </check>
 
     <check if="overall result is FAILED">
@@ -424,13 +517,18 @@ Derived:
 
         ---
 
+        ### Services (verified running at test start)
+        {for each service in services_manifest:}
+        ✓ {service.name} at {service.host}:{service.port} (real — no mocks)
+        {/for}
+
         ### Likely Root Causes
 
         Correlate test failures, visual failures, browser errors, and server errors.
         List each correlation as:
         - **[Failure name]** → likely caused by: [matching browser error, server error, or visual issue]
       </output>
-      <action>Return failure with full structured report to orchestrator</action>
+      <action>Return failure with full structured report to orchestrator, including {services_manifest}</action>
     </check>
   </step>
 
