@@ -69,23 +69,34 @@ If in yolo mode and no coverage target provided: default to `80`.
 
     <action>Scan {project_root} for existing test infrastructure. Check each item:
 
-      FRAMEWORK
-      - Unit/component: `jest.config.*`, `vitest.config.*`, jest/vitest in package.json devDependencies
-      - E2E: `playwright.config.*`, `cypress.config.*`, @playwright/test or cypress in devDependencies
+      STACK DETECTION (run this first — every subsequent check depends on it)
+      Detect project stack by looking for these indicators:
+      - .NET/C#: any `*.csproj`, `*.sln`, or `global.json` file; or `dotnet` in any script/Makefile
+      - Python: `pytest.ini`, `setup.cfg` with [tool:pytest], `pyproject.toml` with pytest, or `conftest.py`
+      - JavaScript/TypeScript: `package.json` at project root
+      Set {detected_stack} = "dotnet" | "python" | "js" | "unknown"
+      (If multiple match, prefer dotnet > python > js based on primary language of source files)
 
-      UNIT TESTS
-      - Test files: `**/*.test.*`, `**/*.spec.*` (exclude node_modules, dist, e2e dirs) — count them
-      - Coverage config: `c8`, `istanbul`, `nyc`, or coverage section in vitest/jest config
-      - Existing coverage report: `coverage/coverage-summary.json` or `coverage/lcov.info` — extract % if found
+      FRAMEWORK — check based on {detected_stack}
+      - js: `jest.config.*`, `vitest.config.*`, jest/vitest in package.json devDependencies; E2E: `playwright.config.*`, `cypress.config.*`, @playwright/test or cypress in devDependencies
+      - dotnet: `*.Test.csproj`, `*Tests.csproj`, or xUnit/NUnit/MSTest in any .csproj `<PackageReference>`; E2E: `Microsoft.Playwright` in any .csproj
+      - python: `pytest.ini`, `conftest.py`, or pytest in requirements.txt/pyproject.toml; E2E: `playwright` in requirements.txt/pyproject.toml
 
-      E2E TESTS
-      - Test files: `tests/e2e/**/*`, `e2e/**/*`, `playwright/**/*` — count them
-      - Browser console instrumentation: search for `page.on('console'` in any test file
-      - Server log capture: search for server log file references in test files
+      UNIT TESTS — check based on {detected_stack}
+      - js: Test files `**/*.test.*`, `**/*.spec.*` (exclude node_modules, dist, e2e dirs) — count them; Coverage: `c8`, `istanbul`, `nyc`, or coverage section in vitest/jest config; Report: `coverage/coverage-summary.json` or `coverage/lcov.info`
+      - dotnet: Test files `**/*Tests.cs`, `**/*Test.cs` (exclude obj, bin) — count them; Coverage: Coverlet in any .csproj `<PackageReference>`; Report: `coverage/coverage.cobertura.xml` or `TestResults/*.xml`
+      - python: Test files `**/test_*.py`, `**/*_test.py` — count them; Coverage: pytest-cov in requirements; Report: `htmlcov/index.html` or `.coverage`
 
-      VISUAL VALIDATION
-      - Screenshot helper: `tests/e2e/helpers/screenshot.*` or `captureScreenshot` in any test file
-      - Requirements file: `{project_root}/visual-requirements.yaml`
+      E2E TESTS — check based on {detected_stack}
+      - js: Test files in `tests/e2e/**/*`, `e2e/**/*`, `playwright/**/*` — count them; Console capture: `page.on('console'` in any test file; Server log references in test files
+      - dotnet: Test files matching E2E pattern (PlaywrightFixture, IPage usage) in any `*Tests.cs` — count them; Console capture: `page.Console +=` or `Page.Console +=` in any test file
+      - python: Test files using `async_playwright` or `page.goto` — count them; Console capture: `page.on("console"` in any test file
+
+      VISUAL VALIDATION — check based on {detected_stack}
+      - js: Screenshot helper `tests/e2e/helpers/screenshot.*` or `captureScreenshot` in any test file
+      - dotnet: Screenshot helper `Tests/E2E/Helpers/ScreenshotHelper.cs` or `ScreenshotHelper.CaptureAsync` in any test file; also check `page.ScreenshotAsync` calls with explicit path parameters
+      - python: Screenshot helper `tests/e2e/helpers/screenshot.py` or `capture_screenshot` in any test file
+      - All stacks: `{project_root}/visual-requirements.yaml`
 
       OTHER
       - CI config: `.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`
@@ -96,8 +107,11 @@ If in yolo mode and no coverage target provided: default to `80`.
     <output>
       ## Test Infrastructure Diagnostic
 
+      ### Stack
+      - Detected stack: {detected_stack} (dotnet | python | js | unknown)
+
       ### Framework
-      - Unit/component framework: {FOUND: "vitest" / MISSING: "not detected"}
+      - Unit/component framework: {FOUND: "xUnit" / "vitest" / "pytest" / MISSING: "not detected"}
       - E2E framework (Playwright): {FOUND / MISSING}
 
       ### Unit Tests
@@ -118,6 +132,7 @@ If in yolo mode and no coverage target provided: default to `80`.
       - CI pipeline: {FOUND: "GitHub Actions" / MISSING}
 
       ---
+      **Stack:** {detected_stack}
       **Items to configure:** {list of MISSING items, or "none — project is fully configured"}
       **Items already in place:** {list of FOUND items}
     </output>
@@ -172,7 +187,11 @@ If in yolo mode and no coverage target provided: default to `80`.
         "Run the skill /bmad-testarch-framework.
          This is running inside an automated pipeline. Auto-approve all checkpoints.
          Do not ask for user input — proceed automatically with sensible defaults.
-         Goal: install Playwright for E2E and configure a unit test framework appropriate for the project stack."
+         Detected project stack: {detected_stack}.
+         Goal: install Playwright for E2E and configure a unit test framework appropriate for the project stack.
+         - If dotnet: use Microsoft.Playwright and xUnit/NUnit as appropriate; run via dotnet test
+         - If python: use pytest-playwright; run via pytest
+         - If js: use @playwright/test and vitest or jest; run via npx"
       </action>
 
       <check if="Agent failed">
@@ -265,10 +284,14 @@ If in yolo mode and no coverage target provided: default to `80`.
       <action>Increment {unit_fix_iteration} by 1</action>
       <output>[Step 3] Running unit tests — iteration {unit_fix_iteration}/3...</output>
 
-      <action>Detect and run the project's unit test command:
-        - Check `package.json` scripts for: `test`, `test:unit`, `test:coverage`
-        - Prefer commands that output coverage (e.g. `npx vitest run --coverage`, `npx jest --coverage`)
-        - Run the command and capture: exit code, full stdout/stderr, coverage summary
+      <action>Detect and run the project's unit test command based on {detected_stack}:
+        - dotnet: `dotnet test --logger "console;verbosity=detailed" /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura`
+          (if Coverlet not installed, run `dotnet test --logger "console;verbosity=detailed"` without coverage flags)
+        - python: `pytest --tb=short -v --cov=. --cov-report=term-missing`
+          (if pytest-cov not installed, run `pytest --tb=short -v` without coverage flags)
+        - js: Check `package.json` scripts for `test`, `test:unit`, `test:coverage`; prefer commands with coverage (e.g. `npx vitest run --coverage`, `npx jest --coverage`)
+        - unknown: Try each in order: dotnet test → pytest → npx vitest run → npx jest
+        Run the command and capture: exit code, full stdout/stderr, coverage summary.
         Store full output as {unit_test_output}.
       </action>
 
@@ -346,6 +369,7 @@ If in yolo mode and no coverage target provided: default to `80`.
       - coverage_target: {coverage_target}
       - config_path: {project-root}/_bmad/bmm/config.yaml
       - date: {date}
+      - detected_stack: {detected_stack}
 
       This is running inside an automated pipeline. Auto-approve all checkpoints.
       Do not ask for user input — proceed automatically.
@@ -407,6 +431,7 @@ If in yolo mode and no coverage target provided: default to `80`.
         - coverage_target: {coverage_target}
         - config_path: {project-root}/_bmad/bmm/config.yaml
         - date: {date}
+        - detected_stack: {detected_stack}
 
         This is running inside an automated pipeline. Proceed automatically.
         Return your result starting with 'E2E RUNNER RESULT: PASSED' or 'E2E RUNNER RESULT: FAILED'."

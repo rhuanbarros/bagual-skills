@@ -6,7 +6,10 @@ Automated visual validation using the agent's built-in vision capabilities. No e
 
 ## Activation Policy
 
-**Frontend projects: always active.** If the project has a frontend (`package.json` with React/Vue/Angular/Next/Svelte, or `playwright.config.*` exists), visual validation runs automatically.
+**Frontend projects: always active.** Visual validation runs automatically for any project with a frontend layer:
+- JS/TS: `package.json` with React/Vue/Angular/Next/Svelte/Vite, or `playwright.config.*` exists
+- .NET/C#: Razor pages (`*.cshtml`), Blazor (`*.razor`), or `wwwroot/index.html` / `ClientApp/` directory
+- Python: `templates/` directory, `static/` with frontend assets, or `index.html` at a served path
 
 **To disable explicitly** (e.g. CI environment without image support): set `VISUAL_VALIDATION_ENABLED=false`.
 
@@ -52,6 +55,44 @@ Examples of semantic bugs to catch:
 - A "Loading" spinner is absent → content must be fully populated, not partially loaded
 
 **Why this matters**: semantic bugs often pass functional tests because the test checks individual assertions, not the overall coherence of the screen. A filter UI can call the API correctly and render the response correctly, yet still display a misleading active-filter indicator when the result is unfiltered.
+
+---
+
+## Integration Mandate — Where Screenshots Live
+
+**Screenshots MUST be captured inside existing E2E tests, not in a separate test class.**
+
+The correct pattern:
+- Take each existing E2E test (e.g. `ChatSmokeTest`, `KnowledgeSearchSmokeTest`)
+- Identify every meaningful UI state that test passes through: initial load, after user action, with results, with drawer/modal open, with error, empty state, etc.
+- Add a screenshot call AFTER the assertions for each state are confirmed stable
+- Name the screenshot `{feature}-{state}` (e.g. `chat-initial-load`, `search-with-results`, `search-error`)
+
+**What to never do:**
+- Never create a separate `VisualTestSuite.cs` / `visual_tests.py` / `visual.spec.ts` class with hardcoded screenshots
+- Never capture a screenshot before the state-confirming assertions
+- Never capture the same state twice
+
+Example (correct — C#):
+```csharp
+[Test]
+public async Task SearchTest_ShowsResultsAndError()
+{
+    await Page.GotoAsync("/search");
+    await Expect(Page.Locator("h1")).ToContainTextAsync("Search");
+    await ScreenshotHelper.CaptureAsync(Page, "search-initial-load"); // ← after confirming state
+
+    await Page.FillAsync("[data-testid='query']", "test query");
+    await Page.ClickAsync("[data-testid='search-btn']");
+    await Expect(Page.Locator("[data-testid='results']")).ToBeVisibleAsync();
+    await ScreenshotHelper.CaptureAsync(Page, "search-with-results"); // ← after confirming state
+
+    await Page.FillAsync("[data-testid='query']", "");
+    await Page.ClickAsync("[data-testid='search-btn']");
+    await Expect(Page.Locator("[data-testid='error-msg']")).ToBeVisibleAsync();
+    await ScreenshotHelper.CaptureAsync(Page, "search-empty-error"); // ← after confirming state
+}
+```
 
 ---
 
@@ -128,9 +169,54 @@ transaction-list-empty-archived:
 
 ## File 1: Screenshot Helper
 
-**Path in target project**: `tests/e2e/helpers/screenshot.{ts|js|py|etc.}`
+**Path in target project**: `tests/e2e/helpers/screenshot.{ts|js|py|cs}`
 
-**TypeScript/Playwright:**
+**C#/.NET (Microsoft.Playwright):**
+```csharp
+// Tests/E2E/Helpers/ScreenshotHelper.cs
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Microsoft.Playwright;
+
+public static class ScreenshotHelper
+{
+    private const string ScreenshotsDir = "test-artifacts/screenshots";
+
+    /// <summary>
+    /// Capture a named screenshot for visual validation.
+    /// Name must match a key in visual-requirements.yaml.
+    /// Call AFTER confirming the UI state is stable and assertions have passed.
+    /// </summary>
+    public static async Task CaptureAsync(IPage page, string name)
+    {
+        Directory.CreateDirectory(ScreenshotsDir);
+        var cleanName = Regex.Replace(
+            name.ToLowerInvariant().Replace(' ', '-'), @"[^\w-]", ""
+        );
+        if (cleanName.Length > 50) cleanName = cleanName.Substring(0, 50);
+        await page.ScreenshotAsync(new PageScreenshotOptions
+        {
+            Path = Path.Combine(ScreenshotsDir, $"{cleanName}.png")
+        });
+    }
+}
+```
+
+**Usage** — always capture AFTER asserting the UI state is what you expect:
+```csharp
+// ✅ Correct: capture after confirming state
+await Expect(Page.GetByRole(AriaRole.Cell, new() { Name = "Active" })).ToBeVisibleAsync();
+await ScreenshotHelper.CaptureAsync(Page, "transaction-list-filtered-active");
+
+// ❌ Wrong: capture before verifying state is stable
+await Page.ClickAsync("button");
+await ScreenshotHelper.CaptureAsync(Page, "transaction-list-filtered-active"); // might be loading
+```
+
+---
+
+**TypeScript/Playwright (JS):**
 ```typescript
 // tests/e2e/helpers/screenshot.ts
 import { Page } from '@playwright/test';
@@ -168,6 +254,28 @@ await captureScreenshot(page, 'transaction-list-filtered-active'); // might be l
 
 ---
 
+**Python/pytest-playwright:**
+```python
+# tests/e2e/helpers/screenshot.py
+import os
+import re
+from playwright.sync_api import Page
+
+SCREENSHOTS_DIR = "test-artifacts/screenshots"
+
+def capture_screenshot(page: Page, name: str) -> None:
+    """
+    Capture a named screenshot for visual validation.
+    Name must match a key in visual-requirements.yaml.
+    Call AFTER confirming the UI state is stable and assertions have passed.
+    """
+    os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+    clean_name = re.sub(r'[^\w-]', '', name.lower().replace(' ', '-'))[:50]
+    page.screenshot(path=os.path.join(SCREENSHOTS_DIR, f"{clean_name}.png"))
+```
+
+---
+
 ## Output: Report Format
 
 `_bmad-output/test-artifacts/visual-validation/latest.json`:
@@ -197,5 +305,7 @@ await captureScreenshot(page, 'transaction-list-filtered-active'); // might be l
 |---------|-------|-----|
 | All screenshots pass | Requirements too generic | Add specific semantic rules per screen |
 | Semantic bugs not caught | No semantic requirements | Analyze test context to generate data-consistency rules |
-| Screenshot not found | Path mismatch | Ensure captureScreenshot() saves to `test-artifacts/screenshots/` |
-| Requirements missing for a screenshot | New test added without updating yaml | Step B2 appends entries for new captureScreenshot() calls automatically |
+| Screenshot not found | Path mismatch | Ensure helper saves to `test-artifacts/screenshots/` regardless of stack |
+| Requirements missing for a screenshot | New test added without updating yaml | Step B2 appends entries for new screenshot calls automatically |
+| Screenshots created in separate class | Dev agent followed wrong spec | Screenshots MUST live inside existing E2E tests — see Integration Mandate |
+| .NET: working dir mismatch | dotnet test runs from project dir | Use absolute path via `Path.Combine(Directory.GetCurrentDirectory(), "test-artifacts/screenshots", ...)` |

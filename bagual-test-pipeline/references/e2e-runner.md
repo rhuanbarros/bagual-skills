@@ -13,6 +13,7 @@ Received from orchestrator:
 - `{coverage_target}` — coverage target percentage
 - `{config_path}` — path to `{project-root}/_bmad/bmm/config.yaml`
 - `{date}` — current datetime string
+- `{detected_stack}` — project stack: "dotnet" | "python" | "js" | "unknown" (detected by orchestrator in Step 0)
 
 Derived:
 - `{browser_log_file}` = `{project_root}/test-results/browser-console-{date}.log`
@@ -29,11 +30,11 @@ Derived:
 
   <!-- ==================== STEP A: Verify Server Running ==================== -->
   <step name="A" goal="Confirm server and database are reachable before running any tests">
-    <action>Detect the server port:
-      - Read `playwright.config.ts` or `playwright.config.js` for `baseURL`
-      - Read `package.json` scripts for port hints (--port, PORT=)
-      - Read `.env`, `.env.test`, or `.env.local` for PORT or API_URL
-      - Default to 3000 if undetermined
+    <action>Detect the server port based on {detected_stack}:
+      - dotnet: Read `Properties/launchSettings.json` for `applicationUrl`; read `appsettings.json` or `appsettings.Development.json` for port hints; read `.env` for PORT or API_URL; default to 5000 (HTTP) or 7000 (HTTPS)
+      - python: Read `pytest.ini` or `conftest.py` for base_url; read `.env` for PORT or API_URL; default to 8000
+      - js: Read `playwright.config.ts` or `playwright.config.js` for `baseURL`; read `package.json` scripts for port hints (--port, PORT=); read `.env`, `.env.test`, `.env.local` for PORT or API_URL; default to 3000
+      - unknown: Try reading all of the above sources in order; default to 3000
     </action>
 
     <action>Run health check: attempt GET to each until one responds (max 3s timeout each):
@@ -69,58 +70,87 @@ Derived:
     <action>Ensure `{project_root}/test-results/` directory exists (create if needed)</action>
 
     <action>Check if Playwright already has a fixture or global setup that captures browser console logs.
-      Look for: `page.on('console'`, `page.on('pageerror'` in existing test fixtures or `global-setup.ts`.
+      - dotnet: look for `page.Console +=` or `Page.Console +=` in any test class or fixture
+      - python: look for `page.on("console"` in any conftest.py or test file
+      - js: look for `page.on('console'` or `page.on('pageerror'` in any fixture or global-setup
     </action>
 
     <check if="no console capture fixture found">
-      <action>Create `{project_root}/tests/fixtures/log-capture.ts` (or `.js` if the project uses JS):
+      <action>Create a log capture fixture adapted to {detected_stack}:
 
+        IF dotnet: Create `{project_root}/Tests/E2E/Fixtures/LogCaptureFixture.cs`:
+        ```csharp
+        // Tests/E2E/Fixtures/LogCaptureFixture.cs
+        using System.Collections.Generic;
+        using System.IO;
+        using Microsoft.Playwright;
+
+        public class LogCaptureFixture
+        {
+            private readonly List<string> _logs = new();
+
+            public void Attach(IPage page)
+            {
+                page.Console += (_, msg) =>
+                    _logs.Add($"[{msg.Type.ToUpper()}] {msg.Text}");
+                page.PageError += (_, err) =>
+                    _logs.Add($"[PAGEERROR] {err}");
+                page.RequestFailed += (_, req) =>
+                    _logs.Add($"[REQUEST_FAILED] {req.Method} {req.Url} — {req.Failure}");
+            }
+
+            public void FlushOnFailure(string testName)
+            {
+                if (_logs.Count == 0) return;
+                var content = string.Join("\n", _logs);
+                Directory.CreateDirectory("{browser_log_dir}");
+                File.AppendAllText("{browser_log_file}", $"\n=== {testName} ===\n{content}\n");
+            }
+        }
+        ```
+        Add `LogCaptureFixture` to the base test class or PlaywrightFixture used by E2E tests.
+        Call `fixture.Attach(page)` in test setup and `fixture.FlushOnFailure(testName)` in teardown.
+
+        IF python: Create `{project_root}/tests/e2e/conftest.py` (or append to existing):
+        ```python
+        # tests/e2e/conftest.py
+        import pytest
+
+        @pytest.fixture
+        def page_with_logs(page, request):
+            logs = []
+            page.on("console", lambda msg: logs.append(f"[{msg.type.upper()}] {msg.text}"))
+            page.on("pageerror", lambda err: logs.append(f"[PAGEERROR] {err}"))
+            yield page
+            if request.node.rep_call.failed if hasattr(request.node, "rep_call") else False:
+                import os
+                os.makedirs("{browser_log_dir}", exist_ok=True)
+                with open("{browser_log_file}", "a") as f:
+                    f.write(f"\n=== {request.node.name} ===\n" + "\n".join(logs) + "\n")
+        ```
+
+        IF js: Create `{project_root}/tests/fixtures/log-capture.ts` (or `.js`):
         ```typescript
         import { test as base } from '@playwright/test';
-
         type ConsoleLogs = { logs: string[] };
-
         export const test = base.extend<ConsoleLogs>({
-          logs: async ({}, use) => {
-            await use([]);
-          },
+          logs: async ({}, use) => { await use([]); },
           page: async ({ page, logs }, use, testInfo) => {
-            page.on('console', msg => {
-              const level = msg.type();
-              const text = msg.text();
-              logs.push(`[${level.toUpperCase()}] ${text}`);
-            });
-            page.on('pageerror', err => {
-              logs.push(`[PAGEERROR] ${err.message}\n${err.stack ?? ''}`);
-            });
-            page.on('requestfailed', req => {
-              logs.push(`[REQUEST_FAILED] ${req.method()} ${req.url()} — ${req.failure()?.errorText}`);
-            });
-
+            page.on('console', msg => logs.push(`[${msg.type().toUpperCase()}] ${msg.text()}`));
+            page.on('pageerror', err => logs.push(`[PAGEERROR] ${err.message}\n${err.stack ?? ''}`));
+            page.on('requestfailed', req => logs.push(`[REQUEST_FAILED] ${req.method()} ${req.url()} — ${req.failure()?.errorText}`));
             await use(page);
-
-            // On failure: attach logs to test report and write to file
             if (testInfo.status !== testInfo.expectedStatus) {
               const logContent = logs.join('\n');
-              await testInfo.attach('browser-console', {
-                body: logContent,
-                contentType: 'text/plain',
-              });
-              // Append to shared log file
+              await testInfo.attach('browser-console', { body: logContent, contentType: 'text/plain' });
               const fs = await import('fs');
-              fs.appendFileSync(
-                '{browser_log_file}',
-                `\n=== ${testInfo.title} ===\n${logContent}\n`
-              );
+              fs.appendFileSync('{browser_log_file}', `\n=== ${testInfo.title} ===\n${logContent}\n`);
             }
           },
         });
-
         export { expect } from '@playwright/test';
         ```
-
-        Update existing E2E test files to import from this fixture instead of `@playwright/test`
-        where the `page` fixture is used.
+        Update existing E2E test files to import from this fixture instead of `@playwright/test`.
       </action>
     </check>
 
@@ -144,11 +174,12 @@ Derived:
 
     <action>Check `VISUAL_VALIDATION_ENABLED` in `.env`, `.env.local`, `.env.test`:
       - If explicitly `false` → set {visual_validation_enabled} = false
-      - Otherwise: detect if this is a frontend project:
-          Scan {project_root} for any of: `package.json` with react/vue/angular/next/svelte/vite in dependencies,
-          `playwright.config.*`, `next.config.*`, `vite.config.*`, `angular.json`
+      - Otherwise: detect if this is a frontend project based on {detected_stack}:
+          dotnet: scan for Razor pages (`*.cshtml`), Blazor (`*.razor`), or a frontend bundle (`wwwroot/index.html`, `ClientApp/`)
+          python: scan for templates (`templates/`, `static/`), or a frontend folder with `index.html`
+          js: scan for `package.json` with react/vue/angular/next/svelte/vite in dependencies, `playwright.config.*`, `next.config.*`, `vite.config.*`, `angular.json`
       - If frontend indicators found → set {visual_validation_enabled} = true (default on)
-      - If backend-only (none of the above) and no explicit true → set {visual_validation_enabled} = false
+      - If backend-only and no explicit true → set {visual_validation_enabled} = false
     </action>
 
     <check if="{visual_validation_enabled} == false">
@@ -158,18 +189,47 @@ Derived:
     <check if="{visual_validation_enabled} == true">
 
       <!-- ── Screenshot helper ──────────────────────────────────────────── -->
+      <action>Determine the screenshot call pattern for {detected_stack}:
+        - dotnet: look for `ScreenshotHelper.CaptureAsync(page, "name")` or `await page.ScreenshotAsync(new PageScreenshotOptions { Path = "..." })` calls with a path under `test-artifacts/screenshots/`
+        - python: look for `capture_screenshot(page, "name")` or `await page.screenshot(path="test-artifacts/screenshots/...")` calls
+        - js: look for `captureScreenshot(page, 'name')` calls
+        Set {screenshot_pattern} to the detected call pattern.
+      </action>
+
       <action>Check if screenshot helper exists:
-        Look for `tests/e2e/helpers/screenshot.*` or `captureScreenshot` in any test file.
+        - dotnet: `Tests/E2E/Helpers/ScreenshotHelper.cs` or {screenshot_pattern} found in any test file
+        - python: `tests/e2e/helpers/screenshot.py` or {screenshot_pattern} found in any test file
+        - js: `tests/e2e/helpers/screenshot.*` or {screenshot_pattern} found in any test file
       </action>
 
       <check if="helper not found">
         <action>Create the screenshot helper adapted to the project's language and framework.
-          Follow File 1 in visual-validation.md. Core contract:
+          Follow the language-specific helper in visual-validation.md. Core contract (all stacks):
           - normalize name → save PNG to `test-artifacts/screenshots/{name}.png`
           - call AFTER assertions confirm the UI state is stable
-          Save to `{project_root}/tests/e2e/helpers/screenshot.{ext}`.
+          Path conventions:
+          - dotnet: `{project_root}/Tests/E2E/Helpers/ScreenshotHelper.cs`
+          - python: `{project_root}/tests/e2e/helpers/screenshot.py`
+          - js: `{project_root}/tests/e2e/helpers/screenshot.{ts|js}`
         </action>
       </check>
+
+      <!-- ── CRITICAL: Screenshots belong inside existing E2E tests ──────── -->
+      <action>
+        *** INTEGRATION MANDATE — NON-NEGOTIABLE ***
+        Screenshots MUST be captured inside the existing E2E test methods, at meaningful UI states.
+        DO NOT create a separate test class, test file, or test suite just for screenshots.
+
+        For each existing E2E test (e.g. ChatSmokeTest, KnowledgeSearchSmokeTest):
+          - Identify the key UI states within that test: initial load, after user action, with results,
+            with drawer/modal open, with error, empty state, etc.
+          - Add a screenshot capture call AFTER the assertions for each state are confirmed
+          - Name each screenshot descriptively: "{feature}-{state}" (e.g. "chat-initial-load", "search-with-results")
+
+        A test that navigates through 5 states should have up to 5 screenshots — one per state.
+        Never capture a screenshot before the assertions that confirm that state is stable.
+        *** END MANDATE ***
+      </action>
 
       <!-- ── visual-requirements.yaml — generate with semantic rules ────── -->
       <action>Check if `{project_root}/visual-requirements.yaml` exists.</action>
@@ -177,7 +237,7 @@ Derived:
       <check if="file does not exist OR file exists but has only placeholder comments">
         <action>Generate `{project_root}/visual-requirements.yaml` with real semantic requirements:
 
-          For EACH `captureScreenshot(page, '{name}')` call found in E2E test files:
+          For EACH screenshot capture call found in E2E test files (using {screenshot_pattern}):
 
           1. Read the surrounding test code (the full test function or describe block)
           2. Identify the app state at the moment of capture:
@@ -203,7 +263,7 @@ Derived:
       </check>
 
       <check if="file exists and has real content">
-        <action>Scan E2E test files for any `captureScreenshot()` calls whose name is NOT yet in visual-requirements.yaml.
+        <action>Scan E2E test files for any screenshot capture calls (using {screenshot_pattern}) whose name is NOT yet in visual-requirements.yaml.
           For each new name found, append an entry using the same analysis process above.
         </action>
         <output>[E2E Step B2] visual-requirements.yaml updated with {new_count} new entries.</output>
@@ -215,10 +275,15 @@ Derived:
 
   <!-- ==================== STEP C: Run Playwright E2E Tests ==================== -->
   <step name="C" goal="Execute all E2E tests and collect full results">
-    <action>Run Playwright with structured output:
-      `npx playwright test --reporter=list,json --output=test-results`
+    <action>Run E2E tests using the command appropriate for {detected_stack}:
+      - dotnet: `dotnet test --logger "console;verbosity=detailed" --results-directory test-results`
+        (test output includes Playwright traces and failure details)
+      - python: `pytest tests/e2e/ --tb=short -v --output=test-results`
+        (or the path where E2E tests are located, detected from test file locations)
+      - js: `npx playwright test --reporter=list,json --output=test-results`
+      - unknown: try `npx playwright test` first; if it fails with "not found", try `dotnet test`; then `pytest`
 
-      Capture: exit code, full stdout/stderr, path to JSON results.
+      Capture: exit code, full stdout/stderr, path to results/JSON output.
     </action>
 
     <action>Read browser console log file if it was written: `{browser_log_file}`</action>
