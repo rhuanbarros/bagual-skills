@@ -194,7 +194,7 @@ Derived paths:
           <output>
             STORY PROCESSOR HALTED at Step C (Fix Review Findings).
             Story: {story_key}
-            Review iteration: {review_iteration}/5
+            Review iteration: {review_iteration}/2
             Error: {error_description}
           </output>
           <action>HALT and return failure</action>
@@ -231,6 +231,12 @@ Derived paths:
   <!-- ==================== SUB-STEP D: Mark story as done ==================== -->
   <step name="D" goal="Update sprint-status.yaml ({story_key} → done, update last_updated) and set Status to done in {story_file}. Preserve all existing comments and structure.">
     <output>[Step D] Marking {story_key} as done...</output>
+
+    <action>Read {sprint_status}. Find the entry for {story_key} and update its status to "done". Update the top-level `last_updated` field to {date}. Write the file back, preserving all existing comments, indentation, and structure.</action>
+
+    <action>Read {story_file}. Find the `Status:` field and update its value to "done". Write the file back.</action>
+
+    <output>[Step D] {story_key} marked as done in sprint-status.yaml and story file.</output>
   </step>
 
   <!-- ==================== SUB-STEP E: Update projects-history.md ==================== -->

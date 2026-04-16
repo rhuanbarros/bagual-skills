@@ -32,7 +32,7 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 ### Paths
 
 - `sprint_status` = `{implementation_artifacts}/sprint-status.yaml`
-- `story_processor` = `.claude/skills/bagual-bmad-implement-quick-epic/story-processor.md`
+- `story_processor` = `{project-root}/.claude/skills/bagual-bmad-implement-quick-epic/references/story-processor.md`
 - `deferred_findings_file` = `{implementation_artifacts}/epic-{epic_num}-deferred-findings.md`
 
 ### Input Validation
@@ -106,10 +106,12 @@ Parse the user-provided epic number from the invocation arguments.
       ============================================================
     </output>
 
-    <action>Spawn an Agent subagent with this prompt:
-      "You are a story processor agent. Read and follow ALL instructions in the file: {story_processor}
+    <action>Read {story_processor} and execute ALL its steps (A through F) directly for {current_story_key}.
+      Do NOT spawn a subagent to read story-processor — follow its instructions yourself inline.
+      When a step says "Spawn an Agent subagent" for create-story, dev-story, code-review, or quick-dev,
+      YOU spawn that agent directly (you are the orchestrator, not a nested subagent).
 
-      Input values:
+      Input values to use throughout story-processor execution:
       - story_key: {current_story_key}
       - story_id: {current_story_id}
       - story_status: {current_story_status}
@@ -120,8 +122,7 @@ Parse the user-provided epic number from the invocation arguments.
       - project_root: {project-root}
       - epic_num: {epic_num}
 
-      This is running inside an automated pipeline. Auto-approve all checkpoints.
-      Do not ask for user input — proceed automatically."
+      Complete all steps A through F before moving to the next story.
     </action>
 
     <check if="Agent returned failure or HALTED">
@@ -129,7 +130,7 @@ Parse the user-provided epic number from the invocation arguments.
         PIPELINE HALTED: Story agent failed for {current_story_key}.
         Error: {error_description}
 
-        Manual intervention required. After fixing, re-run: /bagual-bmad-implement-epic {epic_num}
+        Manual intervention required. After fixing, re-run: /bagual-bmad-implement-quick-epic {epic_num}
       </output>
       <action>HALT</action>
     </check>
@@ -141,7 +142,7 @@ Parse the user-provided epic number from the invocation arguments.
         PIPELINE HALTED: Story agent completed but {current_story_key} was not marked done in sprint-status.yaml.
         Check the story agent output for errors.
 
-        Manual intervention required. After fixing, re-run: /bagual-bmad-implement-epic {epic_num}
+        Manual intervention required. After fixing, re-run: /bagual-bmad-implement-quick-epic {epic_num}
       </output>
       <action>HALT</action>
     </check>
@@ -162,7 +163,7 @@ Parse the user-provided epic number from the invocation arguments.
       <output>
         Epic {epic_num} pipeline finished processing available stories.
         Some stories remain incomplete (likely due to earlier interruption).
-        Re-run /bagual-bmad-implement-epic {epic_num} after addressing any issues.
+        Re-run /bagual-bmad-implement-quick-epic {epic_num} after addressing any issues.
       </output>
       <action>HALT</action>
     </check>
@@ -208,6 +209,41 @@ Parse the user-provided epic number from the invocation arguments.
     </check>
   </step>
 
+  <!-- ==================== STEP 4.5: Test Pipeline Phase ==================== -->
+  <step n="4.5" goal="Run full test pipeline to verify the epic's code actually works — soft-fail so epic always reaches retrospective">
+    <output>
+      ============================================================
+      TEST PIPELINE PHASE
+      Running bagual-test-pipeline at HIGH coverage (95% target)
+      ============================================================
+    </output>
+
+    <action>Set {test_pipeline_result} = "not_run" and {test_pipeline_report} = ""</action>
+
+    <action>Spawn an Agent subagent with this prompt:
+      "Run the skill /bagual-test-pipeline with args: high yolo
+       This is running inside an automated pipeline.
+       Do not ask for user input — proceed automatically with yolo mode.
+       Run the full pipeline to completion and return your full output."
+    </action>
+
+    <check if="Agent output contains 'TEST PIPELINE COMPLETE'">
+      <action>Set {test_pipeline_result} = "passed"</action>
+      <output>[Step 4.5] ✓ Test pipeline PASSED. All tests passing at HIGH coverage.</output>
+    </check>
+
+    <check if="Agent output does NOT contain 'TEST PIPELINE COMPLETE' OR Agent failed">
+      <action>Set {test_pipeline_result} = "failed"</action>
+      <action>Store the full agent output as {test_pipeline_report}</action>
+      <output>
+        ⚠️  [Step 4.5] Test pipeline FAILED or did not complete.
+        Continuing to retrospective — failures will be documented there.
+        Epic will be marked done but flagged: tests need attention before this epic can be considered production-ready.
+      </output>
+    </check>
+  </step>
+
+  <!-- ==================== STEP 5: Retrospective + Mark Epic Done ==================== -->
   <step n="5" goal="Run retrospective and mark epic done">
     <critical>The epic is NOT complete until the retrospective finishes. Do NOT mark epic as done before this step succeeds.</critical>
 
@@ -216,7 +252,16 @@ Parse the user-provided epic number from the invocation arguments.
     <action>Spawn an Agent subagent with this prompt:
       "Run the skill /bmad-retrospective with args: epic {epic_num} yolo
        This is running inside an automated pipeline. Auto-approve all checkpoints and prompts.
-       Do not ask for user input — proceed automatically."
+       Do not ask for user input — proceed automatically.
+
+       Test pipeline status for this epic: {test_pipeline_result}
+       {if test_pipeline_result == 'failed':}
+       The test pipeline did not pass. Include a section in the retrospective documenting this:
+       - Tests could not be fully verified after implementation
+       - Key failures (summarize from the report below):
+       {test_pipeline_report}
+       - Action required: resolve test failures before marking epic as production-ready
+       {/if}"
     </action>
 
     <check if="Agent failed">
@@ -245,6 +290,7 @@ Parse the user-provided epic number from the invocation arguments.
       EPIC {epic_num} PIPELINE COMPLETE
 
       All stories implemented, reviewed, and committed.
+      Test pipeline: {test_pipeline_result} {if test_pipeline_result == 'failed': '⚠️  — see retrospective for details'}
       Retrospective completed and committed.
       Epic {epic_num} marked as done.
       ============================================================

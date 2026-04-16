@@ -154,6 +154,150 @@ Derived:
     </output>
   </step>
 
+  <!-- ==================== STEP A2: Seed Test Data ==================== -->
+  <step name="A2" goal="Ensure the database has the data E2E tests need — discover existing seed, or derive and create one from the tests and schema">
+
+    <action>Set {seed_ran} = false and {seed_marker} = "" and {seed_cleanup_script} = ""</action>
+
+    <!-- ── 1. Discover existing seed mechanism ────────────────────────────── -->
+    <action>Search for an existing seed mechanism in this priority order:
+      1. Shell scripts: `scripts/seed-e2e.sh`, `scripts/seed-test.sh`, `seed-e2e.sh`, `seed.sh`
+      2. Makefile targets: grep Makefile for `seed-e2e`, `seed-test`, `seed` targets
+      3. Stack-specific seeders:
+         - dotnet: `**/DatabaseSeeder.cs`, `**/SeedData.cs`, `**/DataSeeder.cs`, `*Seed*.cs` in test project; also `dotnet run --seed` or `-- --seed` in any launch config
+         - python: `python manage.py loaddata`, `pytest fixtures` in `conftest.py`, `**/fixtures/*.json`, `**/fixtures/*.yaml`
+         - js: `scripts/seed.{js,ts,mjs}`, `prisma db seed`, `knex seed:run`, `sequelize db:seed:all`
+      4. SQL files: `seeds/e2e.sql`, `test-data.sql`, `seed.sql`, `fixtures.sql`
+      5. Docker compose: `docker-compose.test.yml` with seed service or init SQL
+
+      Record: {existing_seed_mechanism} = path/command if found, null if not found.
+    </action>
+
+    <!-- ── 2a. Run existing seed ───────────────────────────────────────────── -->
+    <check if="{existing_seed_mechanism} found">
+      <action>Run the seed mechanism:
+        - Shell script: `bash {path}`
+        - Makefile: `make {target}`
+        - dotnet seeder: `dotnet run --project {seeder_project}` or run via test setup if it's a fixture
+        - python: execute the discovered command
+        - js: execute the discovered command
+        - SQL: `psql {connection_string} -f {path}` or equivalent for the detected DB
+
+        Capture exit code and output.
+      </action>
+
+      <check if="seed command failed">
+        <output>
+          ⚠️  [E2E Step A2] Seed mechanism found but failed to run:
+          Command: {seed_command}
+          Error: {error_output}
+          Attempting to continue — tests may fail due to missing data.
+        </output>
+      </check>
+
+      <check if="seed command succeeded">
+        <action>Set {seed_ran} = true</action>
+        <output>[E2E Step A2] Seed ran successfully: {existing_seed_mechanism}</output>
+      </check>
+
+      <!-- Detect cleanup companion -->
+      <action>Look for a paired cleanup script next to the seed:
+        Same directory as seed, look for: `cleanup-e2e.sh`, `cleanup.sh`, `cleanup.sql`, `teardown.sh`
+        If found, set {seed_cleanup_script} = that path.
+      </action>
+    </check>
+
+    <!-- ── 2b. Derive and create seed from tests + schema ─────────────────── -->
+    <check if="{existing_seed_mechanism} NOT found">
+      <output>[E2E Step A2] No existing seed mechanism found. Deriving seed from tests and schema...</output>
+
+      <action>Read ALL E2E test files (based on {detected_stack}):
+        - dotnet: `**/*Tests.cs` files that contain `IPage` or `PlaywrightFixture` usage
+        - python: `tests/e2e/**/*.py` or files with `async_playwright`/`page.goto`
+        - js: `tests/e2e/**/*.{ts,js}` or `playwright/**/*.{ts,js}`
+
+        For each test, identify what data it assumes exists:
+        - Navigation targets: what pages/routes does it visit? What entities must exist to render them?
+        - Search/filter actions: what does it search for? What must be in the DB to return results?
+        - Form interactions: what does it fill? Does it require existing records (e.g. categories, users)?
+        - Assertions: what counts, names, or values does it assert on screen?
+
+        Build {required_data}: list of entities and minimum records needed, with their key fields.
+      </action>
+
+      <action>Read the project's data schema:
+        - dotnet: migration files (`Migrations/*.cs`), entity classes (`*Entity.cs`, `*Model.cs`), DbContext
+        - python: migration files, model definitions (`models.py`, `**/models/*.py`)
+        - js: migration files, Prisma schema (`schema.prisma`), Sequelize models
+        - All stacks: also check any existing `seed.sql` or `fixtures/` even if incomplete
+
+        Map {required_data} entities to their actual DB tables, required columns, and foreign key constraints.
+      </action>
+
+      <action>Generate seed data:
+
+        Choose marker convention based on {detected_stack}:
+        - Email fields: use `@e2e.test` domain (e.g. `testuser@e2e.test`)
+        - Name fields: prefix with `E2E_` (e.g. `E2E_TestProduct`)
+        - Boolean flag: if schema has `is_test_data` or `is_seeded` field, set to true
+        Set {seed_marker} = the chosen convention (e.g. "email domain @e2e.test and name prefix E2E_")
+
+        Generate the minimum seed that satisfies {required_data}, respecting FK order.
+        Write seed file in the appropriate format:
+        - dotnet: `{project_root}/Tests/E2E/Seed/E2ESeed.cs` — a static class with async Seed(DbContext) method
+        - python: `{project_root}/tests/e2e/seed/seed_e2e.py` — async function with SQLAlchemy or raw psycopg2
+        - js: `{project_root}/tests/e2e/seed/seed-e2e.{ts,js}` — async function using the project's ORM/query builder
+        - Any stack (fallback): `{project_root}/tests/e2e/seed/seed.sql` — pure SQL INSERT statements
+
+        Generate paired cleanup file that deletes exactly what the seed inserted, using the marker:
+        - dotnet: `{project_root}/Tests/E2E/Seed/E2ECleanup.cs`
+        - python: `{project_root}/tests/e2e/seed/cleanup_e2e.py`
+        - js: `{project_root}/tests/e2e/seed/cleanup-e2e.{ts,js}`
+        - SQL fallback: `{project_root}/tests/e2e/seed/cleanup.sql`
+
+        Write `{project_root}/docs/e2e-seed.md`:
+        # E2E Test Seed Data
+        ## What was seeded
+        {for each entity in required_data: "- {entity}: {count} record(s), {key fields}"}
+        ## Marker convention
+        {seed_marker}
+        ## How to re-run seed
+        {run command}
+        ## How to clean up manually
+        {cleanup command}
+        ## How to regenerate
+        Delete the seed files and re-run /bagual-test-pipeline — the pipeline will re-derive from tests.
+
+        Set {seed_cleanup_script} = path to generated cleanup file.
+      </action>
+
+      <action>Run the generated seed:
+        - dotnet: compile and invoke E2ESeed via a small runner or dotnet-script; or call directly if test project exposes a CLI entry
+        - python: `python tests/e2e/seed/seed_e2e.py`
+        - js: `npx ts-node tests/e2e/seed/seed-e2e.ts` or `node tests/e2e/seed/seed-e2e.js`
+        - SQL fallback: `psql {connection_string} -f tests/e2e/seed/seed.sql`
+
+        Capture exit code. If it fails, output a warning and continue — tests will surface data errors explicitly.
+      </action>
+
+      <check if="seed ran successfully">
+        <action>Set {seed_ran} = true</action>
+        <output>[E2E Step A2] Seed derived from tests and schema, created and ran successfully. Marker: {seed_marker}</output>
+      </check>
+
+      <check if="seed failed">
+        <output>
+          ⚠️  [E2E Step A2] Generated seed failed to run. Tests may fail due to missing data.
+          Seed file: {seed_file_path}
+          Error: {error_output}
+          Review docs/e2e-seed.md and fix the seed manually if needed.
+        </output>
+      </check>
+    </check>
+
+    <output>[E2E Step A2] Data seeding complete. seed_ran={seed_ran}, marker="{seed_marker}"</output>
+  </step>
+
   <!-- ==================== STEP B: Set Up Log Capture ==================== -->
   <step name="B" goal="Instrument browser console capture and server log capture">
     <action>Ensure `{project_root}/test-results/` directory exists (create if needed)</action>
@@ -445,6 +589,69 @@ Derived:
     </check>
   </step>
 
+  <!-- ==================== STEP E2: Cleanup Test Data ==================== -->
+  <step name="E2" goal="Remove seed data created during this test run — leave the database in pre-test state">
+
+    <check if="{seed_ran} == false">
+      <output>[E2E Step E2] No seed was run. Skipping cleanup.</output>
+    </check>
+
+    <check if="{seed_ran} == true">
+      <output>[E2E Step E2] Cleaning up seed data...</output>
+
+      <!-- ── Strategy A: Run paired cleanup script ──────────────────────── -->
+      <check if="{seed_cleanup_script} is set and file exists">
+        <action>Run the cleanup script:
+          - Shell: `bash {seed_cleanup_script}`
+          - dotnet: invoke E2ECleanup via dotnet-script or test runner CLI
+          - python: `python {seed_cleanup_script}`
+          - js: `npx ts-node {seed_cleanup_script}` or `node {seed_cleanup_script}`
+          - SQL: `psql {connection_string} -f {seed_cleanup_script}`
+
+          Capture exit code.
+        </action>
+
+        <check if="cleanup succeeded">
+          <output>[E2E Step E2] ✓ Seed data cleaned up via cleanup script.</output>
+        </check>
+
+        <check if="cleanup failed">
+          <output>
+            ⚠️  [E2E Step E2] Cleanup script failed. Seed data may remain in the database.
+            Script: {seed_cleanup_script}
+            Error: {error_output}
+            Run manually to clean up, or re-run seed before next E2E run.
+          </output>
+        </check>
+      </check>
+
+      <!-- ── Strategy B: Delete by marker (fallback if no cleanup script) ── -->
+      <check if="{seed_cleanup_script} NOT set AND {seed_marker} is set">
+        <action>Delete seed data by marker convention ({seed_marker}):
+          Construct DELETE queries based on what was seeded and the marker used:
+          - If marker is email domain `@e2e.test`: DELETE FROM users WHERE email LIKE '%@e2e.test'
+          - If marker is name prefix `E2E_`: DELETE FROM relevant tables WHERE name LIKE 'E2E_%'
+          - Execute in reverse FK order (delete children before parents)
+          - Use the DB connection from the same config used by the seed
+
+          Execute via the appropriate client for {detected_stack}:
+          - dotnet: via DbContext or raw SQL with connection string from appsettings
+          - python: via sqlalchemy or psycopg2 with DATABASE_URL
+          - js: via project's query builder or raw pg client
+        </action>
+
+        <output>[E2E Step E2] ✓ Seed data removed by marker ({seed_marker}).</output>
+      </check>
+
+      <check if="{seed_cleanup_script} NOT set AND {seed_marker} NOT set">
+        <output>
+          ⚠️  [E2E Step E2] No cleanup script and no marker — cannot auto-clean seed data.
+          Database may contain test data from this run. See docs/e2e-seed.md for manual cleanup instructions.
+        </output>
+      </check>
+    </check>
+  </step>
+
   <!-- ==================== STEP E: Return Results ==================== -->
   <step name="E" goal="Combine all results and return structured report to orchestrator">
     <action>Determine overall result:
@@ -464,6 +671,10 @@ Derived:
         {for each service in services_manifest:}
         ✓ {service.name} at {service.host}:{service.port}
         {/for}
+
+        ### Data Lifecycle
+        Seed: {if seed_ran: "ran — " + (existing_seed_mechanism OR "derived from tests") else: "not needed"}
+        Cleanup: {if seed_ran: "completed" else: "skipped"}
       </output>
       <action>Return success to orchestrator, including {services_manifest}</action>
     </check>

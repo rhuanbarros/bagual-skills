@@ -191,34 +191,66 @@ If in yolo mode: default to `{coverage_level}` = "medium", `{coverage_target}` =
       [Step 0.5] Scanning existing E2E tests for mocking violations...
     </output>
 
-    <action>Scan all E2E test files for these violation patterns:
+    <action>Scan E2E test files ONLY (not unit/integration tests) for mocking violations.
 
-      VIOLATION PATTERNS — any of these found in an E2E test file is a blocker:
+      WHERE TO LOOK — scan these paths by stack, NOT the entire project:
+      - dotnet: files under `Tests/E2E/`, `*E2ETests.cs`, `*EndToEndTests.cs`, or any `*Tests.cs`
+        file that contains `IPage`, `IBrowser`, or `IPlaywright` — these are E2E files
+        EXCLUDE: `*UnitTests.cs`, `*IntegrationTests.cs`, files without Playwright imports
+      - python: files under `tests/e2e/`, `tests/functional/`, or any `test_*.py` that imports
+        `playwright`, `async_playwright`, or uses `page.goto`
+        EXCLUDE: files under `tests/unit/`, `tests/integration/`
+      - js: files under `tests/e2e/`, `e2e/`, `playwright/`, or `*.spec.ts` files that use
+        Playwright's `page` fixture
+        EXCLUDE: `*.unit.spec.*`, `*.test.*` files that don't import Playwright
+
+      VIOLATION PATTERNS — any of these in an E2E file is a blocker:
 
       1. HTTP stub listeners / fake servers replacing real external services
-         - dotnet: `HttpListener`, `WireMock`, `MockHttp`, custom TCP listeners, `TestServer` with stub handlers
-         - js: `nock`, `msw`, custom `http.createServer`, Playwright `route()` intercepting API calls to real backends
-         - python: `responses` library, `httpretty`, `unittest.mock` patching HTTP clients
+         HOW TO FIND:
+         - dotnet: grep for `HttpListener`, `WireMock`, `MockHttp`, `WireMockServer`,
+           `TestServer` in constructor or class field, custom TCP server instantiation.
+           Also look for: `new HttpMessageHandler`, `DelegatingHandler` overrides in test setup,
+           `WebApplicationFactory` configured with `services.Replace` swapping real HTTP clients.
+           KEY SIGNAL: a class that implements `IDisposable` AND opens a port AND is used in E2E tests.
+         - js: grep for `nock(`, `msw`, `setupServer(`, `http.createServer`, `new Server(`.
+           Also: `page.route(` intercepting calls to real backend URLs (not just static assets) —
+           `page.route` is OK for static mocking but a violation if it intercepts your API host.
+         - python: grep for `@responses.activate`, `responses.add(`, `httpretty`, `@patch` on
+           HTTP client classes, `requests_mock`, `aioresponses`
 
-      2. In-memory database substitutes in E2E
-         - dotnet: `UseInMemoryDatabase`, SQLite replacing PostgreSQL/SQL Server in E2E config
-         - js/python: any SQLite or fake DB configured only for test runs
+      2. In-memory database substitutes
+         HOW TO FIND:
+         - dotnet: grep for `UseInMemoryDatabase`, `UseSqlite` in test project's `*WebApplicationFactory.cs`,
+           `*TestStartup.cs`, `Program.cs` overrides for test environment, or `appsettings.Test.json`
+           with `"Provider": "InMemory"` or connection string pointing to `:memory:`.
+           KEY SIGNAL: `services.Replace` or `services.AddDbContext` in test setup targeting a different provider.
+         - js/python: any `sqlite:///:memory:` or `:memory:` in test config, `.env.test` overriding
+           DATABASE_URL to a different engine than production uses
 
       3. "Accept error as valid outcome" patterns
-         - dotnet: test asserts success OR error indifferently (e.g. `Assert.True(successVisible || errorVisible)`)
-         - js: `expect(success || errorAlert).toBeTruthy()`
-         - python: `assert success_visible or error_visible`
-         - Any test comment like "// Accepts both ... so the test passes even when service is not running"
+         HOW TO FIND — grep for these in E2E test files:
+         - dotnet: `Assert.True(.*||.*)`, `IsAnyResponseOrErrorVisible`, boolean ORs in Assert calls.
+           Also look for: test methods with comment "// accept either" or "// pass even if"
+         - js: `expect(.*||.*).toBeTruthy()`, `|| error` in assertion arguments
+         - python: `assert ... or ...` on UI state variables, `or error_visible` in assert statements
+         KEY SIGNAL: an assertion that passes when TWO DIFFERENT outcomes are present — one success, one failure
 
-      4. Service availability skipped silently
-         - `[Ignore]`, `[Skip]`, `pytest.mark.skip` on E2E tests when services are not running
-         - Try/catch swallowing connection failures in E2E setup
-         - `catch { return; }` or equivalent in test setup/teardown
+      4. Service availability silently skipped
+         HOW TO FIND:
+         - dotnet: `[Fact(Skip=`, `[Theory(Skip=`, bare `try { await page.GotoAsync } catch { return; }`,
+           `catch (Exception) { }` (empty catch or returning early) in E2E test setup/teardown.
+           Also: `Environment.GetEnvironmentVariable("SKIP_E2E")` checks that abort test silently.
+         - python: `pytest.mark.skip`, `pytest.mark.skipif`, `@pytest.mark.skip` on E2E test functions.
+           Also: `try: ... except: pass` swallowing playwright errors in fixtures.
+         - js: `test.skip(`, `.skip(`, `xit(`, `xdescribe(` in Playwright test files.
+           Also: `try { await page.goto } catch { return; }` or unchecked promise rejections in beforeAll.
 
       For each violation found, record:
       - File path and line number
-      - Violation type (stub, in-memory-db, accept-error, silent-skip)
-      - Specific code snippet
+      - Violation type (stub | in-memory-db | accept-error | silent-skip)
+      - Specific code snippet (the offending line and 2 lines of context)
+      - Why it's a violation (not just what it is)
     </action>
 
     <check if="violations found">
@@ -360,6 +392,58 @@ If in yolo mode: default to `{coverage_level}` = "medium", `{coverage_target}` =
     </check>
 
     <output>[Step 2] Test generation complete.</output>
+  </step>
+
+  <!-- ==================== STEP 2.5: Post-Generation Mocking Audit ==================== -->
+  <step n="2.5" goal="Re-audit E2E tests for mocking violations introduced during test generation in Step 2">
+    <output>[Step 2.5] Post-generation mocking audit — checking for violations introduced during test generation...</output>
+
+    <action>Re-run the full E2E mocking audit from Step 0.5, using the SAME where-to-look rules and
+      violation patterns defined there. Apply them to ALL E2E test files, prioritizing files
+      modified or created during Step 2.
+
+      The same four violation types apply (HTTP stubs, in-memory DB, accept-error patterns,
+      silent skips) with the same HOW TO FIND guidance per stack.
+
+      For each violation found, record: file path, line number, violation type, code snippet,
+      and whether the file was newly generated (Step 2) or pre-existing.
+    </action>
+
+    <check if="violations found">
+      <output>
+        ⚠️  POST-GENERATION MOCKING VIOLATIONS — Introduced during test generation (Step 2):
+
+        {for each violation:}
+        ❌ [{violation_type}] {file_path}:{line}
+           {code_snippet}
+           Fix required: {specific_fix_guidance}
+        {/for}
+
+        These violations were introduced by the test generator — they must be removed before running tests.
+      </output>
+
+      <check if="NOT yolo mode">
+        <output>
+          Would you like me to:
+          [1] Auto-fix these violations via bmad-quick-dev (recommended)
+          [2] Show me the violations and I'll fix them manually
+        </output>
+        <action>Wait for user choice:
+          - [1] → spawn Agent with /bmad-quick-dev to remove each violation; re-scan to confirm clean
+          - [2] → HALT with violation list. Output: "Fix violations and re-run /bagual-test-pipeline"
+          - Default → [1]
+        </action>
+      </check>
+
+      <check if="yolo mode">
+        <output>[Step 2.5] YOLO mode — auto-fixing post-generation mocking violations...</output>
+        <action>Spawn Agent with /bmad-quick-dev to remove each violation. Re-scan to confirm clean.</action>
+      </check>
+    </check>
+
+    <check if="no violations found">
+      <output>[Step 2.5] Post-generation mocking audit clean. ✓ No violations introduced by test generators.</output>
+    </check>
   </step>
 
   <!-- ==================== STEP 3: Run Unit Tests — Fix Loop ==================== -->
