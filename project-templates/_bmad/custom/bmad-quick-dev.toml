@@ -1,0 +1,15 @@
+# Customizações para bmad-quick-dev — template genérico de projeto.
+# Copie para {project-root}/_bmad/custom/bmad-quick-dev.toml
+# Este arquivo NÃO é sobrescrito por atualizações do BMad.
+# Merge automático: persistent_facts faz APPEND ao base customize.toml.
+
+[workflow]
+
+# Conhecimento acumulado do projeto carregado como contexto persistente em toda sessão.
+# Os 4 arquivos de memória do projeto — criados/mantidos manualmente ou pelas skills.
+persistent_facts = [
+  "file:{project-root}/_bmad-output/anti-patterns.md",
+  "file:{project-root}/_bmad-output/decisions.md",
+  "file:{project-root}/_bmad-output/notes.md",
+  "file:{project-root}/_bmad-output/product-decisions.md",
+]

@@ -1,0 +1,25 @@
+# Customizações para bmad-dev-story — template genérico de projeto.
+# Copie para {project-root}/_bmad/custom/bmad-dev-story.toml
+# Este arquivo NÃO é sobrescrito por atualizações do BMad.
+# Merge automático: persistent_facts faz APPEND ao base customize.toml.
+
+[workflow]
+
+# Conhecimento acumulado do projeto carregado como contexto persistente em toda sessão de dev.
+# Os 4 arquivos de memória do projeto — criados/mantidos manualmente ou pelas skills.
+persistent_facts = [
+  "file:{project-root}/_bmad-output/anti-patterns.md",
+  "file:{project-root}/_bmad-output/decisions.md",
+  "file:{project-root}/_bmad-output/notes.md",
+  "file:{project-root}/_bmad-output/product-decisions.md",
+]
+
+# Registra o horário de início para rastreamento de tempo por story.
+# Roda após o greet, antes do workflow começar.
+activation_steps_append = [
+  "Registre mentalmente o horário atual como session_start_time. Quando identificar o story file em Step 1, adicione uma subseção 'Rastreamento de Tempo' no Dev Agent Record com 'Iniciado: {datetime_atual}'.",
+]
+
+# Registra o horário de conclusão e calcula a duração.
+# Roda ao final do workflow, após completar a story.
+on_complete = "No Dev Agent Record do story file, subseção 'Rastreamento de Tempo': adicione 'Concluído: {datetime_atual}' e calcule a duração aproximada a partir de session_start_time (ex: 'Duração: ~3.5h'). Se session_start_time não estiver disponível, registre apenas o horário de conclusão."
