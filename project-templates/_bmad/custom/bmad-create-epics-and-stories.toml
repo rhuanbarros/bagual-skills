@@ -1,0 +1,8 @@
+# Customização: story de E2E obrigatória no final de cada epic.
+# Política do projeto: nenhum epic pode ser finalizado sem testes E2E visuais.
+
+[workflow]
+
+persistent_facts = [
+  "MANDATORY RULE: Every epic MUST always end with an extra story dedicated to visual E2E testing. This story must be the LAST story of the epic, have a title in the format '{Epic Name} — Visual E2E Testing', and include: (1) an explicit instruction for the developer to run /bagual-test-pipeline high to visually validate all epic features in the browser via automated screenshots; (2) acceptance criteria requiring that all epic features render correctly, no visible errors appear on screen, and the pipeline reports success; (3) a list of the epic features that must be visually verified. NEVER finalize the creation of an epic without including this E2E story as the last story.",
+]

@@ -1,0 +1,8 @@
+# Customização: respeitar e criar corretamente a story de E2E do epic.
+# Política do projeto: todo epic termina com uma story de testes E2E visuais.
+
+[workflow]
+
+persistent_facts = [
+  "PROJECT CONVENTION: The last story of every epic is always a visual E2E testing story. When creating stories: (1) If this story is the epic's E2E testing story (identifiable by a title containing 'E2E' or 'Visual E2E Testing'), include in the tasks an instruction to run /bagual-test-pipeline high, and in the acceptance criteria the requirement that all epic features render correctly in the browser with no visible errors; (2) If this is the last real implementation story of the epic and the E2E testing story does not yet exist in the sprint plan, alert the user that the E2E story is missing and must be created before the epic can be closed.",
+]
