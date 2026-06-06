@@ -22,17 +22,33 @@ You receive these values from the orchestrator:
 - `{date}` — current date string
 - `{project_root}` — root directory of the project
 - `{epic_num}` — epic number (e.g. "2"), used for deferred findings file
+- `{fast_mode}` — if true, skip code review step C (default: true)
 
 Derived paths:
 - `{story_file}` = `{implementation_artifacts}/{story_key}.md`
-- `{projects_history}` = `{project_root}/projects-history.md`
+- `{projects_history}` = `{project_root}/_bmad-output/projects-history.md`
 - `{deferred_findings_file}` = `{implementation_artifacts}/epic-{epic_num}-deferred-findings.md`
+- `{anti_patterns_file}` = `{project_root}/_bmad-output/anti-patterns.md`
+- `{decisions_file}` = `{project_root}/_bmad-output/decisions.md`
+- `{product_decisions_file}` = `{project_root}/_bmad-output/product-decisions.md`
+- `{notes_file}` = `{project_root}/_bmad-output/notes.md`
 
 ---
 
 ## EXECUTION
 
 <workflow>
+
+  <!-- ==================== PRE-STEP 0: Load knowledge files ==================== -->
+  <step name="0" goal="Load project knowledge files for context continuity across compactions">
+    <action>Read all four knowledge files before doing anything else:
+      - {anti_patterns_file} — code patterns to avoid in this project
+      - {decisions_file} — technical decisions already made (do not undo without context)
+      - {product_decisions_file} — product behavior decisions (do not revert without explicit decision)
+      - {notes_file} — operational knowledge, system gotchas, how parts interact
+    If any file does not exist, skip it silently.</action>
+    <output>[Step 0] Project knowledge loaded. Starting story {story_key}.</output>
+  </step>
 
   <!-- ==================== SUB-STEP A: Create Story ==================== -->
   <step name="A" goal="Create story definition if in backlog">
@@ -97,7 +113,12 @@ Derived paths:
   </step>
 
   <!-- ==================== SUB-STEP C: Code Review Correction Loop ==================== -->
-  <step name="C" goal="Code review with up to 2 correction iterations">
+  <step name="C" goal="Code review with up to 2 correction iterations (skipped in fast mode)">
+    <check if="{fast_mode} == true">
+      <output>[Step C] Skipped — fast mode active. No code review for {story_key}.</output>
+      <action>GOTO step D</action>
+    </check>
+
     <action>Set {review_iteration} = 0</action>
     <action>Set {review_passed} = false</action>
     <action>Set {spec_lessons} = empty list</action>
@@ -239,6 +260,21 @@ Derived paths:
     <output>[Step D] {story_key} marked as done in sprint-status.yaml and story file.</output>
   </step>
 
+  <!-- ==================== SUB-STEP D.5: Update knowledge files ==================== -->
+  <step name="D.5" goal="Persist learnings from this story to knowledge files before git commit">
+    <output>[Step D.5] Updating knowledge files with learnings from {story_key}...</output>
+
+    <action>Review what was implemented and encountered during this story. For each knowledge file, append ONLY genuinely new insights not already documented — do not repeat existing content:
+      - {notes_file}: system behavior discoveries, operational gotchas, how parts interact, environment quirks
+      - {decisions_file}: new technical decisions made during implementation (architecture, patterns chosen, tradeoffs accepted)
+      - {product_decisions_file}: product behavior decisions that emerged (edge cases handled, UX choices, business rules clarified)
+      - {anti_patterns_file}: problematic patterns discovered, refactored, or consciously avoided during this story
+    If nothing new for a file, skip it. Append entries with a `### {date} — {story_key}` header for traceability.
+    </action>
+
+    <output>[Step D.5] Knowledge files updated. These persist across context compactions for future story agents.</output>
+  </step>
+
   <!-- ==================== SUB-STEP E: Update projects-history.md ==================== -->
   <step name="E" goal="Append a summary entry to {projects_history}">
     <output>[Step E] Updating projects history...</output>
@@ -258,7 +294,7 @@ Derived paths:
   <step name="F" goal="Commit all changes for this story">
     <output>[Step F] Committing changes for {story_key}...</output>
 
-    <action>Stage all changed and new files relevant to this story (implementation files, story file, sprint-status.yaml, projects-history.md). Avoid staging sensitive files (.env, credentials).</action>
+    <action>Stage all changed and new files relevant to this story (implementation files, story file, sprint-status.yaml, and any knowledge files updated in step D.5: projects-history.md, anti-patterns.md, decisions.md, product-decisions.md, notes.md). Avoid staging sensitive files (.env, credentials).</action>
     <action>Run: git commit using a HEREDOC:
       feat: implement {story_key} - {one_line_summary_of_story}
 

@@ -37,13 +37,17 @@ Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
 
 ### Input Validation
 
-Parse the user-provided epic number from the invocation arguments.
+Parse the user-provided epic number and mode flag from the invocation arguments.
 - Extract `{epic_num}` from the argument (e.g., "2" from "/bagual-bmad-implement-quick-epic 2")
 - If no epic number provided:
   - Read the FULL `{sprint_status}` file
   - Find the first epic key (pattern: `epic-N`) whose status is NOT "done"
   - If found, set `{epic_num}` to that epic's number and output: "No epic number provided. Auto-selected epic {epic_num} (first not done)."
   - If none found, HALT: "All epics are done. Nothing to process."
+- Parse mode flag:
+  - If arguments contain "full" or "review" → set `{fast_mode}` = false (code review loop enabled)
+  - Otherwise → set `{fast_mode}` = true (default: fast, code review skipped)
+  - Output: "Mode: {fast_mode == true ? 'fast (no review)' : 'full (with review loop)'}"
 
 ---
 
@@ -121,6 +125,14 @@ Parse the user-provided epic number from the invocation arguments.
       - date: {date}
       - project_root: {project-root}
       - epic_num: {epic_num}
+      - fast_mode: {fast_mode}
+
+      CONTEXT CONTINUITY — before step A, read these files to have full accumulated project context
+      (they persist across context compactions and are updated after each story):
+      - {project-root}/_bmad-output/anti-patterns.md
+      - {project-root}/_bmad-output/decisions.md
+      - {project-root}/_bmad-output/product-decisions.md
+      - {project-root}/_bmad-output/notes.md
 
       Complete all steps A through F before moving to the next story.
     </action>
