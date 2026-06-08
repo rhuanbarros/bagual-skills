@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Agent(*)",
+      "Skill(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "TodoWrite(*)",
+      "NotebookEdit(*)",
+      "mcp__*",
+      "Bash(echo 'export PATH=\"/workspaces/hermes-dev/.hermes/hermes-agent/venv/bin:$PATH\"')",
+      "Bash(export PATH=\"/workspaces/hermes-dev/.hermes/hermes-agent/venv/bin:$PATH\")"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "skipAutoPermissionPrompt": true
+}
