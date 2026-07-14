@@ -1,0 +1,27 @@
+# estado-atual.yaml — snapshot legível do estado operacional de <NOME-SKILL>.
+# Lido no início da fase que precisa dele (NUNCA todo na ativação — ativação enxuta).
+# Reescrito por snapshot ao fim de cada mudança relevante. Fonte de "onde parei".
+
+schema_version: 1
+skill: <NOME-SKILL>
+
+# Último ciclo/execução concluído.
+last_cycle:
+  id: null            # ex.: cycle-<timestamp>
+  ended_at: null      # ISO-8601 UTC
+  outcome: null       # texto curto: o que foi feito
+
+# Trabalho em andamento / retomável.
+in_progress:
+  what: null          # descrição do que estava sendo feito
+  next_step: null     # a próxima ação concreta ao retomar
+
+# Despachos abertos (Bloco A) — cada um com seu marcador em disco.
+dispatches: []
+  # - id: <dispatch-id>
+  #   dir: <caminho>/dispatches/<dispatch-id>
+  #   status: open|done|failed
+  #   opened_at: <ISO>
+
+# Espaço livre para estado específico do domínio desta skill.
+domain: {}

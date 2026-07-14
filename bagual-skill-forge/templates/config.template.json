@@ -1,0 +1,21 @@
+{
+  "_comment": "Superfície de configuração de <NOME-SKILL> — DECLARE, não hardcode. Cada bloco lê daqui em vez de embutir caminhos/limiares no prompt. Preencha os placeholders na geração.",
+
+  "sidecar_path": "<CAMINHO-SIDECAR>",
+  "_sidecar_path": "Bloco D1. Caminho da memória-sidecar desta skill (lessons-log + playbook). Lido no início (feed-forward); no fim, um Reflector separado faz append no lessons-log e cura o playbook. Memória operacional DESTA skill — separada do Ledger do projeto (Bloco E).",
+
+  "spine_facts": [],
+  "_spine_facts": "Bloco D1. Fatos-espinha segurados em mente em TODA execução e TODO papel. São FATOS LITERAIS (não caminhos de arquivo) de propósito — sobrevivem mesmo se um arquivo-fonte sumir.",
+
+  "state_root": "<CAMINHO-ESTADO>",
+  "_state_root": "Bloco B. Raiz do estado persistente (estado-atual.yaml, diario.*, lock, dispatches/).",
+
+  "ledger_root": "<CAMINHO-WIKI>/ledger",
+  "_ledger_root": "Bloco E. Raiz do Ledger tipado grep-native do projeto.",
+
+  "selfheal_mode": "capture-only",
+  "_selfheal_mode": "Bloco D2. 'capture-only' = só registra o defeito e espera ratificação do dono. 'auto-fix' = conserta sozinho (com escalonamento obrigatório no núcleo). Comece em capture-only.",
+
+  "core_paths": [],
+  "_core_paths": "Bloco D2. Arquivos-núcleo (persona, contrato de despacho, scripts centrais) cujo conserto SEMPRE escala pro dono, mesmo com testes verdes."
+}
