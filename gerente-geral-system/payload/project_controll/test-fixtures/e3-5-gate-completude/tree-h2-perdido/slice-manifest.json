@@ -1,0 +1,9 @@
+{
+  "$comment": "Fixture E3.5 — variante COM PERDA: 'Seção Beta' foi fatiada mas nunca mapeada (nenhum arquivo secao-beta.md, nenhuma entrada no manifesto) — simula um sub-agente que dropou um H2 inteiro durante o fatiamento. Usado para provar que slice_completeness_gate.py FALHA (exit 1) e lista o H2 órfão.",
+  "monolith": "../monolito.md",
+  "tree_root": ".",
+  "mappings": [
+    { "h2": "Seção Alfa", "file": "secao-alfa.md" },
+    { "h2": "Seção Gama", "file": "secao-gama.md" }
+  ]
+}

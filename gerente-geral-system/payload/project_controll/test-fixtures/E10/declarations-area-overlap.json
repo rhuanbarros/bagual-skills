@@ -1,0 +1,12 @@
+{
+  "epic-A": {
+    "epic_type": "refactor",
+    "areas": ["frontend/src/features/proposals/"],
+    "touches_shared": []
+  },
+  "epic-B": {
+    "epic_type": "refactor",
+    "areas": ["frontend/src/features/proposals/components/wizard/"],
+    "touches_shared": []
+  }
+}

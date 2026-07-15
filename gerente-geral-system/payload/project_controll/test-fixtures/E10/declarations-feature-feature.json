@@ -1,0 +1,12 @@
+{
+  "epic-A": {
+    "epic_type": "feature",
+    "areas": ["frontend/src/features/foo/", "backend/domain/foo/"],
+    "touches_shared": []
+  },
+  "epic-B": {
+    "epic_type": "feature",
+    "areas": ["frontend/src/features/bar/", "backend/domain/bar/"],
+    "touches_shared": []
+  }
+}

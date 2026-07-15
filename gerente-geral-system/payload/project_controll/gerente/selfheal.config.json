@@ -1,0 +1,13 @@
+{
+  "_comment": "Config do self-healing do meta-sistema (Epic E22). Commitado com default seguro. mode='auto-fix': o Gerente despacha o conserto sozinho e LANDA um conserto de SCRIPT se os test_*.py do subsistema + validate_ledger + semgrep passarem E não tocar core_path; senão escala. mode='capture-only': só materializa o ticket meta-sistema e para — conserto espera ratificação do dono.",
+  "_comment_verde": "IMPORTANTE (o que 'verde' significa): o meta-sistema tem ~28 scripts COM teste e ~93 arquivos de instrução (SKILL.md/workflow.md/persona/.toml) SEM teste unitário. Conserto em SCRIPT tem verde real (test_*.py + validate_ledger + semgrep). Conserto em INSTRUÇÃO não tem teste — por isso instruction_fix_policy governa: 'escalate' (default seguro — dono ratifica) ou 'weak-bar' (landa se aditivo/reversível E um verificador adversário separado concordar). core_paths: contrato-núcleo do Gerente — SEMPRE escalam, mesmo com testes verdes (fix ruim aí quebra o próprio loop). Editável pelo dono.",
+  "mode": "auto-fix",
+  "instruction_fix_policy": "escalate",
+  "core_paths": [
+    ".claude/agents/gerente-geral.md",
+    "project_controll/gerente/dispatch-contract.md",
+    "project_controll/gerente/scripts/gerente_dispatch.py",
+    "project_controll/gerente/scripts/gerente_state.py",
+    "project_controll/gerente/scripts/gerente_quota.py"
+  ]
+}

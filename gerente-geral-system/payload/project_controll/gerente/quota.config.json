@@ -1,0 +1,12 @@
+{
+  "_comment": "Config do guardrail de cota (Story E8.3 + E19.2, gerente_quota.py). Commitado com defaults conservadores — o dono pode editar estes valores diretamente ou sobrescrever via env var (GERENTE_QUOTA_THRESHOLD_PCT, GERENTE_QUOTA_SELF_TRACKED_BUDGET_TOKENS, GERENTE_QUOTA_SAFETY_MULTIPLIER, GERENTE_QUOTA_STALE_SNAPSHOT_SECONDS, GERENTE_QUOTA_PER_DISPATCH_INFLIGHT_ESTIMATE_TOKENS, GERENTE_QUOTA_INFLIGHT_GRACE_SECONDS) ou flag de CLI, nesta ordem de precedência (CLI > env var > este arquivo > default hardcoded em gerente_quota.py). Ver project_controll/gerente/README.md secao 'Cota (E8.3)'.",
+  "_comment_e19_2": "per_dispatch_inflight_estimate_tokens + inflight_grace_seconds (E19.2, Furo 2): fecham a cegueira de cota no meio da árvore de um despacho — o `check` soma esta estimativa por despacho ainda aberto (do ciclo, além da graça) ao sinal auto-rastreado, então o guardrail dispara mesmo antes do close-dispatch. Ponha per_dispatch_inflight_estimate_tokens=0 para desligar a estimativa.",
+  "_comment_enabled": "DECISÃO DO DONO 2026-07-14: guardrail de cota DESLIGADO momentaneamente (enabled=false) — o `check` ainda calcula/reporta os sinais mas força veredito 'start', então o Gerente NUNCA para por cota. Motivo: destravar throughput; o dono acompanha. Para REATIVAR o controle: enabled=true. Isto NÃO é o mesmo que aumentar o orçamento — é o desligamento explícito do guardrail inteiro.",
+  "enabled": false,
+  "threshold_pct": 85.0,
+  "self_tracked_budget_tokens": 300000,
+  "safety_multiplier": 1.15,
+  "stale_snapshot_seconds": 900,
+  "per_dispatch_inflight_estimate_tokens": 200000,
+  "inflight_grace_seconds": 600
+}

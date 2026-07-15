@@ -1,0 +1,20 @@
+{
+  "epic-A": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/vehicles/"],
+    "touches_shared": [],
+    "depends_on": ["epic-C"]
+  },
+  "epic-B": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/clients/"],
+    "touches_shared": [],
+    "depends_on": ["epic-A"]
+  },
+  "epic-C": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/proposals/"],
+    "touches_shared": [],
+    "depends_on": ["epic-B"]
+  }
+}

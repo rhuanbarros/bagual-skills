@@ -1,0 +1,6 @@
+{"ts": "2026-07-11T07:00:00-03:00", "cycle_id": "cycle-fx-003", "event": "CICLO-INICIO"}
+{"ts": "2026-07-11T07:00:05-03:00", "cycle_id": "cycle-fx-003", "event": "acordei"}
+{"ts": "2026-07-11T07:00:10-03:00", "cycle_id": "cycle-fx-003", "event": "li-estado"}
+{"ts": "2026-07-11T07:02:00-03:00", "cycle_id": "cycle-fx-003", "event": "despachei", "text": "TCK-1720673000-bb11 via bagual-epic-runner"}
+{"ts": "2026-07-11T07:20:00-03:00", "cycle_id": "cycle-fx-003", "event": "parei", "text": "bloqueio nao contornavel: TCK-1720673000-bb11 requer decisao de produto ambigua sem padrao no Ledger, movido para precisa-de-info"}
+{"ts": "2026-07-11T07:20:05-03:00", "cycle_id": "cycle-fx-003", "event": "CICLO-FIM"}

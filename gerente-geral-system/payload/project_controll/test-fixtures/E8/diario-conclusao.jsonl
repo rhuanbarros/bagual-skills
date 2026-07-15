@@ -1,0 +1,8 @@
+{"ts": "2026-07-11T03:00:00-03:00", "cycle_id": "cycle-fx-001", "event": "CICLO-INICIO"}
+{"ts": "2026-07-11T03:00:05-03:00", "cycle_id": "cycle-fx-001", "event": "acordei"}
+{"ts": "2026-07-11T03:00:10-03:00", "cycle_id": "cycle-fx-001", "event": "li-estado"}
+{"ts": "2026-07-11T03:02:00-03:00", "cycle_id": "cycle-fx-001", "event": "decidi", "text": "priorizar TCK-1720670000-ab12 (alta) antes de TCK-1720671000-gh78 (media) — ver Ledger decisao-tecnica/priorizacao-fila.md"}
+{"ts": "2026-07-11T03:05:00-03:00", "cycle_id": "cycle-fx-001", "event": "despachei", "text": "TCK-1720670000-ab12 via epic-runner (worktree wt-8a5d)"}
+{"ts": "2026-07-11T04:10:00-03:00", "cycle_id": "cycle-fx-001", "event": "revisei", "text": "TCK-1720670000-ab12 concluido, code review OK, board.yaml atualizado"}
+{"ts": "2026-07-11T04:15:00-03:00", "cycle_id": "cycle-fx-001", "event": "parei", "text": "fila vazia — nenhum ticket pronto restante"}
+{"ts": "2026-07-11T04:15:05-03:00", "cycle_id": "cycle-fx-001", "event": "CICLO-FIM"}

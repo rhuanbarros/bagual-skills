@@ -1,0 +1,7 @@
+{
+  "epic-A": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/foo/"],
+    "touches_shared": []
+  }
+}

@@ -1,0 +1,13 @@
+# fixture E8.7 — estado-atual.yaml SEM as chaves decisions_pending/decisions_escalated
+# (arquivo escrito por uma versão hipotética anterior ao schema atual, ou snapshot
+# parcial) — prova que a ausência da chave é tratada igual a lista vazia, nunca lança
+# exceção nem confunde "ausente" com "populado".
+schema_version: 1
+written_at: "2026-07-11T07:20:05-03:00"
+marker: end
+cycle:
+  id: cycle-fx-003
+  started_at: "2026-07-11T07:00:00-03:00"
+  ended_at: "2026-07-11T07:20:05-03:00"
+  phase: parar
+  stop_reason: bloqueio

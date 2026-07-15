@@ -1,0 +1,12 @@
+{
+  "updated_at": 1783808097,
+  "model": "Opus 4.8 (1M context)",
+  "five_hour": {
+    "used_percentage": 90,
+    "resets_at": 1783823097
+  },
+  "seven_day": {
+    "used_percentage": 40,
+    "resets_at": 1783843097
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$comment": "Fixture E3.5 — variante COM PERDA TEXTUAL (checagem b): os 3 H2 mapeiam 1:1 (checagem a PASSA), mas secao-beta.md teve a 2ª frase silenciosamente cortada pelo sub-agente que fatiou. Prova que o gate detecta perda textual mesmo quando a cobertura H2 está correta.",
+  "monolith": "../monolito.md",
+  "tree_root": ".",
+  "mappings": [
+    { "h2": "Seção Alfa", "file": "secao-alfa.md" },
+    { "h2": "Seção Beta", "file": "secao-beta.md" },
+    { "h2": "Seção Gama", "file": "secao-gama.md" }
+  ]
+}

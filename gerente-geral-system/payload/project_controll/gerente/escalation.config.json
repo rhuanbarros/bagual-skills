@@ -1,0 +1,6 @@
+{
+  "_comment": "Config do escalonamento decidido pelo Gerente (Story E9.5, gerente_escalation.py). Commitado com defaults conservadores — o dono pode editar estes valores diretamente. Precedência: flag de CLI (--limit-days/--sample-size/--stale-after-seconds) > conteúdo deste arquivo > default hardcoded em gerente_escalation.py. 'dead_letter_limit_days': quantos dias um ticket escalado (escalonar: true) pode ficar sem nenhuma atualização antes de virar dead-letter no Briefing (F20 hardening — 'escalado nunca-decidido não apodrece'). 'sample_size': quantas trilhas AUTO-comitadas pela skill (bagual-tickets, E9.4) o Gerente amostra por ciclo para ratificação/correção (AC2 — nunca 100%, amostragem). 'orphan_stale_after_seconds': o MESMO limiar de silêncio de heartbeat que gerente_state.py::DEFAULT_STALE_AFTER_SECONDS (Story E8.2) usa para detect-crash/reconcile — repetido aqui só para ficar editável nesta config sem tocar em gerente_state.py; se ausente, orphan-sweep cai para o valor de gerente_state.py em runtime (nunca um número diferente/paralelo).",
+  "dead_letter_limit_days": 3,
+  "sample_size": 3,
+  "orphan_stale_after_seconds": 900
+}

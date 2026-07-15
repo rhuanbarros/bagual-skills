@@ -1,0 +1,12 @@
+{
+  "epic-A": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/foo/"],
+    "touches_shared": ["sprint-status.yaml"]
+  },
+  "epic-B": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/bar/"],
+    "touches_shared": ["board.yaml"]
+  }
+}

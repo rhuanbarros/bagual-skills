@@ -1,0 +1,73 @@
+# board.yaml — reconstruído por rebuild_board.py (Story E5.2)
+# Fonte de verdade = arquivos TCK-*.md; este índice é sempre recuperável a partir deles.
+tickets:
+  TCK-E9T-20:
+    title: Fixture E9.5 — escalado antigo (deve virar dead-letter)
+    status: pronto-para-implementar
+    priority: media
+    category: feature
+    area: sistema-orquestrador
+    expanded: false
+    created: 2020-01-01
+    updated: 2020-01-01
+    origem: manual
+    visivel_pro_cliente: false
+    trilha: null
+    escalonar: true
+    ledger_refs: []
+  TCK-E9T-22:
+    title: Fixture E9.5 — trilha auto-comitada pela skill (Regra A, rapida)
+    status: pronto-para-implementar
+    priority: alta
+    category: bug
+    area: proposals
+    expanded: false
+    created: 2020-01-01
+    updated: 2020-01-01
+    origem: manual
+    visivel_pro_cliente: false
+    trilha: rapida
+    escalonar: false
+    ledger_refs: []
+  TCK-E9T-23:
+    title: Fixture E9.5 — trilha auto-comitada pela skill (Regra B, wds)
+    status: pronto-para-implementar
+    priority: media
+    category: feature
+    area: vehicles
+    expanded: false
+    created: 2020-01-02
+    updated: 2020-01-02
+    origem: manual
+    visivel_pro_cliente: false
+    trilha: wds
+    escalonar: false
+    ledger_refs: []
+  TCK-E9T-24:
+    title: Fixture E9.5 — ticket em-implementacao (candidato a órfão)
+    status: em-implementacao
+    priority: alta
+    category: bug
+    area: dashboard
+    expanded: false
+    created: 2020-01-03
+    updated: 2020-01-03
+    origem: manual
+    visivel_pro_cliente: false
+    trilha: rapida
+    escalonar: false
+    ledger_refs: []
+  TCK-E9T-25:
+    title: Fixture E9.5 — ticket de controle (nem escalado, nem auto-comitado)
+    status: triado
+    priority: baixa
+    category: chore
+    area: sistema-orquestrador
+    expanded: false
+    created: 2020-01-04
+    updated: 2020-01-04
+    origem: manual
+    visivel_pro_cliente: false
+    trilha: null
+    escalonar: false
+    ledger_refs: []

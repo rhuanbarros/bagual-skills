@@ -1,0 +1,5 @@
+226:## [PRODUCT] "Bancos Parceiros" — faixa de logos (compartilhada: simulação + propostas) — 2026-06-14
+308:## [PRODUCT] Paridade Teddy360 (proposta admin) escopada só ao produto "Financiamento de veículos" — 2026-07-01
+315:## [PRODUCT] Botão "Confirmar cancelamento" de proposta vira vermelho (destructive), não mais âmbar — 2026-07-01
+354:## [PRODUCT] Wizard "Criar Proposta" coexiste com o picker simples — duas rotas para o mesmo resultado, não é duplicação a remover — 2026-07-03
+417:## [PRODUCT] "Valor de entrada" vira dado por proposta, não mais um valor único e mutável do veículo — 2026-07-08

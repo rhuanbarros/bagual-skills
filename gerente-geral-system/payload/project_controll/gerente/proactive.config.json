@@ -1,0 +1,6 @@
+{
+  "_comment": "Config do teto duro + dedup de trabalho proativo (Story E8.5, gerente_proactive.py). Commitado com defaults conservadores — o dono pode editar estes valores diretamente ou sobrescrever via env var (GERENTE_PROACTIVE_CAP_PER_CYCLE, GERENTE_PROACTIVE_DEDUP_THRESHOLD, GERENTE_PROACTIVE_DEDUP_TOP_N) ou flag de CLI, nesta ordem de precedência (CLI > env var > este arquivo > default hardcoded em gerente_proactive.py). Ver project_controll/gerente/proactive-catalog.md e README.md secao 'Trabalho proativo (E8.5)'.",
+  "cap_per_cycle": 3,
+  "dedup_similarity_threshold": 0.3,
+  "dedup_top_n": 5
+}

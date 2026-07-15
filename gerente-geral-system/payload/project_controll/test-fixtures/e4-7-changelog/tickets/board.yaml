@@ -1,0 +1,65 @@
+next_id: 108
+tickets:
+  TCK-101:
+    title: "Adicionar botão de exportar PDF na proposta"
+    status: concluido
+    priority: media
+    category: feature
+    area: proposals
+    expanded: false
+    created: 2026-07-06
+    updated: 2026-07-09
+  TCK-102:
+    title: "Corrigir data de nascimento invertida no formulário de cliente PF"
+    status: concluido
+    priority: alta
+    category: bug
+    area: clients
+    expanded: false
+    created: 2026-07-07
+    updated: 2026-07-08
+  TCK-103:
+    title: "Fix headless: normalizar máscara de telefone no cadastro de parceiro"
+    status: concluido
+    priority: media
+    category: bug
+    area: partners
+    expanded: false
+    created: 2026-07-08
+    updated: 2026-07-09
+  TCK-104:
+    title: "Renomear variável interna isLoadingFlag para isFetching"
+    status: concluido
+    priority: baixa
+    category: chore
+    area: frontend-interno
+    expanded: false
+    created: 2026-07-04
+    updated: 2026-07-05
+  TCK-105:
+    title: "Corrigir paginação da lista de parceiros"
+    status: concluido
+    priority: alta
+    category: bug
+    area: partners
+    expanded: false
+    created: 2026-07-01
+    updated: 2026-07-03
+  TCK-106:
+    title: "Investigar lentidão no dashboard admin"
+    status: triado
+    priority: media
+    category: bug
+    area: admin-dashboard
+    expanded: false
+    created: 2026-07-09
+    updated: 2026-07-09
+  TCK-107:
+    title: "Atualizar dependência interna do build (sem flag ainda triada)"
+    status: concluido
+    priority: baixa
+    category: chore
+    area: build
+    expanded: false
+    created: 2026-07-06
+    updated: 2026-07-07

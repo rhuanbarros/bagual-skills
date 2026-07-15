@@ -1,0 +1,82 @@
+# estado-atual.example.yaml — EXEMPLO documentado, não é estado real.
+#
+# `estado-atual.yaml` (sem `.example`) NÃO é commitado neste repositório em repouso —
+# ele só existe em disco durante/depois de um ciclo real do Gerente (escrito por
+# `gerente_state.py write-snapshot`). Antes do primeiro ciclo de sempre, sua ausência é
+# esperada e faz parte do caminho de degradação graciosa já documentado em
+# `.claude/agents/gerente-geral.md` § Ativação — não é um erro, não crie manualmente.
+#
+# Este arquivo existe só para DOCUMENTAR o schema com um exemplo concreto e realista.
+# Gerado manualmente com os mesmos campos/formato que `write-snapshot` produziria —
+# não rode `parse_estado` esperando reproduzir isto byte-a-byte (o writer real gera
+# `written_at` dinâmico e não tem estes comentários de exemplo).
+
+# estado-atual.yaml — retrato do CICLO ATUAL do Gerente Geral (Story E8.2, PRD 00 FR-11)
+# Sobrescrito a cada ciclo — NÃO é histórico (isso é diario.md). Escrito por
+# project_controll/gerente/scripts/gerente_state.py write-snapshot (escrita atômica).
+# `marker: start` = escrito no INÍCIO do ciclo (otimista, pode estar desatualizado se o
+#   ciclo morreu no meio — ver detect-crash/reconcile, F23).
+# `marker: end`   = escrito no FIM do ciclo (confirmado).
+# Ver README.md deste diretório para o contrato completo do schema.
+
+schema_version: 1
+written_at: "2026-07-11T03:05:00-03:00"
+marker: start
+cycle:
+  id: cycle-20260711-030000
+  started_at: "2026-07-11T03:00:00-03:00"
+  ended_at: null
+  phase: despachar
+  stop_reason: null
+dispatches:
+  - ticket: TCK-1720670000-ab12
+    unit: epic-E8
+    trilha: epic
+    worktree: null
+    status: em-voo
+    started_at: "2026-07-11T03:05:00-03:00"
+    # dispatch_id (Story E8.4, gerente_dispatch.py open-dispatch) — ponteiro para
+    # project_controll/gerente/dispatches/{dispatch_id}/{request,result}.yaml +
+    # DONE.marker. Opcional/aditivo — despachos de antes da E8.4 nunca terão esta
+    # chave. A lista COMPLETA de tickets do despacho vive em request.yaml, nunca
+    # aqui (o serializador deste arquivo só suporta dict-de-escalares em 1 nível —
+    # ver dispatch-contract.md § Integração).
+    dispatch_id: dispatch-20260711-030500-8a5d03a0
+decisions_pending:
+  - ticket: TCK-1720660000-cd34
+    note: "trade-off de produto sem padrão claro no Ledger — aguardando ratificação do dono"
+decisions_escalated:
+  - ticket: TCK-1720650000-ef56
+    note: "movido para precisa-de-info: falta confirmação de escopo"
+# Story E13.4 (PRD 04 FR-2) — suspeitas de falso-positivo de Semgrep ainda
+# pending_ratification, populadas por `read_fp_suspects.py list-pending` a partir de
+# project_controll/semgrep-fp-suspects.jsonl (escrito por flag_suspected_fp.py, E7.3).
+# Aditivo/opcional — mesmo espírito de escalation_sample_review/escalation_dead_letter
+# (E9.5, campos também aditivos, hoje omitidos deste exemplo). [] ou chave ausente
+# renderiza frase neutra no Briefing.
+semgrep_fp_pending:
+  - fingerprint: "no-import-meta-env::frontend/src/main.tsx::10"
+    rule_id: no-import-meta-env
+    file: frontend/src/main.tsx
+    line: 10
+    reason: "Sentry precisa ler import.meta.env antes do React montar"
+    status: pending_ratification
+    timestamp: "2026-07-12T20:30:00+00:00"
+priorities:
+  - ticket: TCK-1720670000-ab12
+    priority: alta
+  - ticket: TCK-1720671000-gh78
+    priority: media
+quota:
+  five_hour_used_pct: 42.5
+  seven_day_used_pct: 18.0
+  source: rate-limits-state.json
+  read_at: "2026-07-11T03:00:10-03:00"
+  # Campos de auto-rastreio (Story E8.3, gerente_quota.py check) — o sinal MAIS FORTE
+  # (mais conservador) entre o rate-limit lido acima e os tokens auto-rastreados do
+  # próprio ciclo. Ver project_controll/gerente/README.md § Cota (E8.3).
+  self_tracked_tokens: 118000
+  self_tracked_pct: 39.4
+  stronger_signal_pct: 42.5
+  stronger_signal_source: rate-limit
+last_briefing_at: "2026-07-10T07:00:00-03:00"

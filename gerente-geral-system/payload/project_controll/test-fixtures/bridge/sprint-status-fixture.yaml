@@ -1,0 +1,40 @@
+# Sprint Status — FIXTURE (bridge-declaracao-areas end-to-end proof)
+# ─────────────────────────────────────────────────────────────────
+# THROWAWAY fixture — never the real product/meta sprint-status.yaml. Used only by
+# ideias/sistema-artifacts/fixtures/bridge/validate_bridge.py, which copies this file
+# into a tmp dir before mutating it (this committed copy is never written to).
+#
+# Deliberately carries realistic "other top-level keys" (generated, last_updated,
+# development_status with existing story entries, plus a pre-existing execution_graph:
+# block) so the end-to-end test can assert none of them are touched by
+# emit_epic_areas.py's atomic, preserve-the-rest write.
+generated: "2026-07-12"
+last_updated: "2026-07-12"  # fixture baseline, untouched by the bridge script
+
+execution_graph:
+  computed_at: "2026-07-01"
+  mode: "trivial-placeholder"
+  tracks:
+    - track_id: "track-1"
+      epics: ["epic-90", "epic-91", "epic-92", "epic-93"]
+      epic_status: {"epic-90": "pending", "epic-91": "pending", "epic-92": "pending", "epic-93": "pending"}
+      status: "pending"
+  pairs: []
+
+development_status:
+
+  epic-90:
+    title: "Fixture epic 90 — feature A (should end up disjoint from 91/92)"
+    status: backlog
+
+  epic-91:
+    title: "Fixture epic 91 — feature B (should end up disjoint from 90, depended-on by 92)"
+    status: backlog
+
+  epic-92:
+    title: "Fixture epic 92 — feature C (depends_on epic-91)"
+    status: backlog
+
+  epic-93:
+    title: "Fixture epic 93 — malformed declaration (fail-safe proof)"
+    status: backlog

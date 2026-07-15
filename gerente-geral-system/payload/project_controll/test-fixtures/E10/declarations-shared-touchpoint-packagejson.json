@@ -1,0 +1,12 @@
+{
+  "epic-A": {
+    "epic_type": "refactor",
+    "areas": ["backend/domain/foo/"],
+    "touches_shared": ["package.json"]
+  },
+  "epic-B": {
+    "epic_type": "refactor",
+    "areas": ["frontend/src/features/bar/"],
+    "touches_shared": ["package.json"]
+  }
+}

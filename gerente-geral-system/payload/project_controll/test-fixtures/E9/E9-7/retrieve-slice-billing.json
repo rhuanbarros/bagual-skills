@@ -1,0 +1,61 @@
+{
+  "feature": "billing",
+  "min_direct_docs": 2,
+  "adjacent_areas_expanded": [
+    "credits"
+  ],
+  "direct": [
+    {
+      "path": "design-artifacts/scenario-02-parceiro-vira-pro.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "billing",
+        "auth",
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-04-operador-capta-parceiros.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "admin",
+        "billing",
+        "credits"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-evolucao-programa-indicacao-ciclo2.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "billing",
+        "admin"
+      ]
+    },
+    {
+      "path": "design-artifacts/trigger-map.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "proposals",
+        "vehicles",
+        "clients",
+        "simulation",
+        "admin",
+        "dashboard",
+        "billing",
+        "credits"
+      ]
+    }
+  ],
+  "adjacent": [],
+  "gaps": [
+    "_migration-staging/notes/pilot-subset-monolith.md",
+    "changelog.md",
+    "recall-audit-log.md"
+  ],
+  "incompleto": false,
+  "incompleto_reason": null
+}

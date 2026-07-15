@@ -1,0 +1,119 @@
+{
+  "feature": "proposals",
+  "min_direct_docs": 2,
+  "adjacent_areas_expanded": [
+    "vehicles",
+    "clients",
+    "credits",
+    "simulation",
+    "dashboard"
+  ],
+  "direct": [
+    {
+      "path": "design-artifacts/scenario-01-parceiro-primeira-venda.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "dashboard",
+        "clients",
+        "vehicles",
+        "simulation",
+        "proposals"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-03-operador-proposta-ted360.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "admin",
+        "dashboard",
+        "proposals"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-05-operador-negocio-proprio.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "admin",
+        "clients",
+        "vehicles",
+        "simulation",
+        "proposals"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-evolucao-wizard-criar-proposta.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "proposals",
+        "clients",
+        "vehicles"
+      ]
+    },
+    {
+      "path": "design-artifacts/trigger-map.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "proposals",
+        "vehicles",
+        "clients",
+        "simulation",
+        "admin",
+        "dashboard",
+        "billing",
+        "credits"
+      ]
+    }
+  ],
+  "adjacent": [
+    {
+      "path": "design-artifacts/scenario-02-parceiro-vira-pro.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "billing",
+        "auth",
+        "dashboard"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-04-operador-capta-parceiros.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "admin",
+        "billing",
+        "credits"
+      ],
+      "matched_via": [
+        "credits"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-evolucao-carrossel-banners.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "dashboard",
+        "admin"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    }
+  ],
+  "gaps": [
+    "_migration-staging/notes/pilot-subset-monolith.md",
+    "changelog.md",
+    "recall-audit-log.md"
+  ],
+  "incompleto": false,
+  "incompleto_reason": null
+}

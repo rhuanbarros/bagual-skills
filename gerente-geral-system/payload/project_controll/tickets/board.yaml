@@ -1,0 +1,4 @@
+# board.yaml — reconstruído por rebuild_board.py a partir dos TCK-*.md.
+# Starter kit: vazio. Crie tickets via /bagual-tickets.
+next_id: 1
+tickets: {}

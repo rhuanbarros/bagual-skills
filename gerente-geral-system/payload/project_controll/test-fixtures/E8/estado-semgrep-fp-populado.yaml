@@ -1,0 +1,26 @@
+# fixture E13.4 — estado-atual.yaml com semgrep_fp_pending populado (simula
+# read_fp_suspects.py list-pending já repassado a write-snapshot), prova que
+# gerente_briefing.py lista as suspeitas no Briefing sem nenhum rework do script.
+schema_version: 1
+written_at: "2026-07-12T21:00:00-03:00"
+marker: end
+cycle:
+  id: cycle-fx-013
+  started_at: "2026-07-12T20:00:00-03:00"
+  ended_at: "2026-07-12T21:00:00-03:00"
+  phase: parar
+  stop_reason: fila-vazia
+dispatches: []
+decisions_pending: []
+decisions_escalated: []
+semgrep_fp_pending:
+  - fingerprint: "no-import-meta-env::frontend/src/main.tsx::10"
+    rule_id: no-import-meta-env
+    file: frontend/src/main.tsx
+    line: 10
+    reason: "Sentry precisa ler import.meta.env antes do React montar"
+    status: pending_ratification
+    timestamp: "2026-07-12T20:30:00+00:00"
+priorities: []
+quota: {}
+last_briefing_at: null

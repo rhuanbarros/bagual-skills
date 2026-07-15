@@ -1,0 +1,88 @@
+{
+  "feature": "chat",
+  "min_direct_docs": 2,
+  "adjacent_areas_expanded": [
+    "dashboard"
+  ],
+  "direct": [],
+  "adjacent": [
+    {
+      "path": "design-artifacts/scenario-01-parceiro-primeira-venda.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "dashboard",
+        "clients",
+        "vehicles",
+        "simulation",
+        "proposals"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-02-parceiro-vira-pro.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "billing",
+        "auth",
+        "dashboard"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-03-operador-proposta-ted360.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "admin",
+        "dashboard",
+        "proposals"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/scenario-evolucao-carrossel-banners.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "dashboard",
+        "admin"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    },
+    {
+      "path": "design-artifacts/trigger-map.md",
+      "tipo": "design-doc",
+      "estado": "",
+      "areas": [
+        "proposals",
+        "vehicles",
+        "clients",
+        "simulation",
+        "admin",
+        "dashboard",
+        "billing",
+        "credits"
+      ],
+      "matched_via": [
+        "dashboard"
+      ]
+    }
+  ],
+  "gaps": [
+    "_migration-staging/notes/pilot-subset-monolith.md",
+    "changelog.md",
+    "recall-audit-log.md"
+  ],
+  "incompleto": true,
+  "incompleto_reason": "cobertura direta rasa (0 doc(s) direto(s) < limiar 2)"
+}

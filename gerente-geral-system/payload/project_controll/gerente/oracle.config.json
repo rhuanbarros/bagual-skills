@@ -1,0 +1,21 @@
+{
+  "_comment": "Config do gate de confiança HISTORY-AWARE do oráculo (Story E9.2, gerente_oracle.py/gerente_style.py). Commitado com defaults conservadores — o dono pode editar estes valores diretamente. Precedência: --oracle-config <path> (qual arquivo carregar) > conteúdo deste arquivo > default hardcoded em gerente_oracle.py (CATEGORY_THRESHOLD_DEFAULTS). 'Similar' é definido operacionalmente como: mesmo `tipo` (a chave abaixo) + N tags de `areas` em comum (interseção case-insensitive/trimmed, NUNCA correspondência fuzzy/semântica) entre o candidato e uma Entrada de Ledger existente. `min_shared_areas_support`: quantas tags em comum um precedente RATIFICADO/vivo precisa ter com o candidato para sustentar `--confidence high` nessa categoria (categorias mais sensíveis, ex. decisão-de-produto, exigem mais overlap — precedente mais forte). `min_shared_areas_contradict`: quantas tags em comum uma decisão CORRIGIDA precisa ter com o candidato para vetar `--confidence high` mesmo com um precedente válido citado (deliberadamente MAIS BAIXO/igual ao de suporte em toda categoria — é mais fácil provar contradição que provar suporte, nunca o contrário; ver ideias/sistema-artifacts/E9-2-aprendizado-estilo.md).",
+  "categories": {
+    "decisao-tecnica": {
+      "min_shared_areas_support": 1,
+      "min_shared_areas_contradict": 1
+    },
+    "decisao-de-arquitetura": {
+      "min_shared_areas_support": 1,
+      "min_shared_areas_contradict": 1
+    },
+    "decisao-de-produto": {
+      "min_shared_areas_support": 2,
+      "min_shared_areas_contradict": 1
+    }
+  },
+  "default": {
+    "min_shared_areas_support": 1,
+    "min_shared_areas_contradict": 1
+  }
+}

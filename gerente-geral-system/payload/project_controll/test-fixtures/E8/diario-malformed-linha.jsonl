@@ -1,0 +1,6 @@
+{"ts": "2026-07-11T09:00:00-03:00", "cycle_id": "cycle-fx-005", "event": "CICLO-INICIO"}
+{"ts": "2026-07-11T09:00:05-03:00", "cycle_id": "cycle-fx-005", "event": "acordei"}
+{este linha nao eh json valido,,,
+{"ts": "2026-07-11T09:03:00-03:00", "cycle_id": "cycle-fx-005", "event": "despachei", "text": "TCK-1720675000-dd33 sobreviveu apesar da linha torta acima"}
+{"ts": "2026-07-11T09:20:00-03:00", "cycle_id": "cycle-fx-005", "event": "parei", "text": "fila vazia"}
+{"ts": "2026-07-11T09:20:05-03:00", "cycle_id": "cycle-fx-005", "event": "CICLO-FIM"}
