@@ -13,6 +13,7 @@ de nenhum produto específico).
 | **Camada de execução** (skill) | `.claude/skills/bagual-epic-runner/` | Executa uma epic/story do início ao fim: create-story → dev-story → [code-review] → retrospective. Despachada pelo Gerente. |
 | **Estado do Gerente** | `project_controll/gerente/` | Scripts (stdlib), configs, contrato de despacho, estado/diário, README operacional. |
 | **Wiki/Ledger** | `wiki/` | Memória do projeto: Ledger tipado grep-native (decisões/regras/padrões/anti-patterns) + notas operacionais + scripts. |
+| **Guards mecânicos** | `.claude/settings.json` (hooks.PreToolUse) + `project_controll/gerente/scripts/gerente_tool_guard.py` + `scripts/prod_deploy_guard.py` | Backstop mecânico (não só prosa) para as duas regras mais críticas da persona: o Gerente nunca edita `frontend/**`/`backend/**`/`supabase/**`/skills `bmad-*`/`bagual-*` diretamente, e nenhum agente roda deploy/migração de Produção. Casam por `agent_type` (nunca bloqueiam a sessão interativa do dono) — ver "⚠️ Guards" abaixo, o merge NÃO é automático se o destino já tem `.claude/settings.json`. |
 | **Deps dos testes** | `semgrep/scripts/`, `_bmad/scripts/memlog.py` | Referenciados pelos self-tests/briefing. Stdlib-only. |
 | **Fixtures + self-tests** | `project_controll/test-fixtures/` + `test_*.py` espalhados | Provam a máquina e alimentam o **self-heal** (autocorreção). |
 
@@ -51,6 +52,17 @@ O instalador:
 Depois: preencha os placeholders de domínio (`<PROJETO>`, `<SUPABASE_REF_*>`, hosts) na persona e
 nos `*.config.json`, garanta o BMad no destino, e ative com `/bagual-gerente-geral`.
 
+### ⚠️ Guards mecânicos — o arquivo que mais provavelmente já existe no destino
+
+`.claude/settings.json` é, de longe, o arquivo do payload com mais chance de já existir no projeto
+destino — e o instalador **nunca sobrescreve** um arquivo existente (merge não-destrutivo, ver acima).
+Se isso acontecer, o instalador reporta `.claude/settings.json` como PULADO no resumo final, e você
+precisa **mesclar manualmente** os dois blocos `hooks.PreToolUse` do `payload/.claude/settings.json`
+no arquivo real do destino (`gerente_tool_guard.py` no matcher `Edit|Write|NotebookEdit`,
+`prod_deploy_guard.py` no matcher `Bash`). **Sem esse merge, os dois guards nunca rodam** — a
+persona continua *documentando* as duas regras mais críticas ("nunca edito código de produto",
+"Produção é exclusiva do dono"), mas nada as aplica mecanicamente. Confira sempre depois de instalar.
+
 ## Verificar a qualquer momento
 
 ```bash
@@ -62,10 +74,15 @@ nos `*.config.json`, garanta o BMad no destino, e ative com `/bagual-gerente-ger
 
 Três camadas: **Gerente** (decide/despacha, Opus) → **execução** (epic-runner, Sonhet) →
 **sub-agente** (tarefa isolada). O Gerente despacha por **marcador em disco** (sobrevive a
-crash/compactação), tem **lock singleton** + **recuperação de crash**, aprende via **sidecar**
-(autoaprendizado) e **self-heal** (autocorreção), registra conhecimento no **Ledger** (RULE ZERO), e
-aprende o **estilo do dono**. Detalhe completo em `payload/project_controll/gerente/README.md` e na
-persona `payload/.claude/agents/gerente-geral.md`.
+crash/compactação) em **background por padrão** — segue pro próximo passo do ciclo sem esperar o
+retorno, e revisa quando a notificação do despacho chegar (nunca despacha mais de um Ticket em
+paralelo no mesmo checkout, porém). Tem **lock singleton** + **recuperação de crash**, aprende via
+**sidecar** (autoaprendizado) e **self-heal** (autocorreção), registra conhecimento no **Ledger**
+(RULE ZERO), e aprende o **estilo do dono**. A persona (`payload/.claude/agents/gerente-geral.md`) é
+curta por construção — progressive disclosure: cada protocolo pesado (Oráculo, Cérebro de
+Planejamento, o loop de 6 fases, promoção dev→staging, self-healing) vive em
+`payload/.claude/skills/bagual-gerente-geral/references/*.md`, carregado sob demanda só quando a
+situação bate, nunca eager-load. Detalhe completo em `payload/project_controll/gerente/README.md`.
 
 > Nota: para **criar skills novas** com essas técnicas de forma curada/genérica (em vez de instalar o
 > sistema inteiro), veja a skill separada `bagual-skill-forge` — ela gera skills sob medida escolhendo
