@@ -236,7 +236,19 @@ def _yaml_scalar(value: Any) -> str:
     text = str(value)
     if text == "":
         return '""'
-    needs_quotes = any(ch in text for ch in (":", "#", '"', "'")) or text != text.strip()
+    # Indicadores YAML que só são perigosos NO INÍCIO do escalar — um texto começando
+    # com `[`/`{` é lido como flow-sequence/flow-mapping, `&`/`*` como âncora/alias,
+    # `!` como tag, `|`/`>` como bloco literal/dobrado, `%` como diretiva, `@`/backtick
+    # são reservados, `?`/`-`/`:`/`,` são indicadores de estrutura (achado ao vivo:
+    # título começando com `[GERAL]` virou flow-sequence e quebrou o parse do board).
+    leading_indicator_chars = ("[", "]", "{", "}", "#", "&", "*", "!", "|", ">", "'", '"', "%", "@", "`", "?", "-", ":", ",")
+    needs_quotes = (
+        any(ch in text for ch in (":", "#", '"', "'"))
+        or text != text.strip()
+        or text[0] in leading_indicator_chars
+        or ": " in text
+        or " #" in text
+    )
     if needs_quotes:
         # Escapa backslash ANTES de aspas — senão uma aspa já escapada (`\"`) vira
         # dupla-escapada (`\\"`) e quebra o parse ao reabrir o arquivo.

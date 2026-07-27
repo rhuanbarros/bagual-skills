@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """classify_trilha.py — E9.4 classificação mecânica: comita o óbvio, escala o ambíguo.
 
+🔴 APOSENTADO como decisor de trilha (TCK-20260727143826-7573, 2026-07-27) — ver
+`wiki/ledger/decisao-tecnica/roteamento-de-trilha-e-plano-antes-da-execucao.md`.
+`bagual-tickets` NÃO chama mais este script; a decisão de `trilha` passou a ser
+julgamento do Gerente/dono (ver `dispatch-and-review.md` step 1 +
+`spec-epic-routing-execution.md`), nunca mais uma regra fixa de script. Motivo: os
+dados reais do board mostraram que as 2 regras abaixo só cobriam o óbvio — TODO bug
+confirmado caía em `rapida` (um typo e um fix de segurança na MESMA trilha leve) e
+`spec`/`epic` nunca eram atribuídos automaticamente, afunilando trabalho substancial
+pro caminho leve. **Este arquivo e seu teste (`test_classify_trilha.py`) NÃO foram
+apagados** — mantidos só para histórico/consulta; nenhum hook/cron/CI os invoca mais.
+O código abaixo continua funcional (não foi alterado), só não é mais chamado por
+ninguém no fluxo real.
+
 Story E9.4 (ideias/sistema-artifacts/E9-4-escalonamento-skill.md), PRD 02 FR-5,
 ideias/epics.md Epic E9.
 
 `bagual-tickets` (`.claude/skills/bagual-tickets/SKILL.md` § Resolver, "Escalonamento de
-trilha") chama este script na transição de um ticket para `pronto-para-implementar`, em
+trilha") chamava este script na transição de um ticket para `pronto-para-implementar`, em
 vez de decidir a `trilha` por "vibe"/leitura livre do texto — mesma filosofia de gate
 mecânico já usada pelo Oráculo (`gerente_oracle.py::_resolve_confidence`, Story E9.1):
 "na dúvida, escalar" tem que ser uma propriedade PROVÁVEL do código, não uma promessa de

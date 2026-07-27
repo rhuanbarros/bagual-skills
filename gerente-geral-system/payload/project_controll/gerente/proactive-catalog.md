@@ -1,5 +1,5 @@
 ---
-title: Catálogo de trabalho proativo do Gerente Geral — fila vazia
+title: Gerente Geral proactive work catalog — empty queue
 tipo: reference
 created: 2026-07-11
 status: living-document
@@ -9,121 +9,121 @@ source_story: "ideias/sistema-artifacts/E8-5-trabalho-proativo.md"
 extends: ".claude/agents/gerente-geral.md"
 ---
 
-# Catálogo de trabalho proativo — fila vazia
+# Proactive work catalog — empty queue
 
-## O que é este documento
+## What this document is
 
-Quando o Gerente Geral (`.claude/agents/gerente-geral.md`) acorda e `project_controll/tickets/board.yaml`
-não tem nenhum ticket em `pronto-para-implementar`, ele não fica ocioso — mas também não
-inventa trabalho arbitrário. Este é o **catálogo restrito** (PRD 00 FR-3) de tarefas
-proativas de **baixíssimo risco** que o Gerente pode escolher nesse momento. É restrito de
-propósito: cada categoria abaixo é **somente-leitura/investigação** — nunca gera uma
-mudança de código commitada diretamente. Todo achado vira um **Ticket rastreável**
-(`origem: proativo`), nunca uma correção silenciosa.
+When the Gerente Geral (`.claude/agents/gerente-geral.md`) wakes up and `project_controll/tickets/board.yaml`
+has no ticket in `pronto-para-implementar`, it doesn't sit idle — but it also doesn't
+invent arbitrary work. This is the **restricted catalog** (PRD 00 FR-3) of **very-low-risk**
+proactive tasks the Gerente can pick from at that moment. It is deliberately restricted:
+every category below is **read-only/investigation** — it never generates a directly
+committed code change. Every finding turns into a **traceable Ticket**
+(`origem: proativo`), never a silent fix.
 
-Mecânica de rotação/teto/dedup: ver `project_controll/gerente/scripts/gerente_proactive.py`
-(`next-task`/`dedup-check`/`record-proactive`) e a fase 2 (priorizar) de
-`.claude/agents/gerente-geral.md`. Este documento é só o **conteúdo** do catálogo — a
-mecânica de "quantas vezes por ciclo" e "como evitar redescobrir o mesmo achado" vive nos
-scripts, não aqui.
+Rotation/cap/dedup mechanics: see `project_controll/gerente/scripts/gerente_proactive.py`
+(`next-task`/`dedup-check`/`record-proactive`) and phase 2 (prioritize) of
+`.claude/agents/gerente-geral.md`. This document is only the catalog's **content** — the
+mechanics of "how many times per cycle" and "how to avoid rediscovering the same finding" live in the
+scripts, not here.
 
-## Regra de ouro — nunca commita código, só investiga e relata
+## Golden rule — never commit code, only investigate and report
 
-Toda tarefa deste catálogo é despachada como um **sub-agente Sonnet somente-leitura**: ele
-pode usar `Read`/`Grep`/`Glob`/`Bash` de leitura (ex.: `git log`, `grep`, rodar suíte de
-testes existente para medir cobertura), mas **nunca** `Edit`/`Write` sobre código de
-produto (`frontend/**`, `backend/**`, `supabase/**`) nem sobre skills `bmad-*`/`bagual-*`.
-O único artefato de saída aceito é um **relatório de achados** (lista de findings, cada um
-com título curto + descrição + evidência `arquivo:linha` quando aplicável) — nunca um
-diff. O Gerente pega esse relatório e, para cada achado, roda o fluxo de dedup +
-`bagual-tickets --headless` (ver "Como um achado vira Ticket" abaixo) — o sub-agente de
-análise em si nunca chama `bagual-tickets` nem grava em `project_controll/tickets/`
-diretamente (evita um segundo escritor concorrente do board).
+Every task in this catalog is dispatched as a **read-only Sonnet sub-agent**: it
+can use read-only `Read`/`Grep`/`Glob`/`Bash` (e.g., `git log`, `grep`, running the existing
+test suite to measure coverage), but **never** `Edit`/`Write` over product code
+(`frontend/**`, `backend/**`, `supabase/**`) nor over `bmad-*`/`bagual-*` skills.
+The only accepted output artifact is a **findings report** (a list of findings, each
+with a short title + description + `file:line` evidence when applicable) — never a
+diff. The Gerente takes that report and, for each finding, runs the dedup flow +
+`bagual-tickets --headless` (see "How a finding becomes a Ticket" below) — the analysis
+sub-agent itself never calls `bagual-tickets` nor writes to `project_controll/tickets/`
+directly (this avoids a second concurrent writer to the board).
 
-Nenhuma categoria abaixo autoriza decidir uma questão de produto/comportamento ambígua —
-se a investigação esbarra numa dessas (ex.: "isso parece um bug, mas pode ser intencional
-por `product-decisions.md`"), o achado ainda vira Ticket, mas com `category: duvida` e a
-suspeita registrada — nunca uma correção proposta como certeza.
+No category below authorizes deciding an ambiguous product/behavior question —
+if the investigation runs into one (e.g., "this looks like a bug, but it might be intentional
+per `product-decisions.md`"), the finding still becomes a Ticket, but with `category: duvida` and
+the suspicion recorded — never a fix proposed as a certainty.
 
-## Categorias (mínimo 4, PRD 00 FR-3)
+## Categories (minimum 4, PRD 00 FR-3)
 
-Rotação round-robin entre as 4 (`gerente_proactive.py next-task` decide a ordem — a lista
-abaixo é a fonte de verdade do CONTEÚDO/guardrails de cada uma; a ordem de rotação em si é
-um detalhe de implementação do script, não deste doc).
+Round-robin rotation among the 4 (`gerente_proactive.py next-task` decides the order — the list
+below is the source of truth for each one's CONTENT/guardrails; the rotation order itself is
+an implementation detail of the script, not of this doc).
 
-### 1. `analise-adversarial-feature` — Análise adversarial de uma feature
+### 1. `analise-adversarial-feature` — Adversarial analysis of a feature
 
-Escolha **uma** feature `[CLIENT]` já em produção (ver `AGENTS.md` § "Template features vs
-Client features" — nunca uma feature `[TEMPLATE]`, que é mantida upstream) que não tenha
-sido revisada adversarialmente recentemente (checar `_bmad-output/projects-history.md`
-para a última menção). Leia o código-fonte da feature (não só a spec) e procure por bugs
-reais: edge cases não tratados, validação ausente, estado inconsistente — o mesmo tipo de
-achado que `/bmad-code-review` (Blind Hunter/Edge Case Hunter) já produz para código
-recém-alterado, aqui aplicado a código **já estável**, sem diff recente para ancorar.
-Cada bug real confirmado no código (nunca hipotético — cite `arquivo:linha`) vira um
-achado `category: bug`.
+Pick **one** `[CLIENT]` feature already in production (see `AGENTS.md` § "Template features vs
+Client features" — never a `[TEMPLATE]` feature, which is maintained upstream) that hasn't
+been adversarially reviewed recently (check `_bmad-output/projects-history.md`
+for the last mention). Read the feature's source code (not just the spec) and look
+for real bugs: unhandled edge cases, missing validation, inconsistent state — the same
+kind of finding `/bmad-code-review` (Blind Hunter/Edge Case Hunter) already produces for
+recently changed code, here applied to code that's **already stable**, with no recent diff to
+anchor to. Every real bug confirmed in the code (never hypothetical — cite `file:line`)
+becomes a `category: bug` finding.
 
-### 2. `completude-de-testes` — Aumento de completude de testes
+### 2. `completude-de-testes` — Increasing test completeness
 
-Escolha um módulo/feature com sinais de cobertura fraca (ex.: `grep` por arquivos de
-código sem arquivo de teste correspondente, ou um fluxo crítico — pagamento, IDOR,
-transição de estado — sem teste que o exercite). O achado não é "escrever o teste" (isso
-seria código) — é um Ticket `category: chore` descrevendo o gap ("função X em
-`arquivo.py` sem teste que cubra o branch Y") para que uma trilha normal
-(`/bmad-quick-dev` ou `/bmad-testarch-*`) o feche depois.
+Pick a module/feature with signs of weak coverage (e.g., `grep` for code files
+with no matching test file, or a critical flow — payment, IDOR,
+state transition — with no test exercising it). The finding is not "write the test" (that
+would be code) — it's a `category: chore` Ticket describing the gap ("function X in
+`arquivo.py` has no test covering branch Y") for a normal track
+(`/bmad-quick-dev` or `/bmad-testarch-*`) to close later.
 
-### 3. `descoberta-de-padroes` — Descoberta de padrões a consolidar
+### 3. `descoberta-de-padroes` — Discovery of patterns to consolidate
 
-Vasculhe `_bmad-output/anti-patterns.md`/`decisions.md` e o código-fonte em busca de um
-padrão que se repete **≥2 vezes** de forma consistente mas ainda não foi consolidado (ex.:
-a mesma lógica de validação copiada em 2+ lugares, um utilitário candidato a extração). O
-achado vira Ticket `category: chore` propondo a consolidação — nunca a consolidação em si.
+Scan `_bmad-output/anti-patterns.md`/`decisions.md` and the source code for
+a pattern that repeats **≥2 times** consistently but hasn't been consolidated yet (e.g.,
+the same validation logic copied in 2+ places, a utility candidate for extraction). The
+finding becomes a `category: chore` Ticket proposing the consolidation — never the consolidation itself.
 
-### 4. `refino-de-tickets` — Refino de tickets mal-elucidados
+### 4. `refino-de-tickets` — Refining poorly elucidated tickets
 
-Releia tickets em `precisa-de-info` ou `triado` com descrição rasa em
-`project_controll/tickets/board.yaml`. Investigue o código relacionado para preencher a
-lacuna (confirmar se o bug existe, achar `arquivo:linha`, checar se bate com uma decisão
-de produto já registrada). **Este é o único caso do catálogo que não necessariamente cria
-um Ticket NOVO** — o resultado normalmente é enriquecer o Ticket já existente via a ação
-"Triar" do `bagual-tickets` (mover pra `triado`, preencher `## Verificação`), composição
-igual às demais. Se a investigação revela que o ticket antigo é, na verdade, dois
-problemas distintos, aí sim pode gerar um Ticket adicional novo (`origem: proativo`) — mas
-o caso comum é enriquecer, não duplicar.
+Re-read tickets in `precisa-de-info` or `triado` with a shallow description in
+`project_controll/tickets/board.yaml`. Investigate the related code to fill in the
+gap (confirm whether the bug exists, find `file:line`, check whether it matches an
+already-recorded product decision). **This is the only case in the catalog that doesn't necessarily
+create a NEW Ticket** — the result is normally to enrich the already-existing Ticket via
+`bagual-tickets`'s "Triage" action (move to `triado`, fill in `## Verificação`), the same
+composition as the others. If the investigation reveals the old ticket is actually two
+distinct problems, then it can generate an additional new Ticket (`origem: proativo`) — but
+the common case is enriching, not duplicating.
 
-## Como um achado vira Ticket (composição — nunca reimplementada aqui)
+## How a finding becomes a Ticket (composition — never reimplemented here)
 
-Para cada achado do relatório do sub-agente de análise:
+For each finding in the analysis sub-agent's report:
 
 1. `python3 project_controll/gerente/scripts/gerente_proactive.py dedup-check --root
-   project_controll/gerente --tickets-dir project_controll/tickets --title "<título do
-   achado>" --description "<descrição do achado>"` — varre o **histórico proativo
-   completo**, incluindo `concluido`/`descartado` (a dimensão que `bagual-tickets` sozinho
-   não cobre — ele só dedupa contra tickets abertos, ver `SKILL.md` § Adicionar, passo 2).
-2. Se `"duplicate": true` — **não crie o Ticket**; registre no diário do ciclo
-   (`gerente_state.py append-diario`) que o achado já é conhecido (aponte o
-   `best_match.ticket_id`). Isto é exatamente o comportamento que o F24 exige: nunca
-   re-arquivar os mesmos achados toda noite.
-3. Se `"duplicate": false` — invoque a skill `bagual-tickets` em modo `--headless` para
-   **Adicionar** (ou, no caso da categoria 4, **Triar**/**Resolver** sobre o ticket
-   existente) — a skill roda seu próprio pipeline completo (raw-check, dedup contra
-   tickets ABERTOS, checagem de `product-decisions.md`, verificação/expansão) por conta
-   própria; não pule nem reimplemente esses passos aqui. Em modo headless, um ticket novo
-   já nasce `origem: proativo` por padrão (ver `SKILL.md` § Headless Mode) — não é preciso
-   passar o campo explicitamente.
-4. Depois de processar TODOS os achados de uma iteração do catálogo, chame
-   `gerente_proactive.py record-proactive` **uma única vez** (consome 1 unidade do teto
-   por-ciclo — ver abaixo, "Unidade de custo").
+   project_controll/gerente --tickets-dir project_controll/tickets --title "<finding
+   title>" --description "<finding description>"` — scans the **full proactive
+   history**, including `concluido`/`descartado` (the dimension `bagual-tickets` alone
+   doesn't cover — it only dedups against open tickets, see `SKILL.md` § Adicionar, step 2).
+2. If `"duplicate": true` — **do not create the Ticket**; record in the cycle's diary
+   (`gerente_state.py append-diario`) that the finding is already known (point to the
+   `best_match.ticket_id`). This is exactly the behavior F24 requires: never
+   re-file the same findings every night.
+3. If `"duplicate": false` — invoke the `bagual-tickets` skill in `--headless` mode for
+   **Adicionar** (or, for category 4, **Triar**/**Resolver** on the
+   existing ticket) — the skill runs its own full pipeline (raw-check, dedup against
+   OPEN tickets, `product-decisions.md` check, verification/expansion) on its
+   own; don't skip or reimplement those steps here. In headless mode, a new ticket is
+   born `origem: proativo` by default (see `SKILL.md` § Headless Mode) — there's no need
+   to pass the field explicitly.
+4. After processing ALL findings from one catalog iteration, call
+   `gerente_proactive.py record-proactive` **exactly once** (consumes 1 unit of the
+   per-cycle cap — see below, "Cost unit").
 
-## Teto duro por ciclo (F24) — o que conta como 1 unidade
+## Hard per-cycle cap (F24) — what counts as 1 unit
 
-O `cap_per_cycle` (configurável em `project_controll/gerente/proactive.config.json`,
-default 3) limita quantas **iterações do catálogo** (não quantos Tickets) o Gerente roda
-por ciclo — uma iteração é "escolher uma categoria (`next-task`) → despachar UM sub-agente
-Sonnet de análise → processar os achados dele (dedup + Ticket, 0 a N achados possíveis) →
-`record-proactive` uma vez". A unidade de custo real é o **despacho do sub-agente de
-análise** (o que queima cota), não o número de Tickets que ele produz — uma análise que
-não encontra nada ainda consumiu um despacho e conta como 1 unidade igual a uma que
-encontrou 3 bugs. Ao atingir o teto, `next-task` retorna `"verdict": "cap-reached"` — o
-Gerente para o trabalho proativo e segue para a fase "parar" do ciclo (relatando "parei
-por teto proativo", não "parei por cota" — são guardrails distintos).
+`cap_per_cycle` (configurable in `project_controll/gerente/proactive.config.json`,
+default 3) limits how many **catalog iterations** (not how many Tickets) the Gerente runs
+per cycle — one iteration is "pick a category (`next-task`) → dispatch ONE analysis
+Sonnet sub-agent → process its findings (dedup + Ticket, 0 to N possible findings) →
+`record-proactive` once". The real cost unit is the **analysis sub-agent
+dispatch** (what burns quota), not the number of Tickets it produces — an analysis that
+finds nothing has still consumed a dispatch and counts as 1 unit just like one that
+found 3 bugs. On reaching the cap, `next-task` returns `"verdict": "cap-reached"` — the
+Gerente stops proactive work and moves to the cycle's "stop" phase (reporting "stopped
+due to proactive cap", not "stopped due to quota" — these are distinct guardrails).

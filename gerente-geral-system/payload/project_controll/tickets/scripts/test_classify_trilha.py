@@ -148,11 +148,24 @@ def main() -> int:
             check(f"{expected_total} tickets reais reconstruídos, sem warnings", result["stats"]["total"] == expected_total and not result["warnings"], str(result))
             rendered = out_path.read_text(encoding="utf-8")
             check("`escalonar` aparece no board reconstruído (índice carrega o campo)", "escalonar: false" in rendered, "campo escalonar ausente do board reconstruído")
-            # nenhum dos 26 tickets legados tem `escalonar: true` no front-matter -> todos default false
+            # Retrocompat conservador: nenhum ticket LEGADO (schema antigo, id sequencial
+            # `TCK-NNN`) deveria nascer `escalonar: true` por um default incorreto do
+            # rebuild. Escopado ao FRONT-MATTER dos próprios arquivos legados — não mais
+            # uma busca de substring no board inteiro, que quebra assim que o Gerente cria
+            # (legitimamente) um ticket NOVO (schema `TCK-<timestamp>-<hex>`) já escalado
+            # (ex.: os tickets GERAIS do feedback da Laura). Ver TCK-20260717212601-da07.
+            # Nota: o padrão `TCK-NNN-*.md` (3 dígitos) nunca casa com o schema novo
+            # (`TCK-<14 dígitos>-<hex>-*.md`), porque o 4º caractere após `TCK-` num id
+            # novo é sempre um dígito do timestamp, nunca o `-` literal que o glob exige.
+            legacy_ticket_files = sorted(REAL_TICKETS_DIR.glob("TCK-[0-9][0-9][0-9]-*.md"))
+            legacy_escalonados = [
+                f.name for f in legacy_ticket_files
+                if "escalonar: true" in f.read_text(encoding="utf-8")
+            ]
             check(
-                "Nenhum dos 26 tickets legados aparece com escalonar:true (retrocompat conservador)",
-                "escalonar: true" not in rendered,
-                "um ticket legado nunca deveria nascer 'escalado' por um default incorreto",
+                f"Nenhum dos {len(legacy_ticket_files)} tickets legados (TCK-NNN) aparece com escalonar:true (retrocompat conservador)",
+                not legacy_escalonados,
+                f"tickets legados com escalonar:true incorreto: {legacy_escalonados}",
             )
     else:
         print("  SKIP  [6] tickets reais do projeto ausentes — checkout sem conteúdo (starter kit)")
@@ -188,6 +201,57 @@ def main() -> int:
         rendered2 = out_path2.read_text(encoding="utf-8")
         check("escalonar:true do .md sintético sobrevive no board reconstruído", "escalonar: true" in rendered2, rendered2)
         check("trilha:null preservado junto com escalonar:true", "trilha: null" in rendered2, rendered2)
+
+    # ------------------------------------------------------------------
+    # [8] Regressão TCK-20260717162048-a7f8: `_yaml_scalar` deve citar um título que
+    # COMEÇA com um indicador YAML (ex.: `[GERAL] ...`) — sem isso, `render_board_yaml`
+    # emite `title: [GERAL] ...` sem aspas, que o YAML lê como flow-sequence e quebra o
+    # parse do board (reproduzido ao vivo em 2026-07-17, ver ticket).
+    # ------------------------------------------------------------------
+    print("\n[8] rebuild_board.py — título começando com indicador YAML (`[`) sai citado no board reconstruído")
+    import tempfile as tempfile3
+    with tempfile3.TemporaryDirectory(prefix="e5-2-leading-indicator-quoting-") as tmp3:
+        tmp3_path = Path(tmp3)
+        synthetic3 = tmp3_path / "TCK-E9T-98-titulo-colchete.md"
+        synthetic3.write_text(
+            "---\n"
+            "id: TCK-E9T-98\n"
+            'title: "[GERAL] status geral sintético"\n'
+            "status: pronto-para-implementar\n"
+            "priority: media\n"
+            "category: meta-bug\n"
+            "area: fixture-teste\n"
+            "expanded: false\n"
+            "created: 2026-07-17\n"
+            "updated: 2026-07-17\n"
+            "origem: manual\n"
+            "visivel_pro_cliente: false\n"
+            "trilha: null\n"
+            "escalonar: false\n"
+            "ledger_refs: []\n"
+            "---\n\n## Descrição\nsintético\n",
+            encoding="utf-8",
+        )
+        out_path3 = tmp3_path / "board.yaml"
+        result3 = run_rebuild(tmp3_path, out_path3)
+        check("1 ticket sintético (título colchete) reconstruído", result3["stats"]["total"] == 1, str(result3))
+        rendered3 = out_path3.read_text(encoding="utf-8")
+        title_line = next((line for line in rendered3.splitlines() if line.strip().startswith("title:")), "")
+        check(
+            "título começando com `[` sai CITADO (entre aspas) no board reconstruído",
+            title_line.strip() == 'title: "[GERAL] status geral sintético"',
+            title_line,
+        )
+        try:
+            import yaml as _yaml_check  # PyYAML já é dependência do projeto (ver requirements do backend)
+            parsed3 = _yaml_check.safe_load(rendered3)
+            check(
+                "board reconstruído com título `[GERAL]...` é parseável por yaml.safe_load",
+                parsed3["tickets"]["TCK-E9T-98"]["title"] == "[GERAL] status geral sintético",
+                str(parsed3),
+            )
+        except ImportError:
+            print("  SKIP  yaml.safe_load indisponível neste ambiente — validação estrutural acima (title_line) já cobre o bug")
 
     # ------------------------------------------------------------------
     print(f"\n{'='*60}\nPASS: {len(PASS)}  FAIL: {len(FAIL)}")

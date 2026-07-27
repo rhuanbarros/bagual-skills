@@ -1,236 +1,238 @@
 ---
-title: "Execução da via (i) — wds-8 nunca headless (E9.8)"
+title: "Route (i) execution — wds-8 never headless (E9.8)"
 tipo: reference
 created: 2026-07-12
 status: living-document
 source_prd: "ideias/prd-05-wds.md — FR-6 (§4.1); ideias/fase-0-spikes.md — S3"
-source_epic: "ideias/epics.md — Epic E9 (última story, fecha a epic)"
+source_epic: "ideias/epics.md — Epic E9 (last story, closes the epic)"
 source_story: "ideias/sistema-artifacts/E9-8-wds8-in-thread-ou-dono.md"
 ---
 
-# Execução da via (i) — wds-8 nunca headless (E9.8)
+# Route (i) execution — wds-8 never headless (E9.8)
 
-Contrato canônico do sub-protocolo que `.claude/agents/gerente-geral.md` invoca na fase
-**"despachar"** sempre que o `trilha` de um Ticket é `wds` — a decisão de classificação
-em si (é via (i)? qual ticket?) já foi tomada por `product-routing.md` (E9.6); este
-documento decide **como essa via (i) já roteada é executada**, dado que `wds-8` foi
-**provado inviável headless** (spike S3, testado ao vivo — travou no primeiro passo do
-Analyze). Leia por inteiro antes da primeira vez que um Ticket com `trilha: wds` chegar
-à fase "despachar".
+Canonical contract for the sub-protocol `.claude/agents/gerente-geral.md` invokes in the
+**"dispatch"** phase whenever a Ticket's `trilha` is `wds` — the classification decision
+itself (is it route (i)? which ticket?) has already been made by `product-routing.md` (E9.6); this
+document decides **how this already-routed route (i) is executed**, given that `wds-8` was
+**proven infeasible headless** (spike S3, tested live — stalled at the very first Analyze
+step). Read it in full before the first time a Ticket with `trilha: wds` reaches
+the "dispatch" phase.
 
-## 1. O fato que ancora este protocolo (S3, testado ao vivo)
+## 1. The fact that anchors this protocol (S3, tested live)
 
-`ideias/fase-0-spikes.md` § S3: o `wds-8` é uma skill **facilitadora** com travas duras
+`ideias/fase-0-spikes.md` § S3: `wds-8` is a **facilitator** skill with hard gates
 — `🛑 NEVER generate content without user input` / `📋 YOU ARE A FACILITATOR, not a
-content generator` / `WAIT FOR INPUT` — presentes em **todo** `step-*.md` de **todas**
-as suas fases (`steps-a/` Analyze, `steps-d/` Design, `steps-p/` Publish/handoff,
-`steps-t/` Test). Um sub-agente autônomo spawnado com instrução explícita de
-"auto-approve, yolo, não pergunte" travou mesmo assim no `step-01-identify.md` (Analyze)
-— essas travas são **turn-yields semânticos**, não diálogos de permissão que
-auto-approve resolve. **Confirmado, não hipotético: nenhum caminho autônomo deste
-sistema pode invocar `wds-8` (ou qualquer `wds-*` que componha o mesmo pipeline) como
-sub-agente headless.**
+content generator` / `WAIT FOR INPUT` — present in **every** `step-*.md` of **all**
+its phases (`steps-a/` Analyze, `steps-d/` Design, `steps-p/` Publish/handoff,
+`steps-t/` Test). An autonomous sub-agent spawned with an explicit instruction to
+"auto-approve, yolo, don't ask" stalled anyway at `step-01-identify.md` (Analyze)
+— these gates are **semantic turn-yields**, not permission dialogs that
+auto-approve resolves. **Confirmed, not hypothetical: no autonomous path in this
+system can invoke `wds-8` (or any `wds-*` that is part of the same pipeline) as a
+headless sub-agent.**
 
-## 2. Regra dura, sem exceção
+## 2. Hard rule, no exception
 
-**Nenhum fluxo autônomo deste sistema — o Gerente, nem qualquer sub-agente que ele
-despache — spawna `wds-8` (nem `Skill(wds-8-product-evolution)`, nem qualquer dos seus
+**No autonomous flow in this system — neither the Gerente nor any sub-agent it
+dispatches — spawns `wds-8` (nor `Skill(wds-8-product-evolution)`, nor any of its
 `workflow-*.md`: `workflow-analyze.md`, `workflow-scope.md`, `workflow-design.md`,
-`workflow-implement.md`, `workflow-test.md`, `workflow-deploy.md`) como sub-agente
-headless.** Isto vale mesmo que a instrução pareça "só o Analyze, que é leve" — S3
-travou exatamente aí. Não há uma versão "parcial" segura de rodar `wds-8` autônomo.
+`workflow-implement.md`, `workflow-test.md`, `workflow-deploy.md`) as a headless
+sub-agent.** This holds even if the instruction looks like "just the Analyze, which is
+lightweight" — S3 stalled exactly there. There is no safe "partial" version of running
+`wds-8` autonomously.
 
-Os arquivos do `wds-8` (`.claude/skills/wds-8-product-evolution/**`) **nunca são
-editados** por este sistema — nem para tentar contornar as travas, nem por qualquer
-outro motivo (regra geral do projeto, "nunca forkar `bmad-*`/`wds-*`"). A resposta a S3
-não é "consertar o wds-8" — é rotear ao redor dele.
+`wds-8`'s files (`.claude/skills/wds-8-product-evolution/**`) are **never
+edited** by this system — not to try to work around the gates, nor for any
+other reason (the project's general rule, "never fork `bmad-*`/`wds-*`"). The answer to S3
+is not "fix wds-8" — it is to route around it.
 
-## 3. Quando este protocolo dispara
+## 3. When this protocol triggers
 
-Na fase "despachar" (`.claude/agents/gerente-geral.md` § "3. despachar"), passo 1
-(mapear `trilha` → skill): quando o Ticket em mãos tem `trilha: wds` (decidido por
-`product-routing.md` §6 via (i) — precisa de design, ou tocou a Coverage Matrix, regra
-dura de E9.6), **pare antes de montar qualquer `open-dispatch`**. Não existe uma linha
-"a etapa que o Ticket indicar → spawne o `wds-*` correspondente" — essa seria
-exatamente a invocação headless que a §2 proíbe. Em vez disso, siga os passos 4-7
-abaixo.
+In the "dispatch" phase (`.claude/agents/gerente-geral.md` § "3. despachar"), step 1
+(map `trilha` → skill): when the Ticket at hand has `trilha: wds` (decided by
+`product-routing.md` §6 route (i) — needs design, or touched the Coverage Matrix, E9.6's
+hard rule), **stop before assembling any `open-dispatch`**. There is no line
+"the stage the Ticket indicates → spawn the corresponding `wds-*`" — that would be
+exactly the headless invocation §2 forbids. Instead, follow steps 4-7
+below.
 
-## 4. As duas opções — tabela
+## 4. The two options — table
 
-| # | Opção | Quem faz o A/S/D | Gatilho | Default? |
+| # | Option | Who does the A/S/D | Trigger | Default? |
 |---|---|---|---|---|
-| **(a)** | Oráculo in-thread | O próprio Gerente, no seu contexto Opus, aplicando o método WDS (Analyze/Scope/Design) como conhecimento — **nunca invocando `Skill(wds-8)`** | Só quando o Protocolo do Oráculo (E9.1) atinge `--confidence high` para esta decisão específica (§6) | **Não** — gateado, evolução futura |
-| **(b)** | Espera o dono | O dono, interativo, rodando `wds-8` ele mesmo, com presença humana real para honrar as travas `WAIT FOR INPUT` | Sempre que (a) não atingir alta confiança — o caso normal/inicial | **Sim** — caminho padrão |
+| **(a)** | In-thread oracle | The Gerente itself, in its Opus context, applying the WDS method (Analyze/Scope/Design) as knowledge — **never invoking `Skill(wds-8)`** | Only when the Oracle Protocol (E9.1) reaches `--confidence high` for this specific decision (§6) | **No** — gated, future evolution |
+| **(b)** | Wait on the owner | The owner, interactively, running `wds-8` themselves, with a real human present to honor the `WAIT FOR INPUT` gates | Whenever (a) doesn't reach high confidence — the normal/initial case | **Yes** — default path |
 
-Design novo é justamente a classe de trabalho que **vale a atenção humana** (PRD 05
-FR-6, Notes) — por isso o padrão é (b), não (a). (a) existe para quando o oráculo já
-tiver acumulado estilo suficiente (E9.2) sobre decisões de design in-thread — não no dia
+New design is exactly the class of work that **deserves human attention** (PRD 05
+FR-6, Notes) — that's why the default is (b), not (a). (a) exists for when the oracle has
+already accumulated enough style (E9.2) about in-thread design decisions — not on day
 1.
 
-## 5. O gate de (a) — reuso do Protocolo do Oráculo, nenhuma máquina nova
+## 5. The gate for (a) — reuse of the Oracle Protocol, no new machinery
 
-Não há config novo, nem script novo, para decidir (a) vs (b). O gate é literalmente o
-mecanismo de confiança que o Protocolo do Oráculo (E9.1) já tem — reaproveitado, nunca
-reimplementado:
+There is no new config, no new script, to decide (a) vs (b). The gate is literally the
+confidence mechanism the Oracle Protocol (E9.1) already has — reused, never
+reimplemented:
 
-1. O Gerente roda o Protocolo do Oráculo (`.claude/agents/gerente-geral.md` § "Protocolo
-   do Oráculo (E9.1)") com `--tipo decisao-de-produto`, `--areas` incluindo a área do
-   Ticket **e** a tag fixa `wds8-design-in-thread` (para que precedentes desta MESMA
-   classe de decisão — "o oráculo pode fazer design in-thread?" — sejam encontráveis
-   por `consult-precedent`/o gate history-aware de E9.2, sem se confundir com outras
-   decisões de produto da mesma área).
-2. `--context` = o que o Ticket pede (design novo); `--decision` = "executar via (i) no
-   modo (a) in-thread" (a alternativa sendo, implicitamente, (b)); `--justification` = o
-   porquê desta escolha ser segura agora.
-3. `--confidence high` só é honrado (mecanicamente, por `record-decision`, nunca por
-   alegação) se existir um `--precedent` real: uma Entrada de Ledger `decisao-de-produto`
-   `estado: ativa`, `ratification: ratified` (ou ausente), de uma execução **anterior**
-   do modo (a) que o dono já revisou e aprovou. **No início da vida deste protocolo, tal
-   precedente não existe** — logo `record-decision` rebaixa mecanicamente para `low`
-   (`downgrade_reason` explicado), `proceed_dispatch: false`, e a via cai em (b) por
-   construção, não por convenção. Isso é o que torna "(b) é o padrão" uma garantia
-   mecânica (F10), não só uma frase de protocolo que a persona poderia esquecer de
-   seguir.
-4. Só depois que o dono ratificar (`set-ratification --status ratified`) pelo menos uma
-   execução do modo (a) — e desde que nenhuma correção conflitante exista para a mesma
-   `--areas` (o mesmo veto history-aware de E9.2) — uma decisão FUTURA e similar pode
-   legitimamente pedir `high` citando esse precedente, destravando (a) para aquele
-   Ticket específico.
+1. The Gerente runs the Oracle Protocol (`.claude/agents/gerente-geral.md` § "Protocolo
+   do Oráculo (E9.1)") with `--tipo decisao-de-produto`, `--areas` including the Ticket's
+   area **and** the fixed tag `wds8-design-in-thread` (so that precedents of this SAME
+   class of decision — "can the oracle do in-thread design?" — are findable
+   by `consult-precedent`/E9.2's history-aware gate, without being confused with other
+   product decisions from the same area).
+2. `--context` = what the Ticket asks for (new design); `--decision` = "execute route (i) in
+   in-thread mode (a)" (the alternative being, implicitly, (b)); `--justification` = the
+   reason this choice is safe now.
+3. `--confidence high` is only honored (mechanically, by `record-decision`, never by
+   assertion) if a real `--precedent` exists: a `decisao-de-produto` Ledger Entry with
+   `estado: ativa`, `ratification: ratified` (or absent), from a **previous** execution
+   of mode (a) that the owner has already reviewed and approved. **At the start of this
+   protocol's life, no such precedent exists** — so `record-decision` mechanically
+   downgrades to `low` (`downgrade_reason` explained), `proceed_dispatch: false`, and the
+   route falls to (b) by construction, not by convention. This is what makes "(b) is the
+   default" a mechanical guarantee (F10), not just a protocol sentence the persona could
+   forget to follow.
+4. Only after the owner ratifies (`set-ratification --status ratified`) at least one
+   execution of mode (a) — and provided no conflicting correction exists for the same
+   `--areas` (the same E9.2 history-aware veto) — can a FUTURE, similar decision
+   legitimately claim `high` by citing that precedent, unlocking (a) for that specific
+   Ticket.
 
-**Isto é a "evolução futura" da Ficha de Build da Story E9.8 ("Autonomia: (a) in-thread
-OU (b) espera o dono; padrão (b)") tornada mecânica**: não é um interruptor manual que
-alguém liga um dia — é o mesmo aprendizado de estilo (E9.2) que já governa toda decisão
-do oráculo, aplicado a esta decisão específica.
+**This is Story E9.8's Build Card "Autonomy: (a) in-thread OR (b) wait on the owner;
+default (b)" made mechanical as its "future evolution"**: it is not a manual switch
+someone flips one day — it is the same style-learning (E9.2) that already governs every
+oracle decision, applied to this specific decision.
 
-## 6. Mecânica de (b) — DEFAULT, "espera o dono"
+## 6. Mechanics of (b) — DEFAULT, "wait on the owner"
 
-Quando `record-decision` devolve `proceed_dispatch: false` (o caso normal, §5.3):
+When `record-decision` returns `proceed_dispatch: false` (the normal case, §5.3):
 
-1. **Não** mova o Ticket para `triado` (o destino genérico de baixa confiança do
-   Protocolo do Oráculo) — mova para **`precisa-de-info`**, via `bagual-tickets`. Isto é
-   uma especialização deliberada, não um desvio acidental do protocolo geral: `triado`
-   pressupõe que ratificar a decisão já destrava o trabalho (o Ticket volta para
-   `pronto-para-implementar` e o Gerente redespacha sozinho); aqui, o desbloqueio
-   genuíno não é "o dono confirma uma frase escrita" — é **o dono precisar
-   fisicamente/interativamente rodar `wds-8`**, exatamente a classe de bloqueio que
-   `precisa-de-info` já é reservada para ("Ativação"/"Quem você é" em
-   `gerente-geral.md`: "exige uma ação literal do dono").
-2. A nota do Ticket (`## Log`, via `bagual-tickets`) cita o `ledger_path` da decisão
-   parqueada **e** uma instrução legível por humano: *"Aguardando o dono: rode `wds-8`
-   interativamente (Analyze → Scope → Design) para este Ticket — o fluxo autônomo não
-   pode passar pelas travas WAIT-FOR-INPUT do wds-8 (spike S3, ver `wds-routing.md`)."*
-3. Inclua o `pending_entry` em `decisions_pending` no próximo `write-snapshot
-   --pending-json` — mesmo mecanismo já usado por qualquer decisão do oráculo baixa-
-   confiança (E9.1/E8.7); isso é o que faz o Briefing da Manhã (E8.7) surfaçar este
-   Ticket para o dono na próxima sessão interativa, sem nenhum wiring novo.
-4. **O que o dono faz depois é fora do escopo deste protocolo.** Ele roda `wds-8`
-   interativamente na SUA PRÓPRIA sessão (não uma dispatch do Gerente) — pode ir até
-   onde quiser, inclusive `[I]/[T]/[P]` se decidir implementar/publicar ele mesmo como
-   humano ao teclado. Quando terminar, se restar trabalho de código para o fluxo
-   autônomo retomar, ele mesmo atualiza o Ticket (via `bagual-tickets`, ou diretamente)
-   — `trilha` re-decidida normalmente (`rapida`/`spec`/`epic`, o design já está feito) e
-   status de volta a `pronto-para-implementar`. Nada disto precisa de um mecanismo do
-   Gerente — é o dono usando o sistema como sempre pôde usar.
+1. **Do not** move the Ticket to `triado` (the Oracle Protocol's generic low-confidence
+   destination) — move it to **`precisa-de-info`**, via `bagual-tickets`. This is a
+   deliberate specialization, not an accidental deviation from the general protocol:
+   `triado` assumes ratifying the decision alone unlocks the work (the Ticket goes back
+   to `pronto-para-implementar` and the Gerente redispatches on its own); here, the
+   genuine unblock isn't "the owner confirms a written sentence" — it is **the owner
+   physically/interactively needing to run `wds-8`**, exactly the class of blocker
+   `precisa-de-info` is already reserved for ("Ativação"/"Quem você é" in
+   `gerente-geral.md`: "requires a literal action from the owner").
+2. The Ticket's note (`## Log`, via `bagual-tickets`) cites the parked decision's
+   `ledger_path` **and** a human-readable instruction: *"Waiting on the owner: run `wds-8`
+   interactively (Analyze → Scope → Design) for this Ticket — the autonomous flow cannot
+   get past wds-8's WAIT-FOR-INPUT gates (spike S3, see `wds-routing.md`)."*
+3. Include the `pending_entry` in `decisions_pending` on the next `write-snapshot
+   --pending-json` — the same mechanism already used by any low-confidence oracle
+   decision (E9.1/E8.7); this is what makes the Morning Briefing (E8.7) surface this
+   Ticket to the owner in the next interactive session, with no new wiring.
+4. **What the owner does next is out of this protocol's scope.** They run `wds-8`
+   interactively in THEIR OWN session (not a Gerente dispatch) — they can go as far as
+   they want, including `[I]/[T]/[P]` if they decide to implement/publish themselves as a
+   human at the keyboard. When done, if code work remains for the autonomous flow to
+   pick back up, they update the Ticket themselves (via `bagual-tickets`, or directly)
+   — `trilha` re-decided normally (`rapida`/`spec`/`epic`, the design is already done) and
+   status back to `pronto-para-implementar`. None of this needs a Gerente mechanism
+   — it's the owner using the system as they always could.
 
-## 7. Mecânica de (a) — GATED, "oráculo in-thread"
+## 7. Mechanics of (a) — GATED, "in-thread oracle"
 
-Só quando `proceed_dispatch: true` (§5, precedente real e ratificado):
+Only when `proceed_dispatch: true` (§5, a real, ratified precedent):
 
-1. O Gerente **não invoca nenhuma skill** — nem `wds-8`, nem um sub-agente `Agent` para
-   fazer o trabalho. Ele mesmo, no seu próprio contexto Opus, aplica o método WDS
-   (Analyze → Scope → Design) como conhecimento — **exatamente o mesmo padrão já
-   estabelecido no "Cérebro de Planejamento (E9.3)"** para `bmad-create-epics-and-
-   stories`/`bmad-check-implementation-readiness`/`bmad-correct-course` (skills
-   facilitador-only, S2/S3): "o que elas fariam, você faz in-thread". `wds-8` entra na
-   MESMA classe — este protocolo é a aplicação concreta dessa classe ao design de
-   produto.
-2. **Analyze:** entenda o pedido do Ticket contra os documentos canônicos já existentes
-   (Coverage Matrix, trigger-map, product-decisions — a mesma "verdade de produto
-   documentada" que `product-routing.md` §1 já usa).
-3. **Scope:** decida o tamanho da mudança de design (novo cenário? cenário existente
-   mudado? novo trigger?) sem gerar conteúdo especulativo além do que o Ticket pede.
-4. **Design:** escreva a atualização direto nos **três documentos canônicos** — e SÓ
-   estes três, nunca um quarto lugar:
-   - `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` (Coverage Matrix/cenário)
-   - `_bmad-output/B-Trigger-Map/trigger-map.md` (se a mudança afeta meta→persona→força)
-   - `_bmad-output/product-decisions.md` (a regra de comportamento resultante, mesmo
-     formato `## [PRODUCT] Título — YYYY-MM-DD` já usado por todas as entradas
-     existentes)
-5. **Exceção explícita à seção "Quem você é" de `gerente-geral.md`:** estes três
-   arquivos são a ÚNICA superfície de escrita direta de produto que o Gerente tem — e
-   só quando executando o modo (a) deste protocolo especificamente (nunca como hábito
-   geral). Eles não são código de produto (`frontend/**`/`backend/**`/`supabase/**`) nem
-   uma skill `bmad-*`/`bagual-*` — são os mesmos documentos canônicos que o WDS em si
-   produziria via `steps-d/step-01-design-update.md`, só que escritos pelo oráculo em
-   vez de por um facilitador interativo.
-6. Registre a conclusão: uma nota no `## Log` do Ticket (via `bagual-tickets`) citando o
-   `ledger_path` da decisão (a) e um resumo do que mudou nos 3 documentos.
-7. **Pare aqui.** Ver §8 — nada além de Analyze/Scope/Design acontece neste protocolo,
-   em nenhum modo.
+1. The Gerente **invokes no skill** — neither `wds-8`, nor an `Agent` sub-agent to
+   do the work. It applies the WDS method (Analyze → Scope → Design) as knowledge itself,
+   in its own Opus context — **exactly the same pattern already
+   established in the "Planning Brain (E9.3)"** for `bmad-create-epics-and-
+   stories`/`bmad-check-implementation-readiness`/`bmad-correct-course` (facilitator-only
+   skills, S2/S3): "what they would do, you do in-thread". `wds-8` falls into the
+   SAME class — this protocol is the concrete application of that class to product
+   design.
+2. **Analyze:** understand the Ticket's request against the already-existing canonical
+   documents (Coverage Matrix, trigger-map, product-decisions — the same "documented
+   product truth" `product-routing.md` §1 already uses).
+3. **Scope:** decide the size of the design change (new scenario? existing
+   scenario changed? new trigger?) without generating speculative content beyond what the
+   Ticket asks for.
+4. **Design:** write the update directly into the **three canonical documents** — and ONLY
+   these three, never a fourth place:
+   - `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` (Coverage Matrix/scenario)
+   - `_bmad-output/B-Trigger-Map/trigger-map.md` (if the change affects goal→persona→force)
+   - `_bmad-output/product-decisions.md` (the resulting behavior rule, same
+     format `## [PRODUCT] Título — YYYY-MM-DD` already used by every
+     existing entry)
+5. **Explicit exception to `gerente-geral.md`'s "Quem você é" section:** these three
+   files are the ONLY direct product-writing surface the Gerente has — and
+   only when executing this protocol's mode (a) specifically (never as a
+   general habit). They are not product code (`frontend/**`/`backend/**`/`supabase/**`) nor
+   a `bmad-*`/`bagual-*` skill — they are the same canonical documents WDS itself
+   would produce via `steps-d/step-01-design-update.md`, just written by the oracle instead
+   of an interactive facilitator.
+6. Record the conclusion: a note in the Ticket's `## Log` (via `bagual-tickets`) citing
+   the (a) decision's `ledger_path` and a summary of what changed in the 3 documents.
+7. **Stop here.** See §8 — nothing beyond Analyze/Scope/Design happens in this protocol,
+   in either mode.
 
-## 8. Fronteira A/S/D-only — `[I]/[T]/[P]` sempre fora do fluxo autônomo
+## 8. A/S/D-only boundary — `[I]/[T]/[P]` always outside the autonomous flow
 
-**Sem exceção, em QUALQUER modo (a) ou (b):** o fluxo autônomo (o Gerente e qualquer
-sub-agente que ele despache) **nunca** avança para `[I]/[T]/[P]` (Implement/Test/Publish
-— branch, PR, deploy) do pipeline `wds-8` (`workflow-implement.md`/`workflow-test.md`/
-`workflow-deploy.md`). Isto é reforçado em três camadas independentes, não uma promessa
-solitária de prosa:
+**No exception, in EITHER mode (a) or (b):** the autonomous flow (the Gerente and any
+sub-agent it dispatches) **never** advances to `[I]/[T]/[P]` (Implement/Test/Publish
+— branch, PR, deploy) of the `wds-8` pipeline (`workflow-implement.md`/`workflow-test.md`/
+`workflow-deploy.md`). This is reinforced across three independent layers, not one
+lone prose promise:
 
-1. **Estrutural (já existente):** o Gerente já nunca executa código de produto
-   (`frontend/**`/`backend/**`/`supabase/**`) — `[I]/[T]/[P]` do `wds-8` tocam
-   exatamente essa superfície. A regra "Gerente nunca executa código" (seção "Quem você
-   é") já barra isso por construção, mesmo sem este protocolo.
-2. **Explícito neste protocolo (§7.7):** o modo (a) para no Design — nenhuma instrução
-   deste documento leva o Gerente além disso.
-3. **Não-objetivo do PRD (ideias/prd-05-wds.md § "Não-Objetivos"):** "Não usa o WDS como
-   motor de implementação/teste — é lente; Implement/Test/Deploy são BMad." Se a
-   decisão de design (modo (a)) revelar trabalho de código real
-   necessário, isso vira um Ticket/decisão de `trilha` **normal** (`rapida`/`spec`/
-   `epic`), dispatched pelo pipeline BMad já existente (`bagual-epic-runner`/
-   `bmad-quick-dev`) — nunca pelo `workflow-implement.md` do `wds-8`. Os dois pipelines
-   nunca se tocam.
+1. **Structural (already existing):** the Gerente already never executes product
+   code (`frontend/**`/`backend/**`/`supabase/**`) — `wds-8`'s `[I]/[T]/[P]` touch
+   exactly that surface. The rule "the Gerente never executes code" (the "Quem você
+   é" section) already blocks this by construction, even without this protocol.
+2. **Explicit in this protocol (§7.7):** mode (a) stops at Design — no instruction
+   in this document takes the Gerente further than that.
+3. **A PRD non-goal (ideias/prd-05-wds.md § "Não-Objetivos"):** "Does not use WDS as
+   an implementation/test engine — it's a lens; Implement/Test/Deploy are BMad." If
+   the design decision (mode (a)) reveals real code work
+   needed, that becomes a **normal** Ticket/`trilha` decision (`rapida`/`spec`/
+   `epic`), dispatched by the already-existing BMad pipeline (`bagual-epic-runner`/
+   `bmad-quick-dev`) — never by `wds-8`'s `workflow-implement.md`. The two pipelines
+   never touch each other.
 
-Quando o dono roda `wds-8` interativamente (modo (b), §6.4), ele PODE ir até
-`[I]/[T]/[P]` como qualquer humano ao teclado — isso não é "o fluxo autônomo fazendo
-`[I]/[T]/[P]`", é o dono usando a ferramenta como sempre pôde. O guardrail é sobre o que
-o **sistema autônomo** (Gerente + despachos) faz sozinho, nunca sobre o que o dono faz
-interativamente.
+When the owner runs `wds-8` interactively (mode (b), §6.4), they CAN go all the way to
+`[I]/[T]/[P]` like any human at the keyboard — that is not "the autonomous flow doing
+`[I]/[T]/[P]`", it's the owner using the tool as they always could. The guardrail is about what
+the **autonomous system** (Gerente + dispatches) does on its own, never about what the owner
+does interactively.
 
-## 9. Via leve (ii) segue autônoma — nunca toca wds-8
+## 9. Light route (ii) remains autonomous — it never touches wds-8
 
-Nenhuma parte deste protocolo se aplica à **via (ii)** (`product-routing.md` §6) —
-"regra pequena já decidida" registra a mudança como uma decisão-de-produto no Ledger
-(`wiki/ledger/decisao-de-produto/`), que **nunca** invoca `wds-8` nem qualquer `wds-*`.
-Continua 100% autônoma, sem gate, sem espera do dono.
+No part of this protocol applies to **route (ii)** (`product-routing.md` §6) — "small
+rule already decided" records the change as a `decisao-de-produto` Ledger entry
+(`wiki/ledger/decisao-de-produto/`), which **never** invokes `wds-8` or any `wds-*`. It
+remains 100% autonomous, no gate, no waiting on the owner.
 
-Ela continua exatamente como era antes desta story — este protocolo não a toca.
+Both continue exactly as they were before this story — this protocol does not touch them.
 
-## 10. Composição — nada reimplementado
+## 10. Composition — nothing reimplemented
 
-- **Protocolo do Oráculo (E9.1)** — `gerente_oracle.py record-decision`/
-  `set-ratification`: reaproveitado integralmente como o gate de (a) vs (b) (§5). Nenhum
-  script/config novo.
-- **`bagual-tickets`** — composição para mover o Ticket a `precisa-de-info` (§6) ou
-  anotar a conclusão de (a) (§7.6). Nunca edite `board.yaml`/o `.md` do Ticket à mão.
-- **Cérebro de Planejamento (E9.3)** — o padrão "in-thread para skill facilitador-only"
-  já estabelecido é reaplicado ao `wds-8` (§7.1), não reinventado.
-- **`write-snapshot --pending-json`/Briefing (E8.7)** — reaproveitado para surfaçar o
-  parqueamento (b) ao dono, sem wiring novo.
+- **Oracle Protocol (E9.1)** — `gerente_oracle.py record-decision`/
+  `set-ratification`: reused in full as the (a) vs (b) gate (§5). No new
+  script/config.
+- **`bagual-tickets`** — composition to move the Ticket to `precisa-de-info` (§6) or
+  annotate (a)'s conclusion (§7.6). Never edit `board.yaml`/the Ticket's `.md` by hand.
+- **Planning Brain (E9.3)** — the "in-thread for facilitator-only skill" pattern
+  already established is reapplied to `wds-8` (§7.1), not reinvented.
+- **`write-snapshot --pending-json`/Briefing (E8.7)** — reused to surface the
+  (b) parking to the owner, with no new wiring.
 
-## 11. Prova — nenhum caminho spawna `wds-8` headless
+## 11. Proof — no path spawns `wds-8` headless
 
-Verificável por grep, sempre que este protocolo for revisado: nenhuma instrução em
-`.claude/agents/gerente-geral.md`, `project_controll/gerente/**`, ou qualquer
-`gerente_*.py` contém uma chamada a `Skill(wds-8`/`Agent(...wds-8...)`/"invoque o
-wds-8"/"spawn wds-8" fora do contexto explícito de "isto é proibido" (§2 acima). Ver
-Dev Agent Record da Story E9.8 para os comandos exatos rodados e a saída confirmando
+Verifiable by grep, whenever this protocol is reviewed: no instruction in
+`.claude/agents/gerente-geral.md`, `project_controll/gerente/**`, or any
+`gerente_*.py` contains a call to `Skill(wds-8`/`Agent(...wds-8...)`/"invoke
+wds-8"/"spawn wds-8" outside the explicit "this is forbidden" context (§2 above). See
+Story E9.8's Dev Agent Record for the exact commands run and the output confirming
 zero hits.
 
-## 12. Exemplos trabalhados
+## 12. Worked examples
 
-Ver `ideias/sistema-artifacts/E9-8-wds8-in-thread-ou-dono.md` § Validação para os casos
-completos: (1) Ticket via (i) com design novo → sem precedente → (b) default, `record-
-decision` rebaixa para `low`, Ticket parqueado em `precisa-de-info`; (2) o MESMO Ticket
-depois de um precedente ratificado existir → (a) gated, `high` honrado, A/S/D in-thread
-sobre documentos-fixture, `[I]/[T]/[P]` nunca alcançado; (3) Ticket via (ii) → nunca toca
-este protocolo; (4) grep de zero ocorrências de invocação headless do `wds-8`.
+See `ideias/sistema-artifacts/E9-8-wds8-in-thread-ou-dono.md` § Validação for the
+complete cases: (1) Ticket via route (i) with new design → no precedent → default (b), `record-
+decision` downgrades to `low`, Ticket parked in `precisa-de-info`; (2) the SAME Ticket
+after a ratified precedent exists → gated (a), `high` honored, in-thread A/S/D
+over fixture documents, `[I]/[T]/[P]` never reached; (3) Ticket via route (ii) → never touches
+this protocol; (4) grep showing zero occurrences of a headless `wds-8` invocation.

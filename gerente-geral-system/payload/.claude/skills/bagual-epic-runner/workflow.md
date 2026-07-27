@@ -132,7 +132,7 @@ run the retrospective.
 
 ---
 
-## INVARIANTS (Story E10.2 — blindagem, sem mudança de comportamento)
+## INVARIANTS (Story E10.2 — hardening, no behavior change)
 
 > Full proof (byte-diff, dry-traces) lives in
 > `ideias/sistema-artifacts/E10-2-preservar-miolo.md`. This block is the pointer any
@@ -1566,17 +1566,17 @@ EXECUTION GRAPH BUILT AND PERSISTED
            not modify this script; it already checks the union of unstaged + staged changes against the
            project's sensitive-path catalog and always exits 0).
         2. **Success, `floor_triggered: true`:** set `{effective_fast_mode}` = `false` for this story's
-           Step C only — Cerco completo forçado, regardless of the invocation's global `{fast_mode}`.
-           Output: "[Floor] sensitive_path_floor.py: floor_triggered=true (categorias: {categories_hit})
-           — Cerco completo forçado para {current_story_key}, ignorando fast_mode global ({fast_mode})."
+           Step C only — full Cerco forced, regardless of the invocation's global `{fast_mode}`.
+           Output: "[Floor] sensitive_path_floor.py: floor_triggered=true (categories: {categories_hit})
+           — full Cerco forced for {current_story_key}, overriding global fast_mode ({fast_mode})."
         3. **Success, `floor_triggered: false`:** set `{effective_fast_mode}` = `{fast_mode}` (global value,
            unchanged — today's behavior is fully preserved when nothing sensitive was touched).
         4. **Failure** — any of: binary/script missing, non-zero/unexpected exit code, unparsable JSON
            output, or a JSON object that parses but is MISSING the `floor_triggered` key (unexpected
            schema) — degrade NOISILY, never block or crash the pipeline: set `{effective_fast_mode}` =
            `{fast_mode}` (the original global value, exactly as if this story block did not exist) and
-           output a visible warning: "[Floor] AVISO: sensitive_path_floor.py falhou ({error_summary}) —
-           piso não pôde ser checado, mantendo fast_mode original ({fast_mode}) para {current_story_key}."
+           output a visible warning: "[Floor] WARNING: sensitive_path_floor.py failed ({error_summary}) —
+           floor could not be checked, keeping original fast_mode ({fast_mode}) for {current_story_key}."
         5. The floor can only ever push `{effective_fast_mode}` from `true` toward `false` (more Cerco) —
            it never pushes the other way. When the global `{fast_mode}` is already `false`, the floor check
            still runs (for the audit trail/output) but `{effective_fast_mode}` stays `false` either way —
@@ -1719,7 +1719,7 @@ EXECUTION GRAPH BUILT AND PERSISTED
   <step n="5" goal="Run retrospective and mark epic done">
     <critical>The epic is NOT complete until the retrospective finishes. Do NOT mark epic as done before this step succeeds.</critical>
 
-    <action>Note (Story E6.6, PRD 03 FR-13 — gravação na conclusão): the epic-level Ledger gravação already happens inside `/bmad-retrospective`'s own `on_complete` hook, wired by Story E4.5 (`_bmad/custom/bmad-retrospective.toml`) — this step does not duplicate it. The per-story Ledger gravação (Step D.6) and per-story Ticket `## Fechamento` gravação (Step F.5) already ran inside story-processor.md for every story processed in Step 2 above. This step's spawn below is unchanged by E6.6 other than the model pin already noted in RULES.</action>
+    <action>Note (Story E6.6, PRD 03 FR-13 — recording on completion): the epic-level Ledger recording already happens inside `/bmad-retrospective`'s own `on_complete` hook, wired by Story E4.5 (`_bmad/custom/bmad-retrospective.toml`) — this step does not duplicate it. The per-story Ledger recording (Step D.6) and per-story Ticket `## Fechamento` recording (Step F.5) already ran inside story-processor.md for every story processed in Step 2 above. This step's spawn below is unchanged by E6.6 other than the model pin already noted in RULES.</action>
 
     <output>[Step 5] Running retrospective for epic {epic_num}...</output>
 

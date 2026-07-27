@@ -1,53 +1,53 @@
-# Cérebro de Planejamento (E9.3) — headless onde dá, in-thread onde não dá
+# Planning Brain (E9.3) — headless where possible, in-thread where not
 
-> Contrato de referência para o Protocolo "Cérebro de Planejamento" em
+> Reference contract for the "Planning Brain" Protocol in
 > `.claude/agents/gerente-geral.md`. Story: `ideias/sistema-artifacts/E9-3-cerebro-planejamento.md`.
-> Canônico: `ideias/prd-00-sistema-orquestrador.md` §4.2 (FR-4), UJ-2. Spike que fundamenta
-> o design: `ideias/fase-0-spikes.md` § S2+S3.
+> Canonical: `ideias/prd-00-sistema-orquestrador.md` §4.2 (FR-4), UJ-2. Spike that grounds
+> the design: `ideias/fase-0-spikes.md` § S2+S3.
 
-## 1. O problema que este documento resolve
+## 1. The problem this document solves
 
-UJ-2 (PRD 00): o dono delega um esforço **grande** ("reforce a cobertura de testes e a
-acessibilidade do app") sem detalhar em epics/stories, e some. O Gerente precisa
-transformar isso num plano de epics/stories **sozinho**, sem travar esperando o dono em
-cada micro-decisão, mas também sem inventar escopo por conta própria onde há ambiguidade
-de produto real.
+UJ-2 (PRD 00): the owner delegates a **large** effort ("beef up test coverage and
+app accessibility") without breaking it down into epics/stories, and disappears. The Gerente needs
+to turn this into an epic/story plan **on its own**, without stalling waiting for the owner on
+every micro-decision, but also without inventing scope on its own where there is real
+product ambiguity.
 
-A ferramenta óbvia seria reusar as skills de planejamento do John (`bmad-agent-pm`) como
-sub-agentes headless — exatamente como o Gerente já faz com `bmad-quick-dev`/
-`bmad-dev-story`/`bagual-epic-runner` na fase "despachar". O spike S2/S3
-(`ideias/fase-0-spikes.md`) descobriu que **isso só funciona para uma parte delas** —
-ver §2.
+The obvious tool would be to reuse John's (`bmad-agent-pm`) planning skills as
+headless sub-agents — exactly as the Gerente already does with `bmad-quick-dev`/
+`bmad-dev-story`/`bagual-epic-runner` in the "dispatch" phase. The S2/S3 spike
+(`ideias/fase-0-spikes.md`) found that **this only works for a subset of them** —
+see §2.
 
-## 2. Classe 1 vs Classe 2 — a descoberta do spike S2/S3
+## 2. Class 1 vs Class 2 — the S2/S3 spike finding
 
-| Classe | Skills | Comportamento headless | Evidência |
+| Class | Skills | Headless behavior | Evidence |
 |---|---|---|---|
-| **Classe 1 — automatizável** | `bmad-prd` | Tem **modo headless formal**: `.claude/skills/bmad-prd/references/headless.md` + `assets/headless-schemas.md`. Detecta `headless: true` (ou invocação de outra skill/runner não-interativo) na primeira mensagem, nunca pergunta, produz um payload JSON terminal (`status: complete\|partial\|blocked`). | Formal, documentado na própria skill. Reconfirmado ao vivo nesta story (§4 abaixo) — rodou ponta-a-ponta sem nenhum prompt interativo. |
-| **Classe 1 — automatizável** (referência, não usada nesta story) | `create-story`/`dev-story`/`code-review` | Sem modo headless formal, mas **sem travas duras de facilitador** — honram "yolo/auto-approve/não pergunte" no prompt de spawn. | `bagual-epic-runner` já roda assim em produção (Epics E1-E8 deste próprio sprint meta). |
-| **Classe 2 — facilitador-only** | `bmad-create-epics-and-stories`, `bmad-check-implementation-readiness`, `bmad-correct-course` | **Sem** `references/headless.md`. Têm `🛑 WAIT FOR INPUT` / `YOU ARE A FACILITATOR not a content generator` / menus `[C] Continue` — *turn-yields semânticos*, não diálogos de permissão. Auto-approve **não** resolve isso — são gates que esperam uma resposta humana real de dentro do corpo da skill. | Testado ao vivo no spike S3 contra `wds-8` (mesma classe/mesmas travas): travou no primeiro `step-01-identify`, ≥5 halts duros. Inspecionado (não executado até o fim) em `bmad-create-epics-and-stories`/`bmad-check-implementation-readiness`/`bmad-correct-course` — mesmas travas textuais confirmadas por leitura direta das skills. |
+| **Class 1 — automatable** | `bmad-prd` | Has a **formal headless mode**: `.claude/skills/bmad-prd/references/headless.md` + `assets/headless-schemas.md`. Detects `headless: true` (or invocation from another non-interactive skill/runner) on the first message, never asks, produces a terminal JSON payload (`status: complete\|partial\|blocked`). | Formal, documented in the skill itself. Reconfirmed live in this story (§4 below) — ran end-to-end with zero interactive prompts. |
+| **Class 1 — automatable** (reference, not used in this story) | `create-story`/`dev-story`/`code-review` | No formal headless mode, but **no hard facilitator gates** — they honor "yolo/auto-approve/don't ask" in the spawn prompt. | `bagual-epic-runner` already runs this way in production (Epics E1-E8 of this very meta sprint). |
+| **Class 2 — facilitator-only** | `bmad-create-epics-and-stories`, `bmad-check-implementation-readiness`, `bmad-correct-course` | **Lacks** `references/headless.md`. Have `🛑 WAIT FOR INPUT` / `YOU ARE A FACILITATOR not a content generator` / `[C] Continue` menus — *semantic turn-yields*, not permission dialogs. Auto-approve does **not** solve this — these are gates that wait for a real human response from inside the skill's body. | Tested live in spike S3 against `wds-8` (same class/same gates): stalled at the very first `step-01-identify`, ≥5 hard halts. Inspected (not run to completion) in `bmad-create-epics-and-stories`/`bmad-check-implementation-readiness`/`bmad-correct-course` — same textual gates confirmed by directly reading the skills. |
 
-**Regra derivada (a que este protocolo aplica):** o Gerente **nunca spawna** uma skill
-Classe 2 como sub-agente headless — isso trava o ciclo autônomo à espera de um humano
-que não está lá (exatamente o F5/E2.2 "sub-agente pendurado", só que pela skill em si,
-não pelo harness). Para o que essas skills fariam, o Gerente faz o raciocínio **in-thread**
-(o próprio Opus do Gerente, dentro do seu contexto, aplica o MÉTODO da skill como
-conhecimento — sem invocar `Skill(bmad-create-epics-and-stories)`), ou marca o passo como
-pendente do dono quando o julgamento requerido excede o que o oráculo tem confiança para
-decidir sozinho (mesmo veto mecânico F10 já usado pelo Protocolo do Oráculo, E9.1).
+**Derived rule (the one this protocol applies):** the Gerente **never spawns** a
+Class 2 skill as a headless sub-agent — this would stall the autonomous cycle waiting for a human
+who isn't there (exactly the F5/E2.2 "hung sub-agent", just caused by the skill itself,
+not by the harness). For whatever these skills would do, the Gerente reasons **in-thread**
+(the Gerente's own Opus, within its own context, applies the skill's METHOD as
+knowledge — without invoking `Skill(bmad-create-epics-and-stories)`), or flags the step as
+pending on the owner when the judgment required exceeds what the oracle is confident to
+decide alone (the same mechanical veto F10 already used by the Oracle Protocol, E9.1).
 
-**Nunca forkar as skills Classe 2** para "consertar" a falta de modo headless — isso
-violaria a regra "nativo > genérico; nunca forkar `bmad-*`" (`AGENTS.md`). A skill continua
-existindo intacta para o uso interativo normal do dono; o Gerente simplesmente não a chama
-quando está sozinho.
+**Never fork the Class 2 skills** to "fix" the lack of a headless mode — this would
+violate the rule "native > generic; never fork `bmad-*`" (`AGENTS.md`). The skill remains
+fully intact for the owner's normal interactive use; the Gerente simply doesn't call it
+when it's alone.
 
-## 3. O protocolo — 4 passos
+## 3. The protocol — 4 steps
 
-### Passo 1 — `bmad-prd` headless via sub-agente Sonnet
+### Step 1 — `bmad-prd` headless via a Sonnet sub-agent
 
-O Gerente despacha um `Agent` (**`model: "sonnet"`**, foreground — mesma disciplina de
-"nunca despacho pendurado" das demais fases) instruído a invocar a skill `bmad-prd` com
-um payload headless na primeira mensagem, seguindo literalmente
+The Gerente dispatches an `Agent` (**`model: "sonnet"`**, foreground — same discipline of
+"never a hung dispatch" as the other phases) instructed to invoke the `bmad-prd` skill with
+a headless payload in the first message, literally following
 `.claude/skills/bmad-prd/references/headless.md`:
 
 ```
@@ -60,180 +60,181 @@ doc_workspace: "<pasta de destino do PRD — NUNCA a pasta de planejamento real 
                  usar uma pasta de trabalho dedicada>"
 ```
 
-Ambiguidade real (o `brief` não dá para inferir um alvo sem inventar detalhe de produto)
-→ a skill retorna `status: "blocked"` com `reason` — **nunca** um prompt interativo (é
-isto que o modo headless formal garante). O Gerente lê o JSON terminal:
+Real ambiguity (the `brief` can't be resolved to a target without inventing product
+detail) → the skill returns `status: "blocked"` with a `reason` — **never** an interactive
+prompt (that's exactly what the formal headless mode guarantees). The Gerente reads the terminal
+JSON:
 
-- `status: "complete"` → segue para o Passo 2 com o `prd` produzido.
-- `status: "partial"` → segue para o Passo 2, mas cada item de `open_questions[]` vira
-  uma pergunta rastreada (ver §"Ambiguidade de produto" abaixo) — não trava o Passo 2
-  inteiro por causa disso.
-- `status: "blocked"` → **não** segue para o Passo 2. O `reason` vira o registro de
-  ambiguidade (mesmo tratamento de "Ambiguidade de produto" abaixo) e o Gerente para essa
-  frente de trabalho especificamente, sem travar o ciclo inteiro (outros Tickets da fila
-  continuam sendo processados normalmente).
+- `status: "complete"` → proceeds to Step 2 with the produced `prd`.
+- `status: "partial"` → proceeds to Step 2, but each item in `open_questions[]` becomes
+  a tracked question (see "Product ambiguity" below) — it does not stall the whole
+  Step 2 because of this.
+- `status: "blocked"` → **does not** proceed to Step 2. The `reason` becomes the ambiguity
+  record (same treatment as "Product ambiguity" below) and the Gerente stops that specific
+  workstream, without stalling the whole cycle (other Tickets in the queue
+  keep being processed normally).
 
-### Passo 2 — Decomposição em epics/stories, IN-THREAD (nunca spawnada)
+### Step 2 — Decomposition into epics/stories, IN-THREAD (never spawned)
 
-O Gerente, no seu próprio contexto Opus (sem `Skill(bmad-create-epics-and-stories)`),
-aplica o MÉTODO dessa skill como conhecimento: lê o PRD produzido no Passo 1 + o
-grounding do projeto (padrões existentes, `_bmad-output/{anti-patterns,decisions,
-product-decisions,notes}.md`, Ledger — o mesmo grounding que uma story normal carrega em
-spec-time, PRD 03), e decompõe em epics/stories.
+The Gerente, in its own Opus context (without `Skill(bmad-create-epics-and-stories)`),
+applies that skill's METHOD as knowledge: it reads the PRD produced in Step 1 + the
+project's grounding (existing patterns, `_bmad-output/{anti-patterns,decisions,
+product-decisions,notes}.md`, Ledger — the same grounding a normal story carries at
+spec-time, PRD 03), and decomposes it into epics/stories.
 
-**Contrato obrigatório de saída — cada epic do plano DECLARA:**
-- `título` + `descrição` (o que entrega).
-- `área` — a mesma tag de área/feature usada em `bagual-tickets` (`area:` no
-  front-matter do Ticket) e no Ledger (`areas: [...]`).
-- `arquivos/diretórios prováveis` — o melhor palpite fundamentado do Gerente sobre onde
-  o trabalho vai tocar (ex.: `frontend/src/features/clients/**`,
-  `backend/domain/vehicles/**`). Não precisa ser exaustivo nem definitivo — é o insumo
-  de ENTRADA para o cálculo do grafo de paralelismo do PRD 03 (disjunção de área/
-  arquivos entre epics = paralelizável); **o cálculo do grafo em si não é feito aqui**.
-- `depende-de` — outros epics do MESMO plano que precisam terminar antes (se houver).
+**Mandatory output contract — every epic in the plan DECLARES:**
+- `title` + `description` (what it delivers).
+- `area` — the same area/feature tag used in `bagual-tickets` (`area:` in
+  the Ticket's front-matter) and in the Ledger (`areas: [...]`).
+- `likely files/directories` — the Gerente's best-grounded guess about where
+  the work will touch (e.g., `frontend/src/features/clients/**`,
+  `backend/domain/vehicles/**`). Doesn't need to be exhaustive or definitive — it is the
+  INPUT to the PRD 03 parallelism graph calculation (area/file disjointness
+  between epics = parallelizable); **the graph calculation itself is not done here**.
+- `depends-on` — other epics from the SAME plan that must finish first (if any).
 
-O plano é gravado em disco (**file-mediated**, mesmo princípio de FR-8): um arquivo
-Markdown por plano, `project_controll/gerente/planning/<slug-do-intent>-plano.md`, uma
-seção `## Epic N — <título>` por epic com os 4 campos acima. Este arquivo é o artefato
-que a fase "despachar" (E8.4) consome depois — nunca um valor de retorno solto no
-contexto do Gerente.
+The plan is written to disk (**file-mediated**, same principle as FR-8): one
+Markdown file per plan, `project_controll/gerente/planning/<intent-slug>-plano.md`, one
+`## Epic N — <title>` section per epic with the 4 fields above. This file is the artifact
+that the "dispatch" phase (E8.4) consumes later — never a loose return value in
+the Gerente's context.
 
-**Contrato de saída ADICIONAL (Story `bridge-declaracao-areas` — a ponte que liga o
-paralelismo de PRD 03/E10-E11): cada seção `## Epic N` também carrega um sentinel
-ESTRUTURADO da MESMA declaração acima**, mecanicamente extraível — nunca uma segunda
-fonte de verdade a manter sincronizada à mão, é a mesma declaração que você (Gerente)
-já está fazendo em prosa, só restated uma vez em JSON de uma linha só:
+**ADDITIONAL output contract (Story `bridge-declaracao-areas` — the bridge that connects
+PRD 03/E10-E11 parallelism): every `## Epic N` section also carries a STRUCTURED sentinel
+of the SAME declaration above**, mechanically extractable — never a second
+source of truth to keep manually synced, it is the same declaration you (the Gerente)
+are already making in prose, just restated once as single-line JSON:
 
 ```
 <!-- epic-decl: {"epic_key": "epic-E12", "epic_type": "feature", "areas": ["frontend/src/features/x/"], "touches_shared": ["supabase/migrations"], "depends_on": ["epic-E11"]} -->
 ```
 
-Formato: um comentário HTML (invisível numa leitura humana normal do plano) contendo
-UM objeto JSON numa linha só, colocado logo abaixo da seção `## Epic N — <título>` que
-descreve. Campos — os MESMOS 5 que `compute_execution_graph.py` já consome, nem mais
-nem menos (ver o módulo docstring daquele script,
+Format: an HTML comment (invisible on a normal human read of the plan) containing
+A single one-line JSON object, placed right below the `## Epic N — <title>` section
+it describes. Fields — the SAME 5 that `compute_execution_graph.py` already consumes, no more
+no less (see that script's module docstring,
 `.claude/skills/bagual-epic-runner/scripts/compute_execution_graph.py`):
-- `epic_key` (**obrigatório**) — a chave REAL que `sprint-status.yaml` vai usar
-  quando este epic for despachado (ex.: `epic-42`, `epic-E12`). **Nunca infira isto
-  do número `## Epic N` da seção** — o número do plano é só um índice de documento; a
-  chave real só existe quando o Ticket/epic é materializado contra o board vivo (Passo
-  4). Você é quem sabe a chave certa; declare-a explicitamente.
-- `epic_type` — `"feature"` (epic que adiciona rota/endpoint — auto-injeta
-  `App.tsx`/`api/index.py` no cálculo de disjunção), `"refactor"` ou `"other"`.
-- `areas` — os mesmos "arquivos/diretórios prováveis" declarados em prosa acima,
-  como array de strings (prefixos de path).
-- `touches_shared` (opcional) — quando você já sabe que este epic toca um dos
-  touchpoints compartilhados fixos (migrations, `package.json`/`pyproject.toml`,
-  arquivos de processo/conhecimento) mesmo fora de `areas`.
-- `depends_on` (opcional) — os `epic_key`s (não os números `## Epic N`) de outros
-  epics do MESMO plano que precisam terminar antes.
+- `epic_key` (**required**) — the REAL key that `sprint-status.yaml` will use
+  when this epic is dispatched (e.g., `epic-42`, `epic-E12`). **Never infer this
+  from the `## Epic N` section number** — the plan number is just a document index; the
+  real key only exists once the Ticket/epic is materialized against the live board (Step
+  4). You are the one who knows the right key — declare it explicitly.
+- `epic_type` — `"feature"` (an epic that adds a route/endpoint — auto-injects
+  `App.tsx`/`api/index.py` into the disjointness calculation), `"refactor"` or `"other"`.
+- `areas` — the same "likely files/directories" declared in prose above,
+  as an array of strings (path prefixes).
+- `touches_shared` (optional) — when you already know this epic touches one of the
+  fixed shared touchpoints (migrations, `package.json`/`pyproject.toml`,
+  process/knowledge files) even outside `areas`.
+- `depends_on` (optional) — the `epic_key`s (not the `## Epic N` numbers) of other
+  epics from the SAME plan that must finish first.
 
-Os VALORES desses campos são seu julgamento (Opus) — a mesma decisão que você já
-tomou para a prosa acima, nunca inferida de volta a partir dela por um script. Uma
-ponte mecânica (`project_controll/gerente/scripts/emit_epic_areas.py`, subcomando
-`from-plan`) extrai esse sentinel e escreve/atualiza o bloco `epic_areas:` de um
-`sprint-status.yaml` alvo — sem NLP, sem parsing de prosa, só extração de um JSON já
-pronto. Uma declaração ausente ou malformada (JSON inválido, `epic_key`
-ausente/inválido, `epic_type` fora do enum) é PULADA pela ponte — fail-safe, o epic
-correspondente cai no `sequencial` padrão de `compute_execution_graph.py`, nunca uma
-declaração "adivinhada". Detalhe completo do formato + prova end-to-end (fixture
-sintética fazendo o `compute_execution_graph.py` real computar 2 Tracks paralelos):
-`ideias/sistema-artifacts/bridge-declaracao-areas.md`.
+The VALUES of these fields are your (Opus) judgment — the same decision you already
+made for the prose above, never inferred back from it by a script. A mechanical
+bridge (`project_controll/gerente/scripts/emit_epic_areas.py`, subcommand
+`from-plan`) extracts this sentinel and writes/updates the `epic_areas:` block of a
+target `sprint-status.yaml` — no NLP, no prose parsing, just extraction of already-ready
+JSON. A missing or malformed declaration (invalid JSON, missing/invalid
+`epic_key`, `epic_type` outside the enum) is SKIPPED by the bridge — fail-safe, the
+corresponding epic falls back to `compute_execution_graph.py`'s default `sequencial`,
+never a "guessed" declaration. Full format detail + end-to-end proof
+(synthetic fixture making the real `compute_execution_graph.py` compute 2 parallel
+Tracks): `ideias/sistema-artifacts/bridge-declaracao-areas.md`.
 
-### Passo 3 — Checagem de prontidão, IN-THREAD (nunca spawnada)
+### Step 3 — Readiness check, IN-THREAD (never spawned)
 
-Mesma disciplina do Passo 2: sem `Skill(bmad-check-implementation-readiness)`. O Gerente
-aplica o checklist de prontidão como conhecimento — releitura do plano contra o PRD:
-todo epic tem escopo claro? Há dependência circular? Alguma epic é grande demais e devia
-ser quebrada em duas? Anota o veredito (`pronto` / `precisa de ajuste`) no próprio arquivo
-de plano, seção `## Checagem de prontidão`. Um epic marcado "precisa de ajuste" não é
-despachado nesta rodada — mas **mantém a declaração de área/arquivos do Passo 2 no
-arquivo de plano** (a checagem de prontidão acontece DEPOIS da declaração e nunca a
-substitui/apaga); fica registrado com a lacuna específica, para o dono resolver ou para
-uma rodada futura do Cérebro de Planejamento.
+Same discipline as Step 2: no `Skill(bmad-check-implementation-readiness)`. The Gerente
+applies the readiness checklist as knowledge — re-reading the plan against the PRD:
+does every epic have clear scope? Is there a circular dependency? Is any epic too
+large and should be split into two? It notes the verdict (`ready` / `needs adjustment`) in the
+plan file itself, under the `## Readiness check` section. An epic marked "needs adjustment" is not
+dispatched in this round — but **keeps the area/file declaration from Step 2 in
+the plan file** (the readiness check happens AFTER the declaration and never
+replaces/erases it); it is recorded with the specific gap, for the owner to resolve or for
+a future round of the Planning Brain.
 
-### Passo 4 — Materializar Tickets + despachar via E8.4
+### Step 4 — Materialize Tickets + dispatch via E8.4
 
-Para cada epic `pronto` do plano: o Gerente invoca `bagual-tickets` (composição, nunca
-edição direta de `board.yaml`) para criar um Ticket com `trilha: epic`, `area: <a
-declarada no plano>`, `## Locais afetados` preenchido com os arquivos/diretórios
-declarados no Passo 2, e `## Descrição` citando o path do plano
-(`project_controll/gerente/planning/<slug>-plano.md#epic-N`). A partir daqui, o Ticket
-entra na fila normal `pronto-para-implementar` e segue o ciclo operacional padrão
-(fase "priorizar" → "despachar" via `gerente_dispatch.py open-dispatch --trilha epic
---skill bagual-epic-runner`, ver tabela de mapeamento trilha→skill em
-`.claude/agents/gerente-geral.md` § "3. despachar") — **nenhum mecanismo novo de
-despacho é inventado aqui**; o Cérebro de Planejamento termina no momento em que os
-Tickets existem, um por epic. O paralelismo entre esses Tickets (despachar mais de um
-epic ao mesmo tempo, por worktree) é território do PRD 03/Orquestrador de Execução —
-fora de escopo desta story, que continua despachando **um Ticket por vez**, como toda
-fase "despachar" já faz desde E8.1.
+For each `ready` epic in the plan: the Gerente invokes `bagual-tickets` (composition, never
+direct `board.yaml` editing) to create a Ticket with `trilha: epic`, `area: <the
+one declared in the plan>`, `## Locais afetados` filled with the files/directories
+declared in Step 2, and `## Descrição` citing the plan's path
+(`project_controll/gerente/planning/<slug>-plano.md#epic-N`). From here, the Ticket
+enters the normal `pronto-para-implementar` queue and follows the standard operational cycle
+("prioritize" phase → "dispatch" via `gerente_dispatch.py open-dispatch --trilha epic
+--skill bagual-epic-runner`, see the trilha→skill mapping table in
+`.claude/agents/gerente-geral.md` § "3. despachar") — **no new dispatch
+mechanism is invented here**; the Planning Brain ends the moment the Tickets exist, one
+per epic. Parallelism between these Tickets (dispatching more than one
+epic at a time, per worktree) is PRD 03/Execution Orchestrator territory —
+out of scope for this story, which continues dispatching **one Ticket at a time**, as every
+"dispatch" phase already has since E8.1.
 
-**Antes de despachar o conjunto de epics `pronto` deste plano para o supervisor
-multi-epic (Story `bridge-declaracao-areas`):** rode a ponte mecânica para popular o
-`epic_areas:` do `sprint-status.yaml` alvo com os sentinels que você já escreveu no
-Passo 2 —
+**Before dispatching the set of `ready` epics from this plan to the multi-epic
+supervisor (Story `bridge-declaracao-areas`):** run the mechanical bridge to populate the
+target `sprint-status.yaml`'s `epic_areas:` with the sentinels you already wrote in
+Step 2 —
 
 ```
 python3 project_controll/gerente/scripts/emit_epic_areas.py from-plan \
-  --plan project_controll/gerente/planning/<slug>-plano.md \
+  --plan project_controll/gerente/planning/<slug-do-intent>-plano.md \
   --sprint-status <sprint-status.yaml alvo>
 ```
 
-Isso é o que faz o Graph-build step de `workflow.md` (que roda `compute_execution_graph.py
---epics ... --sprint-status ... --write` no início de toda invocação do
-`bagual-epic-runner`) parar de cair sempre no fail-safe `sequencial` e computar Tracks
-`paralela` reais quando as áreas dos epics deste plano forem de fato disjuntas — sem
-essa chamada, o `epic_areas:` fica vazio e o comportamento é idêntico a antes desta
-story (correto, só não paraleliza). A ponte é idempotente e nunca falha o Passo 4
-inteiro: um sentinel malformado é só pulado (com warning) e aquele epic específico
-fica no fail-safe, os demais epics do plano continuam normalmente.
+This is what makes `workflow.md`'s Graph-build step (which runs
+`compute_execution_graph.py --epics ... --sprint-status ... --write` at the start of every
+`bagual-epic-runner` invocation) stop always falling back to the fail-safe `sequencial` and
+compute real parallel Tracks when this plan's epics' areas are indeed
+disjoint — without this call, `epic_areas:` stays empty and behavior is identical
+to before this story (correct, just not parallelized). The bridge is idempotent and never
+fails the whole Step 4: a malformed sentinel is just skipped (with a warning) and that
+specific epic stays on the fail-safe, the plan's other epics continue normally.
 
-## 4. Ambiguidade de produto que o oráculo não decide → ticket, nunca bloqueio total
+## 4. Product ambiguity the oracle doesn't decide → a ticket, never a total block
 
-Qualquer ponto do protocolo (um `open_questions[]` do Passo 1, uma decisão de escopo
-ambígua percebida no Passo 2/3) que exija um julgamento de produto sem precedente
-confiável segue o **Protocolo do Oráculo (E9.1)** já existente: o Gerente tenta decidir
-com rastro (Ticket + Ledger); se a confiança sair `low` (sem precedente `estado: ativa`
-+ `ratification: ratified` que sustente `high` — F10, gate mecânico de
-`gerente_oracle.py`), a pergunta fica **registrada no Ticket do epic afetado** e o
-Gerente **segue com o que dá** — nunca trava o plano inteiro por causa de uma dúvida
-isolada em um dos epics (UJ-2, "Edge case"). Epics não afetados pela ambiguidade
-continuam normalmente para o Passo 4.
+Any point in the protocol (an `open_questions[]` from Step 1, an ambiguous scope
+decision noticed in Step 2/3) that requires a product judgment with no reliable precedent
+follows the existing **Oracle Protocol (E9.1)**: the Gerente tries to decide
+with a trail (Ticket + Ledger); if the confidence comes out `low` (no `estado: ativa`
++ `ratification: ratified` precedent to support `high` — F10, `gerente_oracle.py`'s
+mechanical gate), the question stays **recorded on the affected epic's Ticket** and
+the Gerente **proceeds with what it has** — never stalling the whole plan over an
+isolated doubt in one of the epics (UJ-2, "Edge case"). Epics unaffected by
+the ambiguity continue normally to Step 4.
 
-## 5. Registro de visibilidade da skill (S2, nota de tooling)
+## 5. Skill visibility record (S2, tooling note)
 
-O spike S2/S3 registrou uma dúvida de tooling: ao testar via sub-agente
-`general-purpose`, o sub-agente **não enxergou** as skills `bmad-*` no seu registro — só
-skills genéricas — mesmo o `bagual-epic-runner` provando na prática que sub-agentes
-CONSEGUEM invocá-las. Ficou como "provável artefato do harness de spike, a confirmar".
+The S2/S3 spike recorded a tooling doubt: when testing via a `general-purpose`
+sub-agent, the sub-agent **did not see** the `bmad-*` skills in its registry — only
+generic skills — even though `bagual-epic-runner` proves in practice that sub-agents
+CAN invoke them. It was left as "likely a spike-harness artifact, to confirm".
 
-**Confirmado nesta story (E9.3), com um smoke test real e verificável em disco:** um
-sub-agente `general-purpose` fresco (sem contexto prévio), spawnado exatamente como o
-Gerente spawnaria um despacho, teve `bmad-prd` **listado no seu system-reminder de
-skills disponíveis** e invocou-o com sucesso em modo headless — sem prompt interativo,
-sem erro, produzindo um `prd.md` real (`ideias/sistema-artifacts/fixtures/E9/
-e9-3-headless-smoke/prd.md`, `status: "partial"`, 3 `open_questions`, `.memlog.md` com 4
-entradas via o script compartilhado). Ou seja: **hoje, neste harness/versão do projeto,
-a visibilidade de `bmad-prd` para um sub-agente `general-purpose` spawnado via `Agent`
-não é um problema** — nenhuma medida adicional (namespace explícito, prompt especial,
-etc.) foi necessária para o sub-agente encontrar e invocar a skill.
+**Confirmed in this story (E9.3), with a real, on-disk verifiable smoke test:** a
+fresh `general-purpose` sub-agent (no prior context), spawned exactly as the
+Gerente would spawn a dispatch, had `bmad-prd` **listed in its available-skills
+system-reminder** and invoked it successfully in headless mode — no interactive prompt,
+no error, producing a real `prd.md` (`ideias/sistema-artifacts/fixtures/E9/
+e9-3-headless-smoke/prd.md`, `status: "partial"`, 3 `open_questions`, a `.memlog.md` with 4
+entries via the shared script). In other words: **today, on this project's harness/version,
+`bmad-prd` visibility for a `general-purpose` sub-agent spawned via `Agent`
+is not an issue** — no additional measure (explicit namespace, special prompt,
+etc.) was necessary for the sub-agent to find and invoke the skill.
 
-**O que o Gerente deve fazer mesmo assim (defesa em profundidade, já que o S2 registrou
-uma falha real em outro contexto de harness):** ao spawnar o sub-agente do Passo 1, o
-prompt deve nomear explicitamente a skill (`invoque a skill "bmad-prd" via a tool
-Skill`), nunca assumir implicitamente que o sub-agente "vai saber o que fazer" — mesma
-disciplina que `bagual-epic-runner` já usa ao nomear `bmad-create-story`/`bmad-dev-story`
-explicitamente no prompt de cada despacho. Se um sub-agente reportar que a skill não
-apareceu no seu registro (o cenário que S2 viu), o Gerente trata isso como uma falha do
-Passo 1 (`status` equivalente a `blocked`) e registra a ocorrência em
-`_bmad-output/notes.md` como uma recorrência do gap de tooling — nunca tenta contornar
-inventando uma chamada direta ao PRD sem passar pela skill.
+**What the Gerente should still do (defense in depth, since S2 recorded a
+real failure in another harness context):** when spawning the Step 1 sub-agent, the
+prompt must explicitly name the skill (`invoke the "bmad-prd" skill via the Skill
+tool`), never implicitly assume the sub-agent "will know what to do" — the same
+discipline `bagual-epic-runner` already uses when explicitly naming `bmad-create-story`/`bmad-dev-story`
+in every dispatch's prompt. If a sub-agent reports the skill didn't
+appear in its registry (the scenario S2 saw), the Gerente treats this as a Step 1
+failure (equivalent to `status: blocked`) and records the occurrence in
+`_bmad-output/notes.md` as a recurrence of the tooling gap — never tries to work around it
+by inventing a direct call to the PRD skipping the skill.
 
-## 6. O que este documento NÃO cobre (fora de escopo, deliberado)
+## 6. What this document does NOT cover (out of scope, deliberate)
 
-- O cálculo do grafo de paralelismo a partir de `área`/`arquivos` declarados — PRD 03.
-- Execução paralela por worktree de múltiplos epics do mesmo plano — PRD 03/E10-E11.
-- `wds-8` (mudança de produto com design) — mesma Classe 2, mas resolvida por E9.8
-  (in-thread OU espera o dono), não por este documento.
-- Escalonamento de tickets triviais (`bagual-tickets` decidindo a trilha sozinha) — E9.4.
+- Computing the parallelism graph from declared `area`/files — PRD 03.
+- Parallel per-worktree execution of multiple epics from the same plan — PRD 03/E10-E11.
+- `wds-8` (product change with design) — same Class 2, but resolved by E9.8
+  (in-thread OR waits on the owner), not by this document.
+- Escalating trivial tickets (`bagual-tickets` deciding the trilha on its own) — E9.4.

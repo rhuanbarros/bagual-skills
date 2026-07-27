@@ -51,6 +51,29 @@ epic closes with a retrospective.
 
 **Config dependency:** Requires `_bmad/bmm/config.yaml` (BMad Method Module).
 
+## Orchestration model — how to run this skill with real fan-out (2026-07-23)
+
+> Source: `wiki/nota-operacional/bagual-epic-runner-sem-agent-tool.md` (diagnostic test
+> + fix regarding sub-agent nesting). Owner's decision after a long discussion.
+
+- **A background sub-agent does NOT receive the `Agent`/`Task` tool by default.**
+  Dispatching `bagual-epic-runner` AS a sub-agent makes it fall into an inline mode with
+  no isolated reviewer (the session itself generates code and reviews its own code —
+  without the fresh context the skill's design assumes). **Do NOT do this.**
+- **Correct model:** the **main session / Gerente is the ONLY orchestrator (hub)** — it
+  receives the conclusions of every agent, can inspect and message any of them, and
+  dispatches the isolated workers (dev/review/QA) as `sonnet` children. The Gerente
+  loads this skill via `Skill` IN ITS OWN session; it does not delegate the entire
+  orchestration to a sub-agent.
+- **Supported alternative** (if `bagual-epic-runner` in autonomous background WITH real
+  fan-out is ever needed): enable `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH >= "2"` in
+  `settings.json` + `Agent` in the orchestrator agent's `tools:` list (official doc:
+  https://code.claude.com/docs/en/sub-agents.md). This makes the Gerente **lose the
+  per-story quota checkpoints** (the guardrail today runs BETWEEN dispatches in the
+  main session) — keep it as an option, never as the default.
+- **Routing rule:** when the owner decides "create an epic and run it," execution is
+  via `bagual-epic-runner` (proven review flow), **NOT** ad-hoc manual orchestration.
+
 ## On Activation
 
-Load config from `{project-root}/_bmad/bmm/config.yaml`. Follow all instructions in `workflow.md` (in this skill's own directory — not under `references/`).
+Load config from `{project-root}/_bmad/bmm/config.yaml`. Talk to the user in `communication_language` (from `{project-root}/_bmad/config.yaml` / `config.user.yaml`, default Portuguese); this skill's artifacts are English regardless of `document_output_language`. Follow all instructions in `workflow.md` (in this skill's own directory — not under `references/`).

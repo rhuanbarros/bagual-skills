@@ -1,5 +1,5 @@
 ---
-title: "Roteamento de produto (E9.6) — definição operacional de 'alteração de produto' + 3 vias"
+title: "Product routing (E9.6) — operational definition of 'product change' + 3 routes"
 tipo: reference
 created: 2026-07-12
 status: living-document
@@ -8,176 +8,176 @@ source_epic: "ideias/epics.md — Epic E9"
 source_story: "ideias/sistema-artifacts/E9-6-roteamento-produto.md"
 ---
 
-# Roteamento de produto (E9.6)
+# Product routing (E9.6)
 
-Contrato canônico do sub-protocolo que `.claude/agents/gerente-geral.md` invoca dentro
-da fase "priorizar" § "Decisão de escalados + reconciliação (E9.5)" — para CADA ticket
-escalado, antes/junto de decidir a `trilha` via o Protocolo do Oráculo (E9.1), o Gerente
-decide **se o ticket altera o produto** e, se sim, **por qual das 3 vias**. Leia este
-documento por inteiro antes da primeira vez que o sub-passo disparar.
+Canonical contract for the sub-protocol `.claude/agents/gerente-geral.md` invokes inside
+the "prioritize" phase § "Escalated decisions + reconciliation (E9.5)" — for EACH escalated
+ticket, before/alongside deciding the `trilha` via the Oracle Protocol (E9.1), the Gerente
+decides **whether the ticket changes the product** and, if so, **through which of the 3
+routes**. Read this document in full before the first time this sub-step triggers.
 
-Este documento é **prosa/julgamento**, não mecânica — o único componente mecanizado é o
-detector de toque na Coverage Matrix (`gerente_product_routing.py`, ver §5). A decisão
-em si (altera ou não? qual via?) nunca ganha heurística fixa, mesma disciplina de
-"gate de confiança nunca por sensação" (E9.1) e "promoção ao Ledger é julgamento" (E9.5)
-— aqui, "classificar altera-produto/não-altera" e "escolher a via" são o julgamento.
+This document is **prose/judgment**, not mechanics — the only mechanized component is the
+Coverage Matrix touch detector (`gerente_product_routing.py`, see §5). The decision
+itself (does it change or not? which route?) never gets a fixed heuristic, same discipline as
+"confidence gate never by feel" (E9.1) and "promotion to the Ledger is judgment" (E9.5)
+— here, "classify changes-product/doesn't-change-product" and "pick the route" are the judgment.
 
-## 1. A verdade de produto documentada (o âncora do teste)
+## 1. The documented product truth (the test's anchor)
 
-Um ticket **altera o produto** se deixaria desatualizado algum dos três documentos
-canônicos que o grounding em spec-time deriva:
+A ticket **changes the product** if it would leave any of the three canonical
+documents that spec-time grounding derives from out of date:
 
-| Documento | Path | O que ancora |
+| Document | Path | What it anchors |
 |---|---|---|
-| Trigger Map | `_bmad-output/B-Trigger-Map/trigger-map.md` | Metas de negócio → personas → forças → mudanças de comportamento desejadas |
-| Coverage Matrix / UX Scenarios | `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` | Cenários → páginas/telas → propósito de cada jornada |
-| Decisões de produto | `_bmad-output/product-decisions.md` | Regras de comportamento já decididas/confirmadas, com "Cuidado:" marcando o que é intencional |
+| Trigger Map | `_bmad-output/B-Trigger-Map/trigger-map.md` | Business goals → personas → forces → desired behavior changes |
+| Coverage Matrix / UX Scenarios | `_bmad-output/C-UX-Scenarios/00-ux-scenarios.md` | Scenarios → pages/screens → the purpose of each journey |
+| Product decisions | `_bmad-output/product-decisions.md` | Already decided/confirmed behavior rules, with "Cuidado:" marking what is intentional |
 
-Nunca use nenhuma outra fonte como "verdade de produto" para este teste (não o código
-em si, não a opinião do sub-agente que triou o ticket) — só estes três, e só o que
-**neles** estaria desatualizado é que conta.
+Never use any other source as "product truth" for this test (not the code
+itself, not the opinion of the sub-agent that triaged the ticket) — only these three, and
+only what would go out of date **in them** is what counts.
 
-## 2. O teste de 3 perguntas (qualquer SIM ⇒ altera o produto)
+## 2. The 3-question test (any YES ⇒ changes the product)
 
-1. **Comportamento/regra observável muda?** Nova capacidade, regra de negócio
-   diferente, validação nova, passo adicionado/removido no fluxo.
-2. **Fluxo/navegação muda?** Adiciona/remove/reordena tela, rota ou passo de jornada.
-3. **Superfície visível com significado de produto muda?** Campo novo, estado novo,
-   texto que carrega uma regra (não cosmético puro).
+1. **Does observable behavior/rule change?** New capability, different business
+   rule, new validation, a step added/removed in the flow.
+2. **Does the flow/navigation change?** Adds/removes/reorders a screen, route, or journey step.
+3. **Does a visible surface with product meaning change?** New field, new state,
+   text that carries a rule (not purely cosmetic).
 
-Uma mudança de comportamento **sem UI nenhuma** (ex.: "propostas podem ser reabertas
-após recusadas") já é SIM na pergunta 1 — o gatilho é produto, não interface.
+A behavior change **with no UI at all** (e.g., "proposals can be reopened
+after being declined") is already a YES on question 1 — the trigger is product, not interface.
 
-## 3. Exclusões duras (NÃOs — não roteiam, mesmo que pareçam mudança)
+## 3. Hard exclusions (NOs — do not route, even if they look like a change)
 
-- **Refatoração com comportamento idêntico** (mesma entrada → mesma saída, só o
-  código muda).
-- **Performance sem mudança de comportamento observável.**
-- **Bugfix que RESTAURA comportamento já documentado** — o doc já está certo, o código
-  estava errado. *Exceção dentro da exceção:* se o bugfix revelar que o **documento**
-  estava errado/ambíguo (o comportamento "correto" documentado não é o que o produto
-  realmente deveria fazer), então ROTEIA — porque agora é o doc que precisa mudar.
-- **Cosmético puro** (espaçamento/cor) que nenhum cenário afirma como regra.
-- **Infra/tooling/test-only** (nada visível a um usuário/stakeholder).
+- **Refactor with identical behavior** (same input → same output, only the
+  code changes).
+- **Performance with no observable behavior change.**
+- **Bugfix that RESTORES already-documented behavior** — the doc is already right, the
+  code was wrong. *Exception within the exception:* if the bugfix reveals that the
+  **document** was wrong/ambiguous (the documented "correct" behavior isn't what the
+  product should actually do), then ROUTE — because now it's the doc that needs to change.
+- **Purely cosmetic** (spacing/color) that no scenario asserts as a rule.
+- **Infra/tooling/test-only** (nothing visible to a user/stakeholder).
 
-## 4. Viés de segurança — na dúvida, ROTEIA
+## 4. Safety bias — when in doubt, ROUTE
 
-**Falso-negativo é pior que falso-positivo.** Se uma mudança de produto escapa do
-roteamento, o doc fica velho e o grounding em spec-time (que deriva dele) fica **cego**
-— quem consome esses docs não vai nem saber que deveria checar o comportamento novo. Um falso-positivo custa
-esforço perdido (roteou à toa), mas o doc segue correto.
+**A false negative is worse than a false positive.** If a product change slips past
+routing, the doc goes stale and spec-time grounding (which derives from it) goes
+**blind** — whoever consumes those docs won't even know it should check the new
+behavior. A false positive costs
+wasted effort (routed for nothing), but the doc stays correct.
 
-Logo: **na dúvida genuína, roteia** — limitado pelas exclusões duras da §3 (que
-impedem "rotear tudo por precaução"). Dúvida genuína não é preguiça de aplicar o teste
-— é ter aplicado as 3 perguntas + as exclusões e ainda não conseguir decidir com
-confiança.
+So: **when in genuine doubt, route** — bounded by §3's hard exclusions (which
+prevent "route everything out of caution"). Genuine doubt is not laziness about applying
+the test — it's having applied the 3 questions + the exclusions and still not being able
+to decide with confidence.
 
-## 5. Regra dura — toque na Coverage Matrix SEMPRE força a via (i)
+## 5. Hard rule — touching the Coverage Matrix ALWAYS forces route (i)
 
-**Isto não é julgamento fino, é teste duro, sem exceção (PRD 05 FR-1b, "endurecido —
-F19"):** se o ticket toca um cenário/página listado na Coverage Matrix
-(`_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`), a via é **sempre (i)** — nunca (ii).
+**This is not fine judgment, it's a hard test, no exception (PRD 05 FR-1b, "hardened —
+F19"):** if the ticket touches a scenario/page listed in the Coverage Matrix
+(`_bmad-output/C-UX-Scenarios/00-ux-scenarios.md`), the route is **always (i)** — never (ii).
 
-**Por quê é mecânico e não fino:** a via (ii) (registrar a mudança como uma
-decisão-de-produto no Ledger, `wiki/ledger/decisao-de-produto/`) é **contratualmente
-read-only da design truth** — ela só cria uma Entrada de Ledger, nunca reescreve
-`scenarios`/Coverage Matrix. Se um ticket toca um cenário e você
-tentasse rotear via (ii) mesmo assim, a Coverage Matrix ficaria desatualizada por
-CONSTRUÇÃO — a via (ii) não tem como corrigi-la. Por isso a fronteira é mecânica: tocou
-página/cenário ⇒ via (i), sempre, sem "mas é uma mudança pequena" como escape.
+**Why this is mechanical and not fine-grained:** route (ii) (recording the change as a
+`decisao-de-produto` Ledger entry) is **contractually read-only for design truth** — it
+only creates a Ledger entry, never rewrites `scenarios`/the Coverage Matrix. If a ticket touches a scenario
+and you tried to route it via (ii) anyway, the Coverage Matrix would go stale by
+CONSTRUCTION — route (ii) has no way to fix it. That's why the boundary is mechanical:
+touched a page/scenario ⇒ route (i), always, with no "but it's a small change" escape hatch.
 
-**Detector mecânico (sinal, não decisor):**
+**Mechanical detector (a signal, not a decision-maker):**
 ```
 python3 project_controll/gerente/scripts/gerente_product_routing.py check-coverage-touch \
-  --touched "<termos separados por vírgula — páginas/área do ticket>"
+  --touched "<comma-separated terms — pages/area of the ticket>"
 ```
-Leia `area`/`## Locais afetados`/a descrição do ticket para extrair os termos (páginas,
-telas, fluxos nomeados). `forced_route_i: true` (algum `matches`) força
-mecanicamente a via (i) — não há espaço de julgamento aqui, é exatamente a regra desta
-seção. **`forced_route_i: false` NÃO prova ausência de toque** — é só a ausência de um
-match textual (o ticket pode descrever a mesma página com um nome diferente do da
-Coverage Matrix, ou ser uma mudança de comportamento sem página nova — pergunta 1 do
-teste de 3 perguntas). Um negativo do detector **nunca** dispensa aplicar o teste de 3
-perguntas por julgamento antes de concluir "não altera produto" (via iii) — o detector
-só adianta o caso fácil (positivo mecânico), nunca decide o caso difícil.
+Read `area`/`## Locais afetados`/the ticket's description to extract the terms (pages,
+screens, named flows). `forced_route_i: true` (some `matches`) mechanically forces
+route (i) — there is no room for judgment here, it is exactly this section's rule.
+**`forced_route_i: false` does NOT prove there is no touch** — it's only the absence of
+a textual match (the ticket might describe the same page with a different name than the
+Coverage Matrix's, or be a behavior change with no new page — question 1 of the 3-
+question test). A negative from the detector **never** excuses skipping the judgment-
+based 3-question test before concluding "doesn't change the product" (route iii) — the
+detector only fast-tracks the easy case (a mechanical positive), it never decides the hard case.
 
-## 6. As 3 vias
+## 6. The 3 routes
 
-| # | Situação | Ação | Produz |
+| # | Situation | Action | Produces |
 |---|---|---|---|
-| **(i)** | Altera produto **e** precisa de design (nova capacidade, cenário novo/mudado, redesenho de fluxo) **OU** toca uma página/cenário da Coverage Matrix (regra dura, §5) | `trilha: wds` no ticket (Pass `wds-8`, execução real é E9.8 — aqui só o roteamento) | Atualiza `scenarios` + `trigger-map` (quando o Pass rodar) |
-| **(ii)** | Altera produto mas é **regra pequena já decidida** (sem design, sem tocar Coverage Matrix — só registrar a regra) | Registra a mudança como uma decisão-de-produto no Ledger (`wiki/ledger/decisao-de-produto/`, composição §7) — **ortogonal à `trilha`**, não é um valor do enum | Uma Entrada de Ledger `decisao-de-produto` |
-| **(iii)** | **Não** altera produto (nenhuma pergunta da §2 é SIM, ou cai numa exclusão dura da §3) | Nenhuma manutenção de documento | — |
+| **(i)** | Changes the product **and** needs design (new capability, new/changed scenario, flow redesign) **OR** touches a Coverage Matrix page/scenario (hard rule, §5) | `trilha: wds` on the ticket (Pass `wds-8`, real execution is E9.8 — here, only the routing) | Updates `scenarios` + `trigger-map` (when the Pass runs) |
+| **(ii)** | Changes the product but is a **small, already-decided rule** (no design, no Coverage Matrix touch — just record the rule) | Records the change as a `decisao-de-produto` Ledger entry (`wiki/ledger/decisao-de-produto/`, composition §7) — **orthogonal to `trilha`**, not an enum value | A `decisao-de-produto` Ledger entry |
+| **(iii)** | **Does not** change the product (no §2 question is YES, or it falls into a §3 hard exclusion) | No document maintenance | — |
 
-**Via (i) usa a `trilha` do ticket** — é o mesmo campo que o Protocolo do Oráculo
-(E9.1) já decide para despacho (`rapida\|spec\|epic\|wds\|correct-course`); quando a via
-(i) se aplica, a decisão de trilha É `wds` (não é uma segunda decisão paralela — a
-classificação desta seção **é** o motivo de a trilha ser `wds`).
+**Route (i) uses the ticket's `trilha`** — it's the same field the Oracle Protocol
+(E9.1) already decides for dispatch (`rapida\|spec\|epic\|wds\|correct-course`); when route
+(i) applies, the trilha decision IS `wds` (it's not a second, parallel decision — this
+section's classification **is** the reason the trilha is `wds`).
 
-**Via (ii) é ortogonal** — a `trilha` do ticket continua sendo decidida normalmente
-pelo Protocolo do Oráculo (pode ser `rapida`/`spec`/`epic`, o que a natureza REAL do
-trabalho pedir), e o registro da decisão-de-produto no Ledger acontece como
-uma AÇÃO ADICIONAL, "pegando carona" — nunca competindo com a trilha escolhida.
+**Route (ii) is orthogonal** — the ticket's `trilha` keeps being decided normally
+by the Oracle Protocol (it can be `rapida`/`spec`/`epic`, whatever the work's REAL nature
+calls for), and recording the `decisao-de-produto` Ledger entry happens as an ADDITIONAL
+ACTION, "riding along" — never competing with the chosen trilha.
 
-**Via (iii)** não muda nada neste sub-protocolo — a trilha segue sendo decidida
-normalmente, sem nenhuma ação de manutenção de documento.
+**Route (iii)** changes nothing in this sub-protocol — the trilha keeps being decided
+normally, with no document-maintenance action.
 
-## 7. Caso combinado — via (i) DOMINA + enrich como efeito colateral
+## 7. Combined case — route (i) DOMINATES + enrich as a side effect
 
-Uma mudança que toca **ambos** um cenário/página (§5) **e** bate/atualiza uma decisão
-já registrada em `product-decisions.md` nunca dispara as duas vias em paralelo
-desordenado. **Via (i) domina**: `trilha: wds` é a decisão de roteamento. O registro da
-decisão-de-produto no Ledger (o que a via (ii) faria) acontece como **efeito colateral** do
-mesmo ticket — não como uma segunda via independente, mas como parte do mesmo Pass
-(quando `wds-8` rodar — E9.8) ou, se a regra em si já está clara antes do Pass, como um
-registro adicional da decisão-de-produto no Ledger JUNTO com a marcação de `trilha: wds` (nunca
-SUBSTITUINDO-a). O ponto é: **nunca conclua (ii) sozinho quando (i) também se aplica**
-— a Coverage Matrix nunca fica órfã de uma atualização que ela precisava.
+A change that touches **both** a scenario/page (§5) **and** hits/updates a decision
+already recorded in `product-decisions.md` never triggers both routes in disorderly
+parallel. **Route (i) dominates**: `trilha: wds` is the routing decision. The
+`product-decisions.md` enrich (what route (ii) would do) happens as a **side effect**
+of the same ticket — not as a second, independent route, but as part of the same Pass
+(when `wds-8` runs — E9.8) or, if the rule itself is already clear before the Pass, as an
+additional "log change" trigger ALONGSIDE the `trilha: wds` marking (never
+REPLACING it). The point is: **never conclude (ii) alone when (i) also applies**
+— the Coverage Matrix never ends up orphaned of an update it needed.
 
-## 8. Composição — nada disto é reimplementado
+## 8. Composition — none of this is reimplemented
 
-- **Pass `wds-8`** (via i): composto como sub-agente. A execução real (`wds-8` não
-  roda headless — oráculo in-thread OU espera o dono) é escopo de **E9.8**, não desta
-  story/protocolo. Aqui, o resultado da classificação é só `trilha: wds` gravada no
-  ticket via `bagual-tickets` — o mesmo mecanismo de commit que E9.5 já usa.
-- **Registrar a mudança de produto como decisão-de-produto no Ledger** (via ii):
-  registre a mudança como uma Entrada de Ledger `decisao-de-produto` em
-  `wiki/ledger/decisao-de-produto/` (via o contrato `on_complete`,
-  `wiki/ledger/on-complete-contract.md`), capturando o que mudou (antes→depois), onde
-  (páginas/rotas, se determináveis), por quê (a justificativa do ticket) e se é
-  bug-ou-não (o comportamento antigo vira bug se reaparecer, ou é só uma diferença
-  aditiva). Ao concluir, registre no `## Log` do ticket o path da Entrada de Ledger
-  produzida. *(O registro via QA-builder foi removido deste kit — a via (ii) agora
-  registra direto no Ledger.)*
-  - **Fronteira de composição, não um novo despacho de marcador.** Diferente do
-    despacho primário do ticket (`gerente_dispatch.py open-dispatch`/`close-dispatch`,
-    E8.4 — que existe para sobreviver a compactação de contexto/crash sobre o
-    trabalho PRINCIPAL do ticket), este é um registro leve e IDEMPOTENTE: se a
-    sessão morrer antes de a Entrada de Ledger ser gravada, o próximo ciclo
-    simplesmente re-detecta o mesmo ticket (se ainda escalado/sem a nota no `## Log`)
-    e tenta de novo — não há estado parcial perigoso a reconciliar (a Entrada de
-    Ledger só é gravada de uma vez, no fim, nunca fica pela metade).
-    Por isso, deliberadamente, **não** usamos o contrato de marcador em disco de E8.4
-    para esta ação secundária — ver Review Findings da story para o trade-off
-    documentado.
-- **Detector de Coverage Matrix** (`gerente_product_routing.py`, §5): mecaniza só a
-  sub-pergunta objetiva "bate texto com uma página?" — nunca decide sozinho a
-  classificação altera/não-altera nem escolhe entre (ii)/(iii).
+- **Pass `wds-8`** (route i): composed as a sub-agent. The real execution (`wds-8` doesn't
+  run headless — in-thread oracle OR wait on the owner) is **E9.8**'s scope, not this
+  story/protocol's. Here, the classification's result is just `trilha: wds` written on
+  the ticket via `bagual-tickets` — the same commit mechanism E9.5 already uses.
+- **Record the product change as a `decisao-de-produto` Ledger entry** (route ii):
+  record the change as a `decisao-de-produto` Ledger entry in
+  `wiki/ledger/decisao-de-produto/` (via the `on_complete` contract,
+  `wiki/ledger/on-complete-contract.md`), capturing what changed (before→after), where
+  (pages/routes, if determinable), why (the ticket's justification) and whether it's
+  bug-or-not (the old behavior becomes a bug if it reappears, or it's just an additive
+  difference). On completion, record the path of the produced Ledger entry in the
+  ticket's `## Log`. *(QA-builder-based logging was removed from this kit — route (ii)
+  now registers directly in the Ledger.)*
+  - **A composition boundary, not a new marker dispatch.** Unlike the ticket's primary
+    dispatch (`gerente_dispatch.py open-dispatch`/`close-dispatch`,
+    E8.4 — which exists to survive context compaction/a crash over the ticket's MAIN
+    work), this is a lightweight, IDEMPOTENT write: if the
+    session dies before the Ledger entry is written, the next cycle
+    simply re-detects the same ticket (if still escalated/without the `## Log` note)
+    and tries again — there is no dangerous partial state to reconcile (the Ledger
+    entry is only written once, at the end, never left half-done).
+    That's why we deliberately **don't** use E8.4's on-disk marker contract
+    for this secondary action — see the story's Review Findings for the documented
+    trade-off.
+- **Coverage Matrix detector** (`gerente_product_routing.py`, §5): mechanizes only the
+  objective sub-question "does the text match a page?" — it never decides the
+  changes/doesn't-change classification alone nor chooses between (ii)/(iii).
 
-## 9. Fronteira com a triagem da `bagual-tickets` (o detector vs. o classificador)
+## 9. Boundary with `bagual-tickets` triage (the detector vs. the classifier)
 
-A `bagual-tickets` (Triagem, `.claude/skills/bagual-tickets/SKILL.md` § "Checagem de
-decisão de produto") já lê `product-decisions.md` e sinaliza se o pedido bate com algo
-marcado como intencional — isso é o **detector**: "isso pode mexer no produto/colidir
-com uma decisão registrada". Este protocolo (E9.6) é a **classificação + o
-roteamento**: dado esse sinal (ou mesmo na ausência dele, aplicando o teste de 3
-perguntas por conta própria), decide SE altera e POR QUAL via. Nunca sobrepõem — a
-skill não escolhe via, o Gerente não reimplementa a checagem de `product-decisions.md`
-que a skill já faz na triagem.
+`bagual-tickets` (Triage, `.claude/skills/bagual-tickets/SKILL.md` § "Product decision
+check") already reads `product-decisions.md` and flags whether the request matches
+something marked as intentional — that is the **detector**: "this might touch the
+product/collide with a recorded decision". This protocol (E9.6) is the **classification +
+the routing**: given that signal (or even in its absence, applying the 3-question test
+on its own), it decides WHETHER it changes the product and BY WHICH route. They never
+overlap — the skill doesn't choose a route, the Gerente doesn't reimplement the
+`product-decisions.md` check the skill already does at triage.
 
-## 10. Exemplos trabalhados (worked examples)
+## 10. Worked examples
 
-Ver `ideias/sistema-artifacts/E9-6-roteamento-produto.md` § Validação para os 4 casos
-completos (toque em Coverage Matrix → i; regra pequena já decidida → ii; refactor/
-cosmético → iii; caso combinado → i domina + enrich) rodados de verdade contra o
-detector e o documento de produto real.
+See `ideias/sistema-artifacts/E9-6-roteamento-produto.md` § Validação for the 4
+complete cases (Coverage Matrix touch → i; small, already-decided rule → ii; refactor/
+cosmetic → iii; combined case → i dominates + enrich) run for real against the
+detector and the actual product document.
