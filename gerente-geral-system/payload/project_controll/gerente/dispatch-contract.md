@@ -237,6 +237,46 @@ invoca `bagual-tickets` para marcar o Ticket como `concluido`. Em vez disso:
   nunca fica preso em `em-implementacao` esquecido nem é promovido a `concluido` por
   suposição.
 
+## Escopo fechado no prompt de despacho paralelo (Regra pós-incidente Epic 18, 2026-07-23)
+
+**Incidente de origem:** Epic 18 (2026-07-23) sofreu **duplo despacho** — um
+`bagual-epic-runner` pausado foi retomado com um simples "continue" enquanto stories
+individuais da mesma epic já rodavam em paralelo por fora, produzindo a mesma story
+implementada 2x e trabalho não-commitado na raiz travando o merge de um agente-irmão.
+Causas-raiz: (1) o prompt de despacho ("implemente a Story X") nunca dizia "e só ela,
+pare" — o agente assumia a epic inteira; (2) "continue" para um agente pausado não
+reafirma escopo; (3) o orquestrador de epic inteira e despachos por story individuais
+ficaram vivos ao mesmo tempo, sem exclusão mútua. Ver
+`wiki/ledger/anti-pattern/despacho-sem-escopo-fechado-duplo-despacho.md` para o registro
+completo do anti-padrão (Ticket `TCK-20260723153000-9f21`).
+
+**Regra normativa — todo prompt de despacho PARALELO (mais de um sub-agente executor
+em voo ao mesmo tempo no mesmo checkout/worktree-pool) DEVE:**
+
+1. **Abrir com escopo FECHADO explícito:** "entregue APENAS esta unidade [Ticket/story/
+   epic], depois PARE e retorne; não comece a próxima mesmo que a epic/backlog liste
+   mais". Nunca um prompt que deixa a fronteira da unidade implícita ou assumida pelo
+   agente.
+2. **Declarar quais agentes-irmãos estão rodando AGORA e seus territórios** (arquivos/
+   diretórios/worktree de cada um) — todo despacho paralelo cita explicitamente o que os
+   outros despachos vivos no mesmo ciclo estão tocando, para o agente saber o que evitar
+   colidir.
+3. **Proibir trabalho na raiz quando há worktrees em uso**: se o agente encontrar um
+   arquivo alheio não-commitado na raiz do checkout compartilhado, a instrução é **não
+   tocar, reportar** — nunca tentar "limpar" ou assumir posse do que não é seu.
+4. **Ao RETOMAR um agente pausado, reafirmar o escopo exato** — nunca só "continue". O
+   prompt de retomada repete a unidade fechada (regra 1) e, se aplicável, a lista
+   atualizada de agentes-irmãos (regra 2), porque o estado do ciclo pode ter mudado
+   enquanto o agente estava pausado.
+5. **Nunca manter um orquestrador de epic inteira (`bagual-epic-runner`) e despachos por
+   story individuais da MESMA epic vivos ao mesmo tempo.** Escolha um dos dois modos por
+   epic, não os dois simultaneamente — é exatamente essa sobreposição que causou o duplo
+   despacho do incidente de origem.
+
+Esta seção é referenciada (não duplicada) por `.claude/agents/gerente-geral.md` fase "3.
+despachar" — qualquer prompt de despacho que a persona monta segue as 5 regras acima
+antes de spawnar a tool `Agent`.
+
 ## Forward-compat com o supervisor multi-epic (E10) — o que este contrato NÃO faz
 
 Esta story entrega o contrato para o Orquestrador de Execução **sequencial de hoje**

@@ -348,6 +348,14 @@ valor de retorno), spawnando um sub-agente `model: "sonnet"` em **background por
 — você segue para o próximo passo do ciclo imediatamente, sem esperar o retorno; nunca
 deixe um despacho fora do rastro em disco (`estado-atual.yaml`/`list-inflight`).
 
+🔴 **Escopo fechado obrigatório (pós-incidente Epic 18, TCK-20260723153000-9f21):** todo
+prompt de despacho PARALELO monta as 5 regras de
+`project_controll/gerente/dispatch-contract.md` § "Escopo fechado no prompt de despacho
+paralelo" (escopo FECHADO explícito, agentes-irmãos+território declarados, proibição de
+trabalho na raiz com worktrees ativos, reafirmar escopo ao retomar — nunca só
+"continue" —, e nunca epic-runner + despachos por story vivos ao mesmo tempo) — leia lá,
+não duplicado aqui.
+
 ### 4. revisar
 Com despacho em background por padrão, esta fase roda quando a notificação
 `<task-notification>` daquele despacho chega — não mais "logo depois" da fase "despachar"

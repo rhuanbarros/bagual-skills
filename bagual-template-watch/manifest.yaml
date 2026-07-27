@@ -1,0 +1,74 @@
+# Componentes deste repositório importados de template_fullstack_app_supabase (branch dev).
+# Cada componente: template_root (base no template) + dest_root (base aqui) + include/exclude.
+# Caminhos em include/exclude são relativos ao template_root, a menos que comecem com "/"
+# (aí são relativos à raiz do template).
+
+template_repo_default: ../template_fullstack_app_supabase
+template_branch: dev
+
+components:
+  - id: gerente-geral-system
+    dest_root: gerente-geral-system/payload
+    # payload/<caminho> espelha template/<caminho> 1:1 para os itens incluídos abaixo.
+    include_paths:
+      - /.claude/agents/gerente-geral.md
+      - /.claude/settings.json          # só os blocos hooks.PreToolUse dos dois guards — ver nota
+      - /.claude/skills/bagual-gerente-geral/
+      - /.claude/skills/bagual-epic-runner/
+      - /.claude/skills/bagual-tickets/
+      - /project_controll/gerente/
+      - /project_controll/tickets/
+      - /project_controll/test-fixtures/
+      - /wiki/
+      - /scripts/prod_deploy_guard.py
+      - /scripts/test_prod_deploy_guard.py
+      - /semgrep/scripts/
+      - /_bmad/scripts/memlog.py
+    exclude_paths:
+      # estado vivo do template (o kit semeia a partir de exemplos/scaffolds vazios, README §"O que
+      # está incluído" linha "Estado do Gerente")
+      - /project_controll/gerente/estado-atual.yaml
+      - /project_controll/gerente/diario.md
+      - /project_controll/gerente/diario.jsonl
+      - /project_controll/gerente/briefing-*.md
+      - /project_controll/gerente/.crash-check-sentinels/
+      - /project_controll/tickets/TCK-*.md
+      - /project_controll/tickets/board.yaml
+      # mecanismo "filho do template" — bagual-skills não é um filho/child do template, não usa
+      # bagual-template-push nem precisa do runbook de upgrade de filho atrasado
+      - /project_controll/gerente/scripts/gerente_template_push.py
+      - /project_controll/gerente/scripts/gerente_template_push_extract.py
+      - /project_controll/gerente/scripts/test_gerente_template_push.py
+      - /project_controll/gerente/scripts/test_gerente_template_push_extract.py
+      - /project_controll/runbook-upgrade-template-child.md
+      # override de produto (gorioapp), não genérico (ver comentário dentro do próprio arquivo)
+      - /project_controll/gerente/scripts/product_routing.config.json
+      # QA gate: removido de propósito do kit (README §"O que foi REMOVIDO")
+      - /.claude/skills/bagual-epic-runner/scripts/track_qa_isolation.py
+    settings_json_note: >
+      payload/.claude/settings.json só porta os dois hooks.PreToolUse dos guards mecânicos
+      (gerente_tool_guard.py no matcher Edit|Write|NotebookEdit, prod_deploy_guard.py no matcher
+      Bash). O bloco permissions/bypassPermissions/allow-list e o hook Agent|Task ->
+      enforce_subagent_sonnet.py do template são específicos da config local do dono daquele
+      projeto e não fazem parte do kit — não porte, mesmo se o template mudar esse bloco.
+    wiki_note: >
+      wiki/ acumula entradas de Ledger que documentam decisões do PRÓPRIO template (skills que não
+      estão neste kit, nomes de produto). Ao encontrar entrada nova em wiki/ledger/**, leia antes de
+      portar: só entra se documentar o ENGINE (Gerente/Tickets/Wiki/epic-runner) de forma genérica.
+    never_include_hint: >
+      Não olhe (nem pergunte sobre) .claude/skills/bagual-qa-*, bagual-new-project,
+      bagual-template-init, bagual-template-push, bagual-template-sync, bagual-worktree — mecanismos
+      do template inteiro (app fullstack + fluxo de "comprador do template"), fora do escopo deste
+      kit que só carrega o meta-sistema de orquestração.
+
+  - id: bagual-skill-forge
+    dest_root: bagual-skill-forge
+    template_root_path: /.claude/skills/bagual-skill-forge
+    include_paths:
+      - /.claude/skills/bagual-skill-forge/
+    exclude_paths: []
+
+# Skills deste repo SEM contrapartida confirmada no template (checado 2026-07-27): bagual-ai-evals-*,
+# bagual-bmad-implement-epic, bagual-bmad-implement-quick-epic, bagual-bmad-worktree-setup,
+# bagual-test-pipeline. Não rastreadas aqui — se aparecerem no template no futuro, pergunte ao dono
+# antes de adicionar um componente novo (ver SKILL.md §Limites).
