@@ -2,7 +2,7 @@
 """gerente_oracle.py — E9.1 Oráculo: decisão delegada com rastro + raio de estrago por confiança.
 
 Story E9.1 (ideias/sistema-artifacts/E9-1-oraculo-decisao-delegada.md), PRD 00 FR-5
-(§4.3, UJ-3), ideias/epics.md Epic E9. Dá ao Gerente Geral (`.claude/agents/gerente-geral.md`)
+(§4.3, UJ-3), ideias/epics.md Epic E9. Dá ao Gerente Geral (`.claude/skills/bagual-gerente-geral/SKILL.md`)
 a faculdade de ORÁCULO: quando uma camada abaixo (sub-agente despachado, ou o próprio
 Gerente durante "priorizar") levanta uma decisão ambígua/de escopo, o Gerente decide
 AGORA (em vez de escalar ao dono e travar o ciclo), grava o rastro completo — decisão,

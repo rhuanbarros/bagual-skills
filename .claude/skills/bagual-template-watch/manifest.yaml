@@ -11,8 +11,9 @@ components:
     dest_root: gerente-geral-system/payload
     # payload/<caminho> espelha template/<caminho> 1:1 para os itens incluídos abaixo.
     include_paths:
-      - /.claude/agents/gerente-geral.md
-      - /.claude/settings.json          # só os blocos hooks.PreToolUse dos dois guards — ver nota
+      # Sem /.claude/agents/gerente-geral.md nem /.claude/settings.json — a persona foi dobrada
+      # pra dentro de bagual-gerente-geral/SKILL.md e os guards mecânicos por script foram
+      # removidos (2026-07-28, commits 8fe556f8/5f796204/2633617a) — ver nota abaixo.
       - /.claude/skills/bagual-gerente-geral/
       - /.claude/skills/bagual-epic-runner/
       - /.claude/skills/bagual-tickets/
@@ -20,8 +21,6 @@ components:
       - /project_controll/tickets/
       - /project_controll/test-fixtures/
       - /wiki/
-      - /scripts/prod_deploy_guard.py
-      - /scripts/test_prod_deploy_guard.py
       - /semgrep/scripts/
       - /_bmad/scripts/memlog.py
     exclude_paths:
@@ -45,12 +44,17 @@ components:
       - /project_controll/gerente/scripts/product_routing.config.json
       # QA gate: removido de propósito do kit (README §"O que foi REMOVIDO")
       - /.claude/skills/bagual-epic-runner/scripts/track_qa_isolation.py
-    settings_json_note: >
-      payload/.claude/settings.json só porta os dois hooks.PreToolUse dos guards mecânicos
-      (gerente_tool_guard.py no matcher Edit|Write|NotebookEdit, prod_deploy_guard.py no matcher
-      Bash). O bloco permissions/bypassPermissions/allow-list e o hook Agent|Task ->
-      enforce_subagent_sonnet.py do template são específicos da config local do dono daquele
-      projeto e não fazem parte do kit — não porte, mesmo se o template mudar esse bloco.
+    guards_removed_note: >
+      Até 2026-07-27 o kit portava .claude/settings.json (hooks.PreToolUse) +
+      gerente_tool_guard.py + scripts/prod_deploy_guard.py como backstop mecânico das regras
+      "Gerente nunca edita frontend/backend/supabase" e "Produção é exclusiva do dono". O
+      template removeu os dois guards (commits 8fe556f8/5f796204/2633617a, 2026-07-27/28,
+      decisão do dono registrada em wiki/ledger/decisao-tecnica/sem-guards-mecanicos-por-script.md
+      no projeto-filho de origem: hook que nega no meio do fluxo atrapalha mais do que protege).
+      Acompanhamos a mesma decisão aqui — as duas regras agora são só contrato/disciplina na
+      persona (identity-and-limits.md), README do kit documenta isso em "O que foi REMOVIDO". Se
+      o template um dia reintroduzir um guard mecânico, reavalie contra essa mesma decisão antes
+      de portar de volta.
     wiki_note: >
       wiki/ acumula entradas de Ledger que documentam decisões do PRÓPRIO template (skills que não
       estão neste kit, nomes de produto). Ao encontrar entrada nova em wiki/ledger/**, leia antes de

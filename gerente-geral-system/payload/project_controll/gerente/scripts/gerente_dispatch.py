@@ -3,7 +3,7 @@
 
 Story E8.4 (ideias/sistema-artifacts/E8-4-contrato-despacho.md), PRD 00 FR-8 (+ lado
 Sonnet do FR-7), ideias/epics.md Epic E8. Formaliza a interface pela qual o Gerente Geral
-(`.claude/agents/gerente-geral.md`, fase "despachar"/"revisar") entrega UMA unidade de
+(`.claude/skills/bagual-gerente-geral/SKILL.md`, fase "despachar"/"revisar") entrega UMA unidade de
 trabalho (epic/multi-epic/Ticket avulso) ao Orquestrador de Execução (hoje
 `bagual-epic-runner`/`bmad-quick-dev`/etc., PRD 03 quando existir) e recolhe o RESULTADO
 de volta — sempre por MARCADOR EM DISCO, nunca por valor de retorno de função — resiliente

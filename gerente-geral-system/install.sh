@@ -81,18 +81,14 @@ cat <<EOF
 
 == PRONTO. Próximos passos:
    1. Revise o diff da instalação (git status / git diff no destino).
-   2. Preencha os placeholders do domínio (<PROJETO>, <SUPABASE_REF_*>, hosts) na persona
-      .claude/agents/gerente-geral.md e nos configs de project_controll/gerente/*.config.json.
+   2. Preencha os placeholders do domínio (<PROJETO>, <SUPABASE_REF_*>, hosts) na skill
+      .claude/skills/bagual-gerente-geral/SKILL.md (+ references/identity-and-limits.md)
+      e nos configs de project_controll/gerente/*.config.json.
    3. A camada de execução (bagual-epic-runner) depende das skills BMad
       (bmad-create-story / bmad-dev-story / bmad-code-review / bmad-retrospective).
       Garanta que o projeto destino tem o BMad instalado, senão o epic-runner não roda.
-   4. Guards mecânicos (.claude/settings.json § hooks.PreToolUse) — SÓ valem se o arquivo
-      foi de fato copiado. Se o destino já tinha um .claude/settings.json, este passo
-      reportou-o como PULADO acima: você precisa mesclar os dois blocos hooks.PreToolUse
-      à mão (gerente_tool_guard.py em Edit|Write|NotebookEdit, prod_deploy_guard.py em
-      Bash) — sem isso, "Produção é exclusiva do dono" e "o Gerente nunca edita
-      frontend/backend/supabase" ficam só em prosa na persona, sem backstop mecânico.
-   5. Ative:  /bagual-gerente-geral   (ou "rodar o ciclo do Gerente")
+   4. Ative:  /bagual-gerente-geral   (ou "rodar o ciclo do Gerente")
               /bagual-tickets         (porta de entrada de trabalho)
-   Ver README.md deste kit para o que está incluído, o que foi removido (QA), e a arquitetura.
+   Ver README.md deste kit para o que está incluído, o que foi removido (QA + os guards
+   mecânicos por script), e a arquitetura.
 EOF

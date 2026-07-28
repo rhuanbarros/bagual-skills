@@ -4,7 +4,7 @@
 Story E9.5 (ideias/sistema-artifacts/E9-5-gerente-decide-escalados.md), PRD 02 FR-6,
 ideias/epics.md Epic E9. `bagual-tickets` (Story E9.4) já comita a `trilha` dos casos
 óbvios e marca `escalonar: true` no índice `board.yaml` para os ambíguos. Este script dá
-ao Gerente Geral (`.claude/agents/gerente-geral.md`) as primitivas MECÂNICAS de que
+ao Gerente Geral (`.claude/skills/bagual-gerente-geral/SKILL.md`) as primitivas MECÂNICAS de que
 precisa para lidar com o outro lado desse contrato — ele mesmo (via Protocolo do
 Oráculo, E9.1/E9.2) decide a `trilha` dos escalados, mas a decisão em si (julgamento)
 nunca vive aqui; só o que É mecânico/verificável vive aqui:
@@ -96,7 +96,7 @@ nem em nenhum script novo desta story (PRD 02 FR-6, decidido 2026-07-10: "não h
 heurística fixa para promover uma decisão de trilha a entrada de Ledger; é julgamento
 autônomo do Gerente/oráculo"). O COMMIT da trilha decidida no `.md`/`board.yaml` do
 ticket é feito pela persona invocando `bagual-tickets` (Resolver, composição — nunca
-editado nesta story, ver `.claude/agents/gerente-geral.md` § "Decisão de escalados
+editado nesta story, ver `.claude/skills/bagual-gerente-geral/SKILL.md` § "Decisão de escalados
 (E9.5)").
 
 `board.yaml` tem um formato fixo e simples demais para justificar um parser YAML

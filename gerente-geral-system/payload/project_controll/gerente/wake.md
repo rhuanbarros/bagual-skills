@@ -14,7 +14,7 @@ inside which the harness itself paces a wake — via the `loop` skill or via `Cr
 (native scheduling, **session-only**, never written to disk, never persisted outside the
 session). When the wake fires, it calls `gerente_wake.py wake-attempt` (this directory,
 `scripts/`) — a cheap gate that decides, WITHOUT spawning any sub-agent, whether it's
-worth waking the Gerente Geral (Opus persona, `.claude/agents/gerente-geral.md`) right now.
+worth waking the Gerente Geral (Opus persona, `.claude/skills/bagual-gerente-geral/SKILL.md`) right now.
 
 ## Why not OS cron / not cloud (the §8-Q2 decision, summarized)
 
@@ -189,8 +189,8 @@ wake, or this wake) wins; the rest see `held: true`/`stale: false` and defer.
 - **`gerente_wake.py wake-attempt`** is the FIRST half of what would be step 0 of the
   Ativação (`acquire-lock`) — just run OUTSIDE the expensive agent, before deciding
   whether it's even worth invoking it.
-- **`.claude/agents/gerente-geral.md` step 0** gained an alternate entry (see the file,
-  bullet "Entrada alternativa via wake local (Story E8.8)"): when the persona is
+- **`.claude/skills/bagual-gerente-geral/references/activation-and-lock.md` step 0** carries an
+  alternate entry (bullet "Alternate entry via local wake (Story E8.8)"): when the persona is
   invoked with a `cycle_id`/`token` already prepared (passed along by the
   PROMPT-DE-WAKE above), it **skips the `acquire-lock` sub-step** (the wake already did
   it) but still handles `pending_crash` exactly as if it had run `detect-crash` itself —
@@ -313,7 +313,7 @@ first one's PID was already dead — `pid_alive()` saw it as `False` and
 `lock_is_stale()` reclaimed the lock IMMEDIATELY, breaking mutual exclusion in
 practice (reproduced: `proceed:true` on the 2nd wake, should have been `false`).
 **Fixed** by removing the `--pid` auto-fill (default remains `None`), aligning with the
-convention `.claude/agents/gerente-geral.md` already uses — never pass `--pid` to
+convention `.claude/skills/bagual-gerente-geral/SKILL.md` already uses — never pass `--pid` to
 `acquire-lock`, because "no single OS process reliably represents 'the Gerente' in this
 agent/tool-calls harness" (original comment from `gerente_state.py::lock_is_stale`,
 Story E8.2). See the story's Dev Agent Record for the full before/after.

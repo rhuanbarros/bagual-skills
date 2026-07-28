@@ -2,8 +2,8 @@
 
 Story E8.4 (`ideias/sistema-artifacts/E8-4-contrato-despacho.md`), PRD 00 FR-8 (+ the
 Sonnet side of FR-7), `ideias/epics.md` Epic E8. This document is the canonical contract
-for the interface through which the Gerente Geral (`.claude/agents/gerente-geral.md`,
-phases "despachar"/"revisar") hands off **one unit of work** (epic, multi-epic — once the
+for the interface through which the Gerente Geral (`.claude/skills/bagual-gerente-geral/
+references/dispatch-and-review.md`, phases "despachar"/"revisar") hands off **one unit of work** (epic, multi-epic — once the
 E10 supervisor exists —, or a standalone Ticket via `trilha: rapida|spec|correct-course`)
 to the Execution Orchestrator and collects the **result** back. Same file-mediated
 dispatch pattern already proven in `_bmad/custom/bmad-code-review.toml` (Epic E2 — the
@@ -315,7 +315,8 @@ flight at the same time in the same checkout/worktree-pool) MUST:**
    modes per epic, not both simultaneously — it is exactly this overlap that caused the
    origin incident's double dispatch.
 
-This section is referenced (not duplicated) by `.claude/agents/gerente-geral.md` phase "3.
+This section is referenced (not duplicated) by
+`.claude/skills/bagual-gerente-geral/references/dispatch-and-review.md` phase "3.
 despachar" — any dispatch prompt the persona builds follows the 5 rules above
 before spawning the `Agent` tool.
 
@@ -429,7 +430,7 @@ python3 project_controll/gerente/scripts/gerente_dispatch.py reconcile-orphan-di
   --root project_controll/gerente --dispatch-id ID [--board-path PATH]
 ```
 
-## How the persona uses this (see `.claude/agents/gerente-geral.md` phases 3-4)
+## How the persona uses this (see `.claude/skills/bagual-gerente-geral/references/dispatch-and-review.md`, phases 3-4)
 
 **"despachar" phase:**
 1. `open-dispatch` with the `trilha`/Ticket(s) chosen in the "priorizar" phase → stores

@@ -1,7 +1,7 @@
 # Planning Brain (E9.3) — headless where possible, in-thread where not
 
 > Reference contract for the "Planning Brain" Protocol in
-> `.claude/agents/gerente-geral.md`. Story: `ideias/sistema-artifacts/E9-3-cerebro-planejamento.md`.
+> `.claude/skills/bagual-gerente-geral/SKILL.md`. Story: `ideias/sistema-artifacts/E9-3-cerebro-planejamento.md`.
 > Canonical: `ideias/prd-00-sistema-orquestrador.md` §4.2 (FR-4), UJ-2. Spike that grounds
 > the design: `ideias/fase-0-spikes.md` § S2+S3.
 
@@ -163,7 +163,7 @@ declared in Step 2, and `## Descrição` citing the plan's path
 enters the normal `pronto-para-implementar` queue and follows the standard operational cycle
 ("prioritize" phase → "dispatch" via `gerente_dispatch.py open-dispatch --trilha epic
 --skill bagual-epic-runner`, see the trilha→skill mapping table in
-`.claude/agents/gerente-geral.md` § "3. despachar") — **no new dispatch
+`.claude/skills/bagual-gerente-geral/references/dispatch-and-review.md` § "3. despachar") — **no new dispatch
 mechanism is invented here**; the Planning Brain ends the moment the Tickets exist, one
 per epic. Parallelism between these Tickets (dispatching more than one
 epic at a time, per worktree) is PRD 03/Execution Orchestrator territory —

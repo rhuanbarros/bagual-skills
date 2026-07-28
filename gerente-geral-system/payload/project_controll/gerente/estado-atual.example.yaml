@@ -4,7 +4,8 @@
 # ele só existe em disco durante/depois de um ciclo real do Gerente (escrito por
 # `gerente_state.py write-snapshot`). Antes do primeiro ciclo de sempre, sua ausência é
 # esperada e faz parte do caminho de degradação graciosa já documentado em
-# `.claude/agents/gerente-geral.md` § Ativação — não é um erro, não crie manualmente.
+# `.claude/skills/bagual-gerente-geral/references/activation-and-lock.md` — não é um erro,
+# não crie manualmente.
 #
 # Este arquivo existe só para DOCUMENTAR o schema com um exemplo concreto e realista.
 # Gerado manualmente com os mesmos campos/formato que `write-snapshot` produziria —

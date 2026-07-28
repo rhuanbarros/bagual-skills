@@ -26,7 +26,7 @@ unless it's essential to unblock.
 1. Dispatch a **clean-context Sonnet** sub-agent (the "despachar" phase: foreground, blocks until the
    verdict — E19.1 guarantees it doesn't come back idle; marker-based contract). Scope **restricted**
    to the meta-system's client-owned files: `.claude/skills/bagual-*`, `_bmad/custom/*.toml`,
-   `project_controll/gerente/**`, `.claude/agents/gerente-geral.md`. **NEVER** `bmad-*`/`wds-*`
+   `project_controll/gerente/**`. **NEVER** `bmad-*`/`wds-*`
    (inviolable rule).
 2. The sub-agent fixes the ticket's defect and reports the **files touched** + the evidence.
 3. **What "green" means depends on the TYPE of fix** (the meta-system has two halves: ~28 scripts

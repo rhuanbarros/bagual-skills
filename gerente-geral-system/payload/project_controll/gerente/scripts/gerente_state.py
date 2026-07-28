@@ -3,7 +3,7 @@
 
 Story E8.2 (ideias/sistema-artifacts/E8-2-estado-operacional.md), PRD 00 FR-11 (§4.8),
 ideias/epics.md Epic E8. Materializa a consciência situacional do Gerente Geral
-(`.claude/agents/gerente-geral.md`, Story E8.1) em `project_controll/gerente/`:
+(`.claude/skills/bagual-gerente-geral/SKILL.md`, Story E8.1) em `project_controll/gerente/`:
 
   * `estado-atual.yaml` — retrato do ciclo ATUAL, sobrescrito a cada ciclo (write-snapshot).
   * `diario.md` (+ `diario.jsonl` irmão, mesma disciplina de append) — diário append-only

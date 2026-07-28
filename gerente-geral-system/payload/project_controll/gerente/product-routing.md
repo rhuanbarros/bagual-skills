@@ -10,8 +10,9 @@ source_story: "ideias/sistema-artifacts/E9-6-roteamento-produto.md"
 
 # Product routing (E9.6)
 
-Canonical contract for the sub-protocol `.claude/agents/gerente-geral.md` invokes inside
-the "prioritize" phase § "Escalated decisions + reconciliation (E9.5)" — for EACH escalated
+Canonical contract for the sub-protocol `.claude/skills/bagual-gerente-geral/SKILL.md` invokes
+inside the "prioritize" phase (`references/priorities-and-proactive-work.md` §
+"Escalated decisions + reconciliation (E9.5)") — for EACH escalated
 ticket, before/alongside deciding the `trilha` via the Oracle Protocol (E9.1), the Gerente
 decides **whether the ticket changes the product** and, if so, **through which of the 3
 routes**. Read this document in full before the first time this sub-step triggers.

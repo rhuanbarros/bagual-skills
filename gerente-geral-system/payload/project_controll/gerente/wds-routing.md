@@ -10,8 +10,8 @@ source_story: "ideias/sistema-artifacts/E9-8-wds8-in-thread-ou-dono.md"
 
 # Route (i) execution — wds-8 never headless (E9.8)
 
-Canonical contract for the sub-protocol `.claude/agents/gerente-geral.md` invokes in the
-**"dispatch"** phase whenever a Ticket's `trilha` is `wds` — the classification decision
+Canonical contract for the sub-protocol `.claude/skills/bagual-gerente-geral/SKILL.md` invokes in
+the **"dispatch"** phase whenever a Ticket's `trilha` is `wds` — the classification decision
 itself (is it route (i)? which ticket?) has already been made by `product-routing.md` (E9.6); this
 document decides **how this already-routed route (i) is executed**, given that `wds-8` was
 **proven infeasible headless** (spike S3, tested live — stalled at the very first Analyze
@@ -48,7 +48,7 @@ is not "fix wds-8" — it is to route around it.
 
 ## 3. When this protocol triggers
 
-In the "dispatch" phase (`.claude/agents/gerente-geral.md` § "3. despachar"), step 1
+In the "dispatch" phase (`.claude/skills/bagual-gerente-geral/references/dispatch-and-review.md` § "3. despachar"), step 1
 (map `trilha` → skill): when the Ticket at hand has `trilha: wds` (decided by
 `product-routing.md` §6 route (i) — needs design, or touched the Coverage Matrix, E9.6's
 hard rule), **stop before assembling any `open-dispatch`**. There is no line
@@ -74,8 +74,8 @@ There is no new config, no new script, to decide (a) vs (b). The gate is literal
 confidence mechanism the Oracle Protocol (E9.1) already has — reused, never
 reimplemented:
 
-1. The Gerente runs the Oracle Protocol (`.claude/agents/gerente-geral.md` § "Protocolo
-   do Oráculo (E9.1)") with `--tipo decisao-de-produto`, `--areas` including the Ticket's
+1. The Gerente runs the Oracle Protocol (`.claude/skills/bagual-gerente-geral/references/
+   oracle-protocol.md`) with `--tipo decisao-de-produto`, `--areas` including the Ticket's
    area **and** the fixed tag `wds8-design-in-thread` (so that precedents of this SAME
    class of decision — "can the oracle do in-thread design?" — are findable
    by `consult-precedent`/E9.2's history-aware gate, without being confused with other
@@ -222,7 +222,7 @@ Both continue exactly as they were before this story — this protocol does not 
 ## 11. Proof — no path spawns `wds-8` headless
 
 Verifiable by grep, whenever this protocol is reviewed: no instruction in
-`.claude/agents/gerente-geral.md`, `project_controll/gerente/**`, or any
+`.claude/skills/bagual-gerente-geral/**`, `project_controll/gerente/**`, or any
 `gerente_*.py` contains a call to `Skill(wds-8`/`Agent(...wds-8...)`/"invoke
 wds-8"/"spawn wds-8" outside the explicit "this is forbidden" context (§2 above). See
 Story E9.8's Dev Agent Record for the exact commands run and the output confirming

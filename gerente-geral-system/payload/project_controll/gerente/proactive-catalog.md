@@ -6,14 +6,14 @@ status: living-document
 source_prd: "ideias/prd-00-sistema-orquestrador.md — FR-3, UJ-4"
 source_epic: "ideias/epics.md — Epic E8, Story E8.5"
 source_story: "ideias/sistema-artifacts/E8-5-trabalho-proativo.md"
-extends: ".claude/agents/gerente-geral.md"
+extends: ".claude/skills/bagual-gerente-geral/SKILL.md"
 ---
 
 # Proactive work catalog — empty queue
 
 ## What this document is
 
-When the Gerente Geral (`.claude/agents/gerente-geral.md`) wakes up and `project_controll/tickets/board.yaml`
+When the Gerente Geral (`.claude/skills/bagual-gerente-geral/SKILL.md`) wakes up and `project_controll/tickets/board.yaml`
 has no ticket in `pronto-para-implementar`, it doesn't sit idle — but it also doesn't
 invent arbitrary work. This is the **restricted catalog** (PRD 00 FR-3) of **very-low-risk**
 proactive tasks the Gerente can pick from at that moment. It is deliberately restricted:
@@ -23,7 +23,7 @@ committed code change. Every finding turns into a **traceable Ticket**
 
 Rotation/cap/dedup mechanics: see `project_controll/gerente/scripts/gerente_proactive.py`
 (`next-task`/`dedup-check`/`record-proactive`) and phase 2 (prioritize) of
-`.claude/agents/gerente-geral.md`. This document is only the catalog's **content** — the
+`.claude/skills/bagual-gerente-geral/references/priorities-and-proactive-work.md`. This document is only the catalog's **content** — the
 mechanics of "how many times per cycle" and "how to avoid rediscovering the same finding" live in the
 scripts, not here.
 

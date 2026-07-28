@@ -4,7 +4,7 @@
   "mode": "auto-fix",
   "instruction_fix_policy": "escalate",
   "core_paths": [
-    ".claude/agents/gerente-geral.md",
+    ".claude/skills/bagual-gerente-geral/SKILL.md",
     "project_controll/gerente/dispatch-contract.md",
     "project_controll/gerente/scripts/gerente_dispatch.py",
     "project_controll/gerente/scripts/gerente_state.py",

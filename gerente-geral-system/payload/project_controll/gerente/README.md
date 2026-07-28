@@ -2,7 +2,7 @@
 
 Story E8.2 (`ideias/sistema-artifacts/E8-2-estado-operacional.md`), PRD 00 FR-11 (§4.8),
 `ideias/epics.md` Epic E8. Materializes the situational awareness that the persona
-`.claude/agents/gerente-geral.md` (Story E8.1) reads **before deciding anything** when
+`.claude/skills/bagual-gerente-geral/SKILL.md` (Story E8.1) reads **before deciding anything** when
 activated. This document is the canonical schema/CLI contract — the persona and future
 stories (E8.5-E8.7-E8.8, the E9 oracle) must treat it as the source of truth, not
 duplicate the schema in prose elsewhere. As of Story E8.3, this README is also the
@@ -48,7 +48,7 @@ pointer + a summary of what integrates with this file.
 `proactive-ciclo.json` and `dispatches/` are not committed at rest** — they only exist on
 disk during/after a real cycle. Before the very first cycle ever, their absence
 is expected and is exactly the graceful-degradation path that
-`.claude/agents/gerente-geral.md` § Activation already documents — it is not an error, and no
+`.claude/skills/bagual-gerente-geral/references/activation-and-lock.md` already documents — it is not an error, and no
 story should create them preemptively "just so they don't appear absent." `quota.config.json`,
 `proactive.config.json`, `proactive-catalog.md`, `estado-atual.example.yaml`,
 `dispatch-contract.md` and `oracle.config.json` are the exception — they are CONFIG/doc/CONTRACT,
@@ -204,7 +204,7 @@ in the DANGEROUS direction (underestimation). Mitigations applied:
    there is no mechanical enforcement forcing the persona to call manual `record-usage` for its
    own standalone Opus turns (phase transitions, analyses without a dispatch) — this
    remains behavioral discipline, documented here and in
-   `.claude/agents/gerente-geral.md`, of the same class as other disciplines already accepted
+   `.claude/skills/bagual-gerente-geral/SKILL.md`, of the same class as other disciplines already accepted
    in this system (e.g., "always invoke `bagual-tickets` instead of hand-editing `board.yaml`").
    Closing this completely would require instrumenting the agent's own execution
    (outside the reach of a local stdlib script) — territory for a future story, not
@@ -472,7 +472,7 @@ SESSION (never OS cron, never the `schedule`/routines cloud skill — forbidden 
 Story E9.1 (`ideias/sistema-artifacts/E9-1-oraculo-decisao-delegada.md`), PRD 00 FR-5
 (§4.3, UJ-3), `ideias/epics.md` Epic E9. Canonical contract for the trust gate; the
 operational protocol (when it fires, step by step, ratification) lives in
-`.claude/agents/gerente-geral.md` § "Oracle Protocol (E9.1)" — this README only documents
+`.claude/skills/bagual-gerente-geral/references/oracle-protocol.md` — this README only documents
 the script's mechanics (`scripts/gerente_oracle.py`).
 
 **Where it writes:** unlike everything else in this folder, an oracle decision is
@@ -666,8 +666,8 @@ already-decided ticket; the exclusion of "already resolved" is a property of the
 an extra filter.
 
 **Committing the decided track — via `bagual-tickets` (composition, not a new script):**
-after deciding via the Oracle Protocol (`.claude/agents/gerente-geral.md`, the section of
-the same name), the persona invokes `bagual-tickets` (Resolver) to record `trilha: <decided>`
+after deciding via the Oracle Protocol (`.claude/skills/bagual-gerente-geral/references/oracle-protocol.md`),
+the persona invokes `bagual-tickets` (Resolver) to record `trilha: <decided>`
 + `escalonar: false` + a `## Log` line citing the trace (Ledger path if any) +
 `ledger_refs` when promoted — the skill is NEVER re-edited by this story (E9.4 is already
 its side of the contract); the same generic "update fields of a ticket" mechanism
@@ -827,7 +827,7 @@ Story E9.8 (PRD 05 FR-6, `ideias/fase-0-spikes.md` § S3 — **tested live: `wds
 got stuck headless**, not a hypothesis). Closes the **last story of Epic E9**. Full
 contract in `wds-routing.md` (protocol, the mechanical gate for (a), the A/S/D-only
 boundary) — read it in full before the first time a Ticket with `trilha: wds` reaches the
-"dispatch" phase of `.claude/agents/gerente-geral.md`.
+"dispatch" phase of `.claude/skills/bagual-gerente-geral/SKILL.md`.
 
 **Hard rule, no exception:** no autonomous flow (the Gerente, nor any sub-agent it
 dispatches) invokes `wds-8` (or any of its `workflow-*.md` files) headlessly — the
@@ -957,7 +957,7 @@ sentinel — the guard is only about `open-dispatch`.
 stays in pure diagnostic mode (no sentinel written) — only the persona, in its step
 0 of Activation, decides the new cycle's `cycle_id` ahead of time and passes it
 explicitly. `reconcile --cycle-id` was already required and always writes the sentinel for
-the `cycle_id` it reconciled. See `.claude/agents/gerente-geral.md` § Activation (step 0)
+the `cycle_id` it reconciled. See `.claude/skills/bagual-gerente-geral/references/activation-and-lock.md` (step 0)
 for the exact sequence the persona follows, and `test_gerente_state.py` §[6]/
 `test_gerente_dispatch.py` §[13]/`test_gerente_wake.py` §[7] for the mechanical proofs
 (blocking, releasing, scoping by `cycle_id`, and that `acquire-lock`/`check-lock` remain
@@ -1191,7 +1191,7 @@ All commands print a JSON line (`ok`/`acquired`/`held`/`crashed` depending on
 the command) — the same "write-only, echo the new state" spirit as `memlog.py`, so
 callers never need to reread the file to know where things stand.
 
-## How the persona uses this (see `.claude/agents/gerente-geral.md` § Activation)
+## How the persona uses this (see `.claude/skills/bagual-gerente-geral/references/activation-and-lock.md`)
 
 **Local wake (Story E8.8) — only when this activation was triggered by `loop`/
 `CronCreate`, see `wake.md` and § Local wake (E8.8) above:**

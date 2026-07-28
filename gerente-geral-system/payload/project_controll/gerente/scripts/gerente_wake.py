@@ -16,7 +16,7 @@ Comandos:
   wake-attempt   tenta adquirir o lock singleton (REUSA gerente_state.py::acquire_lock,
                  a mesma primitiva atômica de E8.2 — não uma reimplementação) em nome do
                  wake. `proceed: true` + `cycle_id`/`token` prontos para repassar à
-                 ativação de `.claude/agents/gerente-geral.md` (ela pula a sub-etapa
+                 ativação de `.claude/skills/bagual-gerente-geral/SKILL.md` (ela pula a sub-etapa
                  `acquire-lock` do seu próprio passo 0 e usa o que já foi adquirido aqui —
                  ver `wake.md` § "Composição com o lock singleton"). `proceed: false`
                  quando o lock já está held-e-fresco (dono interativo OU outro ciclo já em
