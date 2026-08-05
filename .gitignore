@@ -1,0 +1,11 @@
+.bmad-loop/runs/
+.bmad-loop/cache/
+# .bmad-loop/policy.toml — DELIBERATELY VERSION-CONTROLLED (2026-08-05).
+# bmad-loop's init gitignores this file by default, treating it as machine-local
+# config. Here it is the opposite: it declares WHICH MODEL execution runs on
+# ([adapter] model) and WHETHER runs are isolated ([scm] isolation). Ignored, a
+# reinstall or a second machine silently reverts both to the shipped defaults —
+# full Opus sessions, writing into the shared checkout. Both are decisions with
+# a cost and a blast radius, so they belong in history, not in a local file.
+# Each deviation carries its rationale at the point of override, inside the file.
+_bmad/render/

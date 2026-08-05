@@ -1,0 +1,108 @@
+# Sprint Status — Bagual Skills v2
+# Generated 2026-08-05 from _bmad-output/planning-artifacts/epics-bagual-skills-v2.md
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in the epic file
+#   - ready-for-dev: Story file created, ready for development
+#   - in-progress: Developer actively working on implementation
+#   - review: Implementation complete, ready for review
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# Action Item Status:
+#   - open: Committed during a retrospective, not yet addressed
+#   - in-progress: Actively being worked on
+#   - done: Completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Mark epic as 'in-progress' when starting work on its first story
+# - Dev moves story to 'review', then code-review runs in a fresh context
+# - Retrospective appends action items below; they are surfaced until closed
+#
+# 🔴 PROJECT NOTE — this suite has no automatic epic closure.
+# Nothing here runs a QA gate, a retrospective, or triages deferred work when an
+# epic's last story reaches done. Epic 22 in the sibling project ended with 11
+# stories done, the epic open for ten hours, and a risk its own review called
+# irreversible sitting unread in deferred-work.md. With six epics, that is six
+# chances to repeat it. Close each epic by hand until Epic 1 ships.
+
+generated: 05-08-2026 00:00
+last_updated: 05-08-2026 00:00
+project: Bagual Skills v2
+project_key: BAGUAL
+tracking_system: file-system
+story_location: "{project-root}/_bmad-output/implementation-artifacts"
+
+development_status:
+
+  # Epic 1: Run an epic overnight and have it actually close
+  epic-1: backlog
+  1-1-launch-a-supervised-run: backlog
+  1-2-be-woken-by-what-matters-including-by: backlog
+  1-3-refuse-to-run-an-epic-that-was: backlog
+  1-4-audit-the-stories-not-only-the-epic: backlog
+  1-5-bind-the-verdict-to-the-exact-stories: backlog
+  1-6-park-an-escalation-instead-of-inventing-an: backlog
+  1-7-triage-deferred-work-before-the-epic-can: backlog
+  1-8-verify-the-assembled-epic-when-the-project: backlog
+  1-9-retrospect-and-capture-what-the-night-learned: backlog
+  1-10-close-the-epic-only-when-the-checklist: backlog
+  1-11-set-the-skill-up-in-a-project: backlog
+  1-12-prove-the-skill-meets-the-standard-it: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Knowledge that stays true
+  epic-2: backlog
+  2-1-structure-that-makes-searching-converge: backlog
+  2-2-bring-a-knowledge-store-into-being-without: backlog
+  2-3-a-spec-arrives-already-carrying-what-the: backlog
+  2-4-company-rules-live-with-the-project-they: backlog
+  2-5-a-question-that-had-to-be-asked: backlog
+  2-6-every-entry-says-how-much-it-can: backlog
+  2-7-curation-makes-the-store-smaller: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Anti-patterns become rules a machine enforces
+  epic-3: backlog
+  3-1-see-what-is-ready-to-become-a: backlog
+  3-2-write-a-rule-that-proves-itself-before: backlog
+  3-3-shipping-a-rule-closes-the-loop: backlog
+  3-4-blocked-work-has-an-honest-way-forward: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Work that never gets lost
+  epic-4: backlog
+  4-1-several-windows-one-intact-record: backlog
+  4-2-the-states-this-organization-actually-uses: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: The manager that learns
+  epic-5: backlog
+  5-1-one-place-to-ask-for-anything: backlog
+  5-2-output-built-to-be-read-fast: backlog
+  5-3-corrected-once-remembered-forever: backlog
+  5-4-lessons-land-as-configuration-or-knowledge-never: backlog
+  5-5-never-send-a-writer-into-a-checkout: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Install anywhere, stay current
+  epic-6: backlog
+  6-1-drop-it-in-and-it-works: backlog
+  6-2-nothing-project-specific-left-in-the-skill: backlog
+  6-3-change-behaviour-without-forking: backlog
+  6-4-an-improvement-in-one-project-reaches-the: backlog
+  epic-6-retrospective: optional
+
+# Action items committed during retrospectives
+action_items: []
